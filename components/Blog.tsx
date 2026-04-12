@@ -1,0 +1,102 @@
+import React, { useState } from 'react';
+import { BLOG_POSTS, BLOG_CATEGORIES } from '../constants';
+
+const Blog: React.FC = () => {
+  const [activeCategory, setActiveCategory] = useState("Tümü");
+
+  const filteredPosts = activeCategory === "Tümü"
+    ? BLOG_POSTS
+    : BLOG_POSTS.filter(post => post.category === activeCategory);
+
+  return (
+    <section id="blog" className="py-24 px-4 relative bg-background-dark/50">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <span className="text-primary font-bold tracking-widest text-sm uppercase mb-3 block">Güncel Bilgiler</span>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Temizlik Rehberi & İpuçları</h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Ev hijyeni, leke çıkarma yöntemleri ve profesyonel temizlik teknolojileri hakkında uzman görüşleri.
+          </p>
+        </div>
+
+        {/* Filter Categories */}
+        <div className="flex flex-wrap justify-center gap-3 mb-12">
+          {BLOG_CATEGORIES.map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 border ${
+                activeCategory === category
+                  ? 'bg-primary border-primary text-white shadow-[0_0_20px_rgba(6,182,212,0.4)] transform scale-105'
+                  : 'bg-surface-dark border-white/10 text-gray-400 hover:text-white hover:border-primary/50 hover:bg-white/5'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {/* Blog Grid - Key forces re-animation on category change */}
+        <div key={activeCategory} className="grid md:grid-cols-3 gap-8">
+          {filteredPosts.map((post, index) => (
+            <article 
+              key={post.id} 
+              className="glass rounded-2xl overflow-hidden group hover:border-primary/40 transition-colors flex flex-col h-full animate-fade-in-down"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className="h-48 overflow-hidden relative">
+                <div className="absolute inset-0 bg-primary/20 group-hover:bg-transparent transition-colors z-10"></div>
+                
+                {/* Category Badge */}
+                <div className="absolute top-4 left-4 z-20">
+                  <span className="bg-surface-dark/90 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                    {post.category}
+                  </span>
+                </div>
+
+                <img 
+                  src={post.image} 
+                  alt={post.title}
+                  className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                />
+              </div>
+              
+              <div className="p-8 flex flex-col flex-grow">
+                <div className="flex justify-between items-center mb-3">
+                   <div className="text-primary text-xs font-bold uppercase tracking-wider">{post.date}</div>
+                </div>
+                
+                <h3 className="text-xl font-bold text-white mb-4 group-hover:text-primary transition-colors">
+                  {post.title}
+                </h3>
+                <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                  {post.excerpt}
+                </p>
+                
+                <div className="mt-auto border-t border-white/5 pt-4">
+                  <p 
+                    className="text-gray-300 text-sm leading-relaxed line-clamp-3"
+                    dangerouslySetInnerHTML={{ __html: post.content }}
+                  />
+                  <button className="mt-4 text-primary text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Devamını Oku <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+        
+        {filteredPosts.length === 0 && (
+          <div className="text-center py-12 text-gray-500 animate-fade-in-down">
+            <span className="material-symbols-outlined text-4xl mb-2 opacity-50">search_off</span>
+            <p>Bu kategoride henüz yazı bulunmamaktadır.</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
+export default Blog;
