@@ -85,6 +85,48 @@ const SEOContent: React.FC = () => {
             </div>
           </div>
 
+          {/* Section 5: Premium Temizlik & AI */}
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Afyon'da Premium Temizlik ve Yapay Zeka Destekli Hijyen</h2>
+            <div className="space-y-4 text-gray-400 leading-relaxed text-sm">
+              <p>
+                Afyonkarahisar'da standartların ötesinde bir temizlik deneyimi arayanlar için <strong>premium temizlik afyon</strong> konseptini yeniden tanımlıyoruz. Geleneksel yıkama yöntemlerinin aksine, NisanProClean olarak sunduğumuz premium hizmet, eşyalarınızın dokusuna ve kirlilik derecesine özel olarak tasarlanmış kişiselleştirilmiş bir bakım sürecidir. Amacımız sadece görünür kirleri değil, gözle görülmeyen mikroskobik tehditleri de ortadan kaldırmaktır.
+              </p>
+              <p>
+                Bu premium deneyimin temelinde <strong>yapay zeka (AI) destekli analiz teknolojilerimiz</strong> yatıyor. Kumaşın türü, lekenin yapısı ve kullanım yoğunluğu gibi veriler analiz edilerek, uygulanacak su sıcaklığı, vakum gücü ve kullanılacak organik şampuanın pH değeri milimetrik olarak hesaplanır. Bu sayede koltuklarınız, yataklarınız ve araç içi döşemeleriniz hiçbir zarar görmeden, ilk günkü canlılığına ve formuna kavuşur. Akıllı algoritmalarımız, kumaşın yıpranma payını en aza indirerek maksimum hijyen sağlar.
+              </p>
+              <p>
+                Afyon premium temizlik hizmetimiz, sadece bir yıkama işlemi değil, aynı zamanda eşyalarınızın ömrünü uzatan bir restorasyon sürecidir. Vaktinizin ne kadar değerli olduğunun farkındayız; bu yüzden yerinde, hızlı ve %100 memnuniyet garantili hizmet sunuyoruz. Evinizde veya iş yerinizde en üst düzey hijyen standartlarını yaşamak, yapay zeka destekli yeni nesil temizlik teknolojilerimizle tanışmak için bizimle iletişime geçin.
+              </p>
+            </div>
+          </div>
+
+          {/* Section 6: Competitor Comparison (White Hat Hack) */}
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Neden Bizi Seçmelisiniz? (Standart Firmalardan Farkımız)</h2>
+            <div className="space-y-4 text-gray-400 leading-relaxed text-sm">
+              <p>
+                Afyon'da ucuz fiyatlarla hizmet verdiğini iddia eden standart temizlik firmaları genellikle yüzeysel işlem yapar. <strong>Standart yıkamacılar</strong> oto yıkama makineleri ve ağır kimyasallar kullanırken, biz sadece koltuk ve yataklar için üretilmiş, Avrupa standartlarında yüksek vakumlu endüstriyel cihazlar kullanıyoruz.
+              </p>
+              <p>
+                Sıradan firmalar koltuklarınızı günlerce ıslak bırakıp kusma ve kötü kokuya sebep olurken; NisanProClean'in <strong>hızlı kuruma teknolojisi</strong> sayesinde eşyalarınız saatler içinde kullanıma hazır hale gelir. Merdiven altı işletmelerin aksine, %100 leke çıkarma gayreti, güler yüzlü hizmet ve garantili hijyen sunuyoruz. Paranızı ve eşyalarınızı riske atmayın, profesyonellerle çalışın.
+              </p>
+            </div>
+          </div>
+
+          {/* Section 7: Local SEO / Neighborhoods (Local Hack) */}
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Afyonkarahisar Hizmet Bölgelerimiz</h2>
+            <div className="space-y-4 text-gray-400 leading-relaxed text-sm">
+              <p>
+                NisanProClean olarak, Afyonkarahisar merkez ve tüm popüler mahallelerine hızlı, ücretsiz servis imkanı ile yerinde koltuk yıkama hizmeti götürüyoruz. Başta <strong>Erenler koltuk yıkama</strong> talepleri olmak üzere; <strong>Uydukent, Erkmen, Sahipata, Fatih Mahallesi, Kanlıca, Gazi Mahallesi, Ali İhsan Paşa, Cumhuriyet ve Dumlupınar</strong> mahallelerinde her gün aktif servis araçlarımız bulunmaktadır.
+              </p>
+              <p>
+                Ayrıca randevu yoğunluğuna göre Sandıklı, Bolvadin, Çay, Emirdağ, Şuhut ve İscehisar gibi çevre ilçelerden gelen toplu temizlik (otel, yurt, ofis) ve ev tipi koltuk/yatak hijyeni taleplerini de karşılıyoruz. Afyon'un neresinde olursanız olun, bir telefonla premium temizlik kapınızda.
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>

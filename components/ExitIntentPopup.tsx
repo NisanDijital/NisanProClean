@@ -20,10 +20,16 @@ const ExitIntentPopup: React.FC = () => {
     // Pick a random offer on mount
     setOffer(OFFERS[Math.floor(Math.random() * OFFERS.length)]);
 
+    // İlk 5 saniye boyunca popup'ın çıkmasını engelle (yanlışlıkla tetiklenmeyi önler)
+    let canTrigger = false;
+    const initialDelay = setTimeout(() => {
+      canTrigger = true;
+    }, 5000);
+
     const handleMouseLeave = (e: MouseEvent) => {
       // Fare ekranın üst kısmından çıkarsa (sekmeyi kapatma veya geri gitme hareketi)
-      // iframe içinde daha rahat test edilebilmesi için e.clientY <= 20 yaptık
-      if (e.clientY <= 20 && !hasTriggered) {
+      // Hassasiyeti azalttık (clientY <= 5) ve ilk 5 saniye kuralı ekledik
+      if (canTrigger && e.clientY <= 5 && !hasTriggered) {
         const isMobile = window.innerWidth < 768;
         if (!isMobile) {
           setIsVisible(true);
@@ -45,6 +51,7 @@ const ExitIntentPopup: React.FC = () => {
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
       clearTimeout(mobileTimer);
+      clearTimeout(initialDelay);
     };
   }, [hasTriggered]);
 
