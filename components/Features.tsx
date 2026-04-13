@@ -35,8 +35,8 @@ const Features: React.FC = () => {
           />
           <FeatureCard 
             icon="directions_car" 
-            title="Araç Detay Temizlik" 
-            description="Aracınızın koltuklarını sökmeden, yerinde detaylı kuaför hizmeti. Deri ve kumaş döşemeler için özel bakım."
+            title="Araç Koltuk Temizliği" 
+            description="Aracınızın koltuklarını sökmeden, yerinde temizliyoruz. İşlem için sadece elektrik alabileceğimiz bir yer göstermeniz yeterlidir."
             theme="primary"
           />
         </div>

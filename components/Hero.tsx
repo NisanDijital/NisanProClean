@@ -39,10 +39,15 @@ const Hero: React.FC = () => {
             <span className="material-symbols-outlined transition-transform group-hover:rotate-12 relative z-10">call</span>
             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-black/10 to-transparent animate-shine z-0"></div>
           </a>
-          <button className="flex items-center justify-center gap-3 px-8 py-4 rounded-full font-bold text-lg text-white border border-white/20 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm">
-            <span className="material-symbols-outlined">play_circle</span>
-            <span>Temizlik Sürecini İzle</span>
-          </button>
+          <a 
+            href={CONTACT_INFO.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-3 px-8 py-4 rounded-full font-bold text-lg text-white border border-white/20 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm"
+          >
+            <span className="material-symbols-outlined">photo_camera</span>
+            <span>Instagram'da Bizi İzleyin</span>
+          </a>
         </div>
 
         {/* Trust Badge (Customer Perspective) */}
@@ -59,13 +64,13 @@ const Hero: React.FC = () => {
       </div>
 
       {/* Floating Guarantee Card (Designer Perspective) */}
-      <div className="absolute hidden lg:flex items-center gap-4 bottom-32 right-20 glass-card p-4 rounded-2xl animate-float border border-primary/30 shadow-[0_0_30px_rgba(45,212,191,0.2)]">
-        <div className="size-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-          <span className="material-symbols-outlined">verified_user</span>
+      <div className="absolute hidden lg:flex items-center gap-4 bottom-32 right-20 bg-gradient-to-r from-red-900/80 to-background-dark p-4 rounded-2xl animate-float border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.3)] backdrop-blur-md">
+        <div className="size-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
+          <span className="material-symbols-outlined">gavel</span>
         </div>
         <div className="text-left">
-          <p className="text-white font-bold text-sm">%100 Memnuniyet</p>
-          <p className="text-gray-400 text-xs">Leke Çıkarma Garantisi</p>
+          <p className="text-white font-bold text-sm">7 Gün Rest Garantisi!</p>
+          <p className="text-gray-300 text-xs">Para İade veya Yeniden Yıkama</p>
         </div>
       </div>
 

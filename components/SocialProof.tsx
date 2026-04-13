@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const NAMES = ["Ahmet Y.", "Ayşe K.", "Mehmet T.", "Fatma S.", "Caner B.", "Zeynep A.", "Burak C.", "Elif D.", "Mustafa E.", "Merve F."];
 const LOCATIONS = ["Afyon Merkez", "Erenler", "Uydukent", "Sahipata", "Erkmen", "Fatih", "Kanlıca", "Gazi"];
-const SERVICES = ["Koltuk Hijyeni", "Yatak Hijyeni", "Araç İçi Detaylı Temizlik", "Büyük L Koltuk Temizliği", "Chester Takım Temizliği"];
+const SERVICES = ["Koltuk Hijyeni", "Yatak Hijyeni", "Araç Koltuk Temizliği", "Büyük L Koltuk Temizliği", "Chester Takım Temizliği"];
 
 const SocialProof: React.FC = () => {
   const [viewers, setViewers] = useState(Math.floor(Math.random() * 6) + 5); // 5 ile 10 arası başlar

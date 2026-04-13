@@ -5,6 +5,7 @@ import Marquee from './components/Marquee';
 import Features from './components/Features';
 import BeforeAfterGallery from './components/BeforeAfterGallery';
 import AIStainAnalyzer from './components/AIStainAnalyzer';
+import UVScanner from './components/UVScanner';
 import SplitSection from './components/SplitSection';
 import PricingCalculator from './components/PricingCalculator';
 import Referral from './components/Referral';
@@ -30,6 +31,7 @@ const App: React.FC = () => {
         <Features />
         <BeforeAfterGallery />
         <AIStainAnalyzer />
+        <UVScanner />
         
         <section id="services" className="py-20 px-4 scroll-mt-24">
           <div className="max-w-7xl mx-auto flex flex-col gap-24">

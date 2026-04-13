@@ -20,8 +20,8 @@ const PRICING = {
     { id: 'bazaBasligi', name: 'Baza Başlığı', price: 500 },
   ],
   arac: [
-    { id: 'binekArac', name: 'Binek Araç İçi Detaylı', price: 1800 },
-    { id: 'suvArac', name: 'SUV / Ticari Araç İçi', price: 2000 },
+    { id: 'binekArac', name: 'Binek Araç Koltuk Temizliği', price: 1800 },
+    { id: 'suvArac', name: 'SUV / Ticari Araç Koltuk Temizliği', price: 2000 },
   ]
 };
 
@@ -81,8 +81,8 @@ const PricingCalculator: React.FC = () => {
       });
     }
 
-    const calcDiscount = hasItems ? Math.round(calcTotal * 0.10) : 0;
-    const finalTotal = calcTotal - calcDiscount;
+    const calcDiscount = 0; // İndirim kaldırıldı
+    const finalTotal = calcTotal;
 
     return { total: finalTotal, subTotal: calcTotal, discount: calcDiscount, summary: calcSummary };
   }, [items, addons]);
@@ -94,7 +94,7 @@ const PricingCalculator: React.FC = () => {
     summary.forEach(item => {
       message += `- ${item.qty}x ${item.name}\n`;
     });
-    message += `\n*Ara Toplam:* ${subTotal} TL\n*Web İndirimi (%10):* -${discount} TL\n*Ödenecek Tutar:* ${total} TL\n\n`;
+    message += `\n*Ödenecek Tutar:* ${total} TL\n\n`;
 
     if (date) {
       const [year, month, day] = date.split('-');
@@ -183,7 +183,7 @@ const PricingCalculator: React.FC = () => {
               <div className="glass-card p-6 rounded-2xl border border-white/5">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                   <span className="material-symbols-outlined text-secondary">directions_car</span>
-                  Araç İçi Detay
+                  Araç Koltuk Temizliği
                 </h3>
                 <div className="space-y-4">
                   {PRICING.arac.map(item => (
@@ -242,7 +242,7 @@ const PricingCalculator: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-white font-bold text-sm mb-1">Bahar Kampanyası</h4>
-                <p className="text-gray-400 text-xs leading-relaxed">Web sitemize özel online randevularda anında <strong className="text-primary">%10 İndirim!</strong></p>
+                <p className="text-gray-400 text-xs leading-relaxed">Web sitemize özel online randevularda <strong className="text-primary">Öncelikli Hizmet!</strong></p>
               </div>
             </div>
 
@@ -271,21 +271,35 @@ const PricingCalculator: React.FC = () => {
                   </div>
                   
                   <div className="border-t border-white/10 pt-4 mb-6">
-                    <div className="flex justify-between items-center mb-2 text-gray-400 text-sm">
-                      <span>Ara Toplam</span>
-                      <span>{subTotal} TL</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-4 text-primary text-sm font-bold">
-                      <span>Web Özel İndirim (%10)</span>
-                      <span>-{discount} TL</span>
-                    </div>
                     <div className="flex justify-between items-end border-t border-white/5 pt-3">
                       <div className="text-white font-bold text-sm">Ödenecek Tutar</div>
                       <div className="text-3xl font-black text-primary drop-shadow-[0_0_10px_rgba(45,212,191,0.5)]">
                         {total} TL
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-3">*Fiyatlar tahmini olup, yerinde yapılacak net tespite göre küçük değişiklikler gösterebilir.</p>
+
+                    {/* PayTR & Credit Card */}
+                    <div className="mt-4 p-3 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3">
+                      <div className="flex -space-x-2">
+                        <div className="size-8 rounded-full bg-[#1c1f27] border border-white/20 flex items-center justify-center z-20"><span className="text-[10px] font-bold text-white">VISA</span></div>
+                        <div className="size-8 rounded-full bg-[#1c1f27] border border-white/20 flex items-center justify-center z-10"><span className="text-[10px] font-bold text-white">MC</span></div>
+                      </div>
+                      <div>
+                        <p className="text-white text-xs font-bold">Kredi Kartı Geçerlidir</p>
+                        <p className="text-gray-400 text-[10px]">PayTR Güvencesiyle Taksit İmkanı</p>
+                      </div>
+                    </div>
+
+                    {/* 7 Day Guarantee */}
+                    <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
+                      <span className="material-symbols-outlined text-red-400 text-lg">gavel</span>
+                      <div>
+                        <p className="text-red-400 text-xs font-bold">7 Gün Rest Garantisi!</p>
+                        <p className="text-gray-400 text-[10px] leading-relaxed">Memnun kalmazsanız 7 gün içinde ücretsiz yeniden yıkama veya uygun şartlarda para iade garantisi.</p>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-gray-500 mt-4">*Fiyatlar tahmini olup, yerinde yapılacak net tespite göre küçük değişiklikler gösterebilir.</p>
                   </div>
 
                   {/* Randevu Seçimi */}

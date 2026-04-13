@@ -99,7 +99,13 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-600 text-xs">© 2026 NisanProClean. Tüm hakları saklıdır.</p>
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <p className="text-gray-600 text-xs">© 2026 NisanProClean. Tüm hakları saklıdır.</p>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">
+              <span className="material-symbols-outlined text-gray-400 text-sm">lock</span>
+              <span className="text-xs text-gray-400 font-medium">PayTR ile Güvenli Ödeme & Taksit</span>
+            </div>
+          </div>
           <div className="flex flex-wrap justify-center gap-4 md:gap-6">
             <a href="#" className="text-gray-600 hover:text-white transition-colors text-xs">KVKK Aydınlatma Metni</a>
             <a href="#" className="text-gray-600 hover:text-white transition-colors text-xs">Gizlilik Politikası</a>

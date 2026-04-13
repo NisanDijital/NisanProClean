@@ -12,7 +12,8 @@ export const CONTACT_INFO = {
   phone: "0507 958 16 42",
   phoneLink: "tel:05079581642",
   whatsapp: "0507 958 16 42",
-  whatsappLink: "https://wa.me/905079581642"
+  whatsappLink: "https://wa.me/905079581642",
+  instagram: "https://instagram.com/nisanproclean"
 };
 
 export const NAV_LINKS = [
@@ -50,7 +51,7 @@ export const GALLERY_ITEMS = [
   {
     id: 3,
     title: "Araç Koltuğu Su Lekesi",
-    category: "Araç Detay",
+    category: "Araç Koltuk Temizliği",
     beforeImage: "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=800&auto=format&fit=crop",
     afterImage: "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=800&auto=format&fit=crop",
   }
@@ -82,12 +83,12 @@ export const FAQ_ITEMS = [
     answer: "Kesinlikle hayır. Uzman ekibimiz işleme başlamadan önce kumaş analizi yapar. Kumaş türüne (kadife, tay tüyü, keten, nubuk, deri vb.) özel hassas fırça uçları ve uygun pH değerine sahip şampuanlar seçerek kumaşın dokusuna ve rengine zarar vermeden temizlik sağlarız."
   },
   {
-    question: "Araç koltuğu hijyeni ve detaylı iç temizlik yapıyor musunuz?",
-    answer: "Evet, Afyon'da aracınızın bulunduğu konuma (evinizin veya iş yerinizin otoparkına) gelerek yerinde araç koltuğu hijyeni, tavan, taban ve kapı döşemesi temizliği hizmeti sunuyoruz. Oto kuaföre gitmenize gerek kalmaz."
+    question: "Araç koltuğu hijyeni hizmetiniz nasıl çalışıyor?",
+    answer: "Evet, Afyon'da aracınızın bulunduğu konuma (evinizin veya iş yerinizin otoparkına) gelerek yerinde araç koltuğu hijyeni hizmeti sunuyoruz. Tavan ve taban temizliği yapmıyoruz, sadece koltukları detaylıca temizliyoruz. İşlem için sadece elektrik alabileceğimiz bir yer göstermeniz yeterlidir, oto kuaföre gitmenize gerek kalmaz."
   },
   {
     question: "Leke çıkarma garantisi veriyor musunuz?",
-    answer: "Lekelerin türü (kan, kahve, tükenmez kalem vb.) ve kumaşta bekleme süresi önemlidir. Profesyonel ekibimiz ve endüstriyel leke sökücülerimizle çıkabilecek her türlü lekeyi %99 oranında temizliyoruz. Ancak kumaşın yapısını bozacak, rengini solduracak aşındırıcı kimyasal müdahalelerden kaçınıyoruz."
+    answer: "Lekelerin türü (kan, kahve, tükenmez kalem vb.) ve kumaşta bekleme süresi önemlidir. Profesyonel ekibimiz ve endüstriyel leke sökücülerimizle çıkabilecek her türlü lekeyi yüksek oranda temizliyoruz. Ancak 6 aydan eski lekeler ve daha önce müşteri tarafından kimyasal işlem görmüş (silinmiş/müdahale edilmiş) lekeler garanti kapsamı dışındadır. Kumaşın yapısını bozacak aşındırıcı kimyasal müdahalelerden kaçınıyoruz."
   }
 ];
 
@@ -99,7 +100,7 @@ export const BLOG_POSTS = [
     title: "Afyon Koltuk Hijyeni Hizmetinde Devrim",
     category: "Teknoloji",
     image: IMAGES.blog1,
-    date: "12 Ekim 2024",
+    date: "12 Ekim 2026",
     excerpt: "Afyonkarahisar'da ev temizliğinin standartlarını yükseltiyoruz. Geleneksel yöntemlerin aksine, derinlemesine hijyen teknolojimizle tanışın.",
     content: "Afyon koltuk temizliği sektöründe en büyük sorun yüzeysel temizliktir. NisanProClean olarak kullandığımız yüksek vakum makineleri, koltuğun süngerine kadar inen kirleri çeker. Bu sayede sadece görünür temizlik değil, hijyenik bir yaşam alanı sunarız. Hizmetlerimiz hakkında <a href='#features' class='text-primary hover:underline'>detaylı bilgi</a> alabilirsiniz."
   },
@@ -108,7 +109,7 @@ export const BLOG_POSTS = [
     title: "Yatak Hijyeni ve Akar Arındırması Neden Önemli?",
     category: "İpuçları",
     image: IMAGES.blog2,
-    date: "28 Eylül 2024",
+    date: "28 Eylül 2026",
     excerpt: "Gözle görülmeyen tehlike: Maytlar. Yataklarınızda biriken ölü deriler ve akarlar sağlığınızı nasıl tehdit ediyor?",
     content: "Ortalama bir yatakta milyonlarca ev tozu akarı yaşar. Yatak hijyeni uygulaması sadece leke çıkarmak için değil, alerjik reaksiyonları önlemek için de kritiktir. Buharlı ve vakumlu temizlik ile yataklarınızı sterilize ediyoruz. Sağlıklı bir uyku için <a href='#contact' class='text-primary hover:underline'>hemen randevu</a> oluşturun."
   },
@@ -117,7 +118,7 @@ export const BLOG_POSTS = [
     title: "Araç Koltuğu Hijyeni: Detaylı Kuaför Evinizde",
     category: "Hizmetler",
     image: IMAGES.blog3,
-    date: "15 Eylül 2024",
+    date: "15 Eylül 2026",
     excerpt: "Aracınızı oto yıkamaya bırakmanıza gerek yok. Profesyonel ekipmanlarımızla kapınıza geliyoruz.",
     content: "Araç koltuğu hijyeni hizmetimizle, zaman kaybetmeden aracınızın iç detaylı temizliğini yapıyoruz. Kumaş veya deri döşeme fark etmeksizin, aracınızın orijinalliğini koruyan özel solüsyonlar kullanıyoruz. <a href='#features' class='text-primary hover:underline'>Teknolojimiz</a> araç içindeki kötü kokuları da kalıcı olarak yok eder."
   }
