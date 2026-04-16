@@ -92,34 +92,34 @@ export const FAQ_ITEMS = [
   }
 ];
 
-export const BLOG_CATEGORIES = ["Tümü", "Teknoloji", "İpuçları", "Hizmetler"];
+export const BLOG_CATEGORIES = ["Tümü", "Evde Çözümler", "Makine Tavsiyeleri", "Uzman Görüşü"];
 
 export const BLOG_POSTS = [
   {
     id: 1,
-    title: "Afyon Koltuk Hijyeni Hizmetinde Devrim",
-    category: "Teknoloji",
+    title: "Koltuk Neyle Silinir? Evde Yapılan 5 Büyük Hata",
+    category: "Evde Çözümler",
     image: IMAGES.blog1,
-    date: "12 Ekim 2026",
-    excerpt: "Afyonkarahisar'da ev temizliğinin standartlarını yükseltiyoruz. Geleneksel yöntemlerin aksine, derinlemesine hijyen teknolojimizle tanışın.",
-    content: "Afyon koltuk temizliği sektöründe en büyük sorun yüzeysel temizliktir. NisanProClean olarak kullandığımız yüksek vakum makineleri, koltuğun süngerine kadar inen kirleri çeker. Bu sayede sadece görünür temizlik değil, hijyenik bir yaşam alanı sunarız. Hizmetlerimiz hakkında <a href='#features' class='text-primary hover:underline'>detaylı bilgi</a> alabilirsiniz."
+    date: "12 Kasım 2026",
+    excerpt: "Herkesin 'Arap Sabunu mu, Sirke mi?' diye sorduğu koltuk temizliği konusunda bilmeniz gereken acı gerçekler.",
+    content: "Google'da sıkça aranan <strong>'Koltuk neyle silinir?'</strong> sorusunun yanıtı aslında çok tehlikeli olabilir. Kulaktan dolma bilgilerle karbonat, sirke veya Arap sabunu kullanmak, kumaşın dokusuna ve rengine kalıcı hasarlar verir. En büyük hata ise kiri silerek içeri itmektir (sünger kusması). Güvenli çözüm ise endüstriyel fırçalama ve güçlü vakumdur. Denediğiniz her yöntem başarısız olduysa, NisanProClean olarak özel solüsyonlarımız ile hizmetinizdeyiz. Profesyonel <a href='#fiyat-hesapla' class='text-primary hover:underline'>fiyat teklifi alın</a>."
   },
   {
     id: 2,
-    title: "Yatak Hijyeni ve Akar Arındırması Neden Önemli?",
-    category: "İpuçları",
+    title: "Kiwi ve Arçelik Koltuk Yıkama Makinesi Alınır Mı?",
+    category: "Makine Tavsiyeleri",
     image: IMAGES.blog2,
-    date: "28 Eylül 2026",
-    excerpt: "Gözle görülmeyen tehlike: Maytlar. Yataklarınızda biriken ölü deriler ve akarlar sağlığınızı nasıl tehdit ediyor?",
-    content: "Ortalama bir yatakta milyonlarca ev tozu akarı yaşar. Yatak hijyeni uygulaması sadece leke çıkarmak için değil, alerjik reaksiyonları önlemek için de kritiktir. Buharlı ve vakumlu temizlik ile yataklarınızı sterilize ediyoruz. Sağlıklı bir uyku için <a href='#contact' class='text-primary hover:underline'>hemen randevu</a> oluşturun."
+    date: "28 Ekim 2026",
+    excerpt: "Ev tipi (Kiwi, Arçelik, Karcher vb.) koltuk yıkama makineleri ile Sanayi Tipi profesyonel cihazların karşılaştırması.",
+    content: "Ev hanımlarının sıkça sorduğu <strong>'Kiwi koltuk yıkama makinesi alınır mı?'</strong> veya <strong>'Ev tipi koltuk yıkama makinesi fiyatları ne kadar?'</strong> sorularını uzman gözüyle inceledik. Ev tipi makinelerin 400-500 Watt'lık emiş gücü maalesef suyu ve kiri süngerden çekecek donanıma sahip değildir; yüzeydeki kiri sadece ıslatır. Sanayi tipi profesyonel makinelerimiz (2400W+) ise kiri şampuanla çözüp derinlemesine çeker. Bu tarz cihazlara binlerce lira harcamak veya <strong>koltuk yıkama makinesi kiralama</strong> yollarına girmek yerine, abone olup <a href='#kasko-paketleri' class='text-primary hover:underline'>Koltuk Kaskosu</a> ile yılda 2 kez stressiz temizlik satın almak çok daha ekonomiktir."
   },
   {
     id: 3,
-    title: "Araç Koltuğu Hijyeni: Detaylı Kuaför Evinizde",
-    category: "Hizmetler",
+    title: "Buharlı Koltuk Yıkama Makinesi Fiyatları vs Profesyonel Hizmet",
+    category: "Uzman Görüşü",
     image: IMAGES.blog3,
-    date: "15 Eylül 2026",
-    excerpt: "Aracınızı oto yıkamaya bırakmanıza gerek yok. Profesyonel ekipmanlarımızla kapınıza geliyoruz.",
-    content: "Araç koltuğu hijyeni hizmetimizle, zaman kaybetmeden aracınızın iç detaylı temizliğini yapıyoruz. Kumaş veya deri döşeme fark etmeksizin, aracınızın orijinalliğini koruyan özel solüsyonlar kullanıyoruz. <a href='#features' class='text-primary hover:underline'>Teknolojimiz</a> araç içindeki kötü kokuları da kalıcı olarak yok eder."
+    date: "15 Ekim 2026",
+    excerpt: "Mayt (akar) ve inatçı lekelerde sıcak buhar şart mı? Piyasada satılan cihazlara yatırım yapmak ne kadar mantıklı?",
+    content: "Alerjik reaksiyonlar ve inatçı lekeler için <strong>Buharlı Koltuk Yıkama</strong> şarttır. Piyasada <strong>'Buharlı koltuk yıkama makinesi fiyatları'</strong> araştırması yaptığınızda karşınıza çıkan amatör cihazlar (3-4 bar), profesyonel 140 derecelik şok buhar jeneratörlerimizin (9-10 bar) yerini tutamaz. Ayrıca <strong>araç koltuk yıkama makinesi</strong> gibi spesifik ihtiyaçlarınızda kendinizi yormaktansa, mobil ekiplerimiz kapınıza gelir. Üstelik düzenli bakıma ihtiyaç duyanlar için yeni geliştirdiğimiz <strong>kendi temizlik deterjanımız ve leke sökücü spreyimiz</strong> yakında kasko üyelerimize ücretsiz hediye! <a href='#features' class='text-primary hover:underline'>Buhar teknolojimizi</a> inceleyin."
   }
 ];

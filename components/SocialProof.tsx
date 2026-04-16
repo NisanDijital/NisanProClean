@@ -2,7 +2,16 @@ import React, { useState, useEffect } from 'react';
 
 const NAMES = ["Ahmet Y.", "Ayşe K.", "Mehmet T.", "Fatma S.", "Caner B.", "Zeynep A.", "Burak C.", "Elif D.", "Mustafa E.", "Merve F."];
 const LOCATIONS = ["Afyon Merkez", "Erenler", "Uydukent", "Sahipata", "Erkmen", "Fatih", "Kanlıca", "Gazi"];
-const SERVICES = ["Koltuk Hijyeni", "Yatak Hijyeni", "Araç Koltuk Temizliği", "Büyük L Koltuk Temizliği", "Chester Takım Temizliği"];
+const SERVICES = [
+  "Koltuk Hijyeni", 
+  "Yatak Hijyeni", 
+  "Araç Koltuk Temizliği", 
+  "Altın Kasko VIP Paketi", 
+  "Gümüş Kasko", 
+  "Leke Çıkarma (Buharlı)", 
+  "Platin VIP Kasko Aboneliği",
+  "U Köşe Takımı Temizliği"
+];
 
 const SocialProof: React.FC = () => {
   const [viewers, setViewers] = useState(Math.floor(Math.random() * 6) + 5); // 5 ile 10 arası başlar
@@ -69,13 +78,13 @@ const SocialProof: React.FC = () => {
           </>
         ) : (
           <>
-            <div className="flex items-center justify-center size-10 rounded-full bg-[#25D366]/20 text-[#25D366] shrink-0">
-              <span className="material-symbols-outlined text-[20px]">event_available</span>
+            <div className={`flex items-center justify-center size-10 rounded-full shrink-0 ${booking.service.includes('Kasko') ? 'bg-yellow-500/20 text-yellow-500' : 'bg-[#25D366]/20 text-[#25D366]'}`}>
+              <span className="material-symbols-outlined text-[20px]">{booking.service.includes('Kasko') ? 'workspace_premium' : 'event_available'}</span>
             </div>
             <div>
               <p className="text-gray-400 text-xs mb-0.5">{booking.name} ({booking.location})</p>
               <p className="text-white text-sm font-medium leading-snug">
-                Az önce <strong className="text-[#25D366]">{booking.service}</strong> randevusu aldı.
+                Az önce <strong className={booking.service.includes('Kasko') ? 'text-yellow-500' : 'text-[#25D366]'}>{booking.service}</strong> {booking.service.includes('Kasko') ? 'satın aldı.' : 'randevusu aldı.'}
               </p>
             </div>
           </>
