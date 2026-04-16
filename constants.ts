@@ -52,8 +52,8 @@ export const GALLERY_ITEMS = [
     id: 3,
     title: "Araç Koltuğu Su Lekesi",
     category: "Araç Koltuk Temizliği",
-    beforeImage: "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=800&auto=format&fit=crop",
-    afterImage: "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=800&auto=format&fit=crop",
+    beforeImage: "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800&auto=format&fit=crop",
+    afterImage: "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800&auto=format&fit=crop",
   }
 ];
 

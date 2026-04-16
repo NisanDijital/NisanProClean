@@ -4,24 +4,26 @@ import { CONTACT_INFO } from '../constants';
 // Örnek Fiyatlandırma (Bu fiyatları daha sonra kolayca değiştirebilirsiniz)
 const PRICING = {
   koltuk: [
-    { id: 'avangard', name: 'Avangard Takım', price: 2500 },
-    { id: 'chesterTakim', name: 'Chester Takım', price: 2000 },
-    { id: 'minderliTakim', name: 'Minderli Takım', price: 2000 },
-    { id: 'maxiTakim', name: 'Maxi Takım (Yataklı)', price: 1750 },
-    { id: 'mindersizTakim', name: 'Mindersiz (Düz) Takım', price: 1500 },
-    { id: 'buyukLKoltuk', name: 'Büyük L Koltuk', price: 1250 },
-    { id: 'kucukLKoltuk', name: 'Küçük L Koltuk', price: 1000 },
-    { id: 'berjer', name: 'Berjer / Tekli Koltuk', price: 300 },
-    { id: 'sandalye', name: 'Sandalye', price: 150 },
+    { id: 'maxiTakim', name: 'Maxi Takım', price: 3000 },
+    { id: 'megaKose', name: 'U / Büyük Köşe Takımı', price: 3000 },
+    { id: 'chesterTakim', name: 'Chester Koltuk Takımı', price: 2500 },
+    { id: 'minderliTakim', name: 'Minderli Koltuk Takımı', price: 2500 },
+    { id: 'duzTakim', name: 'Düz Koltuk Takımı', price: 2000 },
+    { id: 'takim3211', name: '3+2+1+1 Takım', price: 1800 },
+    { id: 'buyukLKoltuk', name: 'L Koltuk (Büyük)', price: 1250 },
+    { id: 'ucluKoltuk', name: 'Üçlü Koltuk', price: 750 },
+    { id: 'ikiliKoltuk', name: 'İkili Koltuk', price: 550 },
+    { id: 'tekliKoltuk', name: 'Tekli Koltuk / Berjer', price: 350 },
+    { id: 'sandalye', name: 'Ev Sandalyesi (Adet)', price: 200 },
   ],
   yatak: [
-    { id: 'ciftYatak', name: 'Çift Kişilik Yatak', price: 1500 },
+    { id: 'ciftYatak', name: 'Çift Kişilik Yatak', price: 1750 },
     { id: 'tekYatak', name: 'Tek Kişilik Yatak', price: 1000 },
     { id: 'bazaBasligi', name: 'Baza Başlığı', price: 500 },
   ],
   arac: [
-    { id: 'binekArac', name: 'Binek Araç Koltuk Temizliği', price: 1800 },
-    { id: 'suvArac', name: 'SUV / Ticari Araç Koltuk Temizliği', price: 2000 },
+    { id: 'aracKoltugu', name: 'Binek Araç Koltuğu', price: 2000 },
+    { id: 'suvArac', name: 'SUV / Ticari Araç Koltuğu', price: 2500 },
   ]
 };
 
@@ -36,6 +38,8 @@ const PricingCalculator: React.FC = () => {
   const [addons, setAddons] = useState<Record<string, boolean>>({});
   const [date, setDate] = useState('');
   const [time, setTime] = useState('Öğleden Önce (09:00 - 13:00)');
+  const [isGuaranteeModalOpen, setIsGuaranteeModalOpen] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const updateItem = (id: string, delta: number) => {
     setItems(prev => {
@@ -89,6 +93,7 @@ const PricingCalculator: React.FC = () => {
 
   const handleWhatsAppOrder = () => {
     if (summary.length === 0) return;
+    if (!acceptedTerms) return;
     
     let message = "Merhaba, web sitenizden fiyat hesaplaması yaptım ve randevu almak istiyorum.\n\n*Seçtiğim Hizmetler:*\n";
     summary.forEach(item => {
@@ -231,6 +236,77 @@ const PricingCalculator: React.FC = () => {
               </div>
             </div>
 
+            {/* ProClean Care (Kasko) - 3 Tier System */}
+            <div id="kasko-paketleri" className="mt-12 scroll-mt-24">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase tracking-wider mb-3">
+                  <span className="material-symbols-outlined text-[12px]">star</span>
+                  Mavi Okyanus Stratejisi
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">ProClean Care <span className="text-gradient-primary">Koltuk Kaskosu</span></h3>
+                <p className="text-gray-400 text-sm">Koltuklarınızı yılda 1 kez yıkatıp kaderine terk etmeyin. İhtiyacınıza uygun paketi seçin, 365 gün koruma altına alın.</p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6 items-start">
+                {/* Silver */}
+                <div className="glass-card rounded-2xl border border-gray-400/20 bg-gradient-to-b from-gray-400/5 to-transparent p-6 relative">
+                  <div className="text-gray-400 mb-4 flex justify-between items-center">
+                    <span className="material-symbols-outlined text-3xl">shield</span>
+                    <span className="text-xs font-bold uppercase tracking-wider border border-gray-400/30 px-2 py-1 rounded-full">Gümüş</span>
+                  </div>
+                  <div className="mb-6">
+                    <div className="text-3xl font-black text-white">249<span className="text-sm text-gray-500 font-medium"> TL/ay</span></div>
+                    <div className="text-xs text-gray-400 mt-1">Temel Koruma Paketi</div>
+                  </div>
+                  <ul className="space-y-3 mb-8 text-sm text-gray-300">
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-gray-400 text-[18px]">check</span> Yılda 1 kez detaylı takım yıkama</li>
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-gray-400 text-[18px]">check</span> Ek hizmetlerde %20 indirim</li>
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-gray-400 text-[18px]">check</span> WhatsApp destek hattı</li>
+                  </ul>
+                  <a href={`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodeURIComponent("Merhaba, ProClean Care (Gümüş Kasko) abonelik sistemi hakkında bilgi almak ve üye olmak istiyorum.")}`} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-xl transition-colors text-sm">Gümüş Üye Ol</a>
+                </div>
+
+                {/* Gold */}
+                <div className="glass-card rounded-2xl border border-yellow-500/50 bg-gradient-to-b from-yellow-500/10 to-transparent p-6 relative transform md:-translate-y-4 shadow-[0_0_30px_rgba(234,179,8,0.15)]">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-yellow-400 to-orange-500 text-background-dark text-[10px] font-black uppercase tracking-widest py-1 px-3 rounded-full shadow-lg whitespace-nowrap">En Çok Tercih Edilen</div>
+                  <div className="text-yellow-400 mb-4 flex justify-between items-center mt-2">
+                    <span className="material-symbols-outlined text-3xl">workspace_premium</span>
+                    <span className="text-xs font-bold uppercase tracking-wider border border-yellow-500/30 px-2 py-1 rounded-full bg-yellow-500/10">Altın</span>
+                  </div>
+                  <div className="mb-6">
+                    <div className="text-3xl font-black text-white">399<span className="text-sm text-gray-500 font-medium"> TL/ay</span></div>
+                    <div className="text-xs text-yellow-500/80 mt-1">Standart Aile Paketi</div>
+                  </div>
+                  <ul className="space-y-3 mb-8 text-sm text-gray-300">
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Yılda 2 kez detaylı takım yıkama</li>
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Yılda 1 kez acil lokal müdahale</li>
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Ek hizmetlerde %30 indirim</li>
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Öncelikli randevu hakkı</li>
+                  </ul>
+                  <a href={`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodeURIComponent("Merhaba, ProClean Care (Altın Kasko) abonelik sistemi hakkında bilgi almak ve üye olmak istiyorum.")}`} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-background-dark font-bold py-3 rounded-xl transition-colors text-sm shadow-lg shadow-yellow-500/20">Altın Üye Ol</a>
+                </div>
+
+                {/* Platinum */}
+                <div className="glass-card rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-cyan-500/10 to-transparent p-6 relative">
+                  <div className="text-cyan-400 mb-4 flex justify-between items-center">
+                    <span className="material-symbols-outlined text-3xl">diamond</span>
+                    <span className="text-xs font-bold uppercase tracking-wider border border-cyan-500/30 px-2 py-1 rounded-full bg-cyan-500/10">Platin</span>
+                  </div>
+                  <div className="mb-6">
+                    <div className="text-3xl font-black text-white">599<span className="text-sm text-gray-500 font-medium"> TL/ay</span></div>
+                    <div className="text-xs text-cyan-400/80 mt-1">VIP & Evcil Hayvan Paketi</div>
+                  </div>
+                  <ul className="space-y-3 mb-8 text-sm text-gray-300">
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Yılda 2 takım + 1 yatak yıkama</li>
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Sınırsız acil lokal müdahale</li>
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Tüm ek hizmetlerde %50 indirim</li>
+                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Bayramlarda VIP randevu garantisi</li>
+                  </ul>
+                  <a href={`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodeURIComponent("Merhaba, ProClean Care (Platin VIP Kasko) abonelik sistemi hakkında bilgi almak ve üye olmak istiyorum.")}`} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 font-bold py-3 rounded-xl transition-colors text-sm">Platin Üye Ol</a>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* Right Side: Receipt / Summary */}
@@ -270,32 +346,55 @@ const PricingCalculator: React.FC = () => {
                     ))}
                   </div>
                   
-                  <div className="border-t border-white/10 pt-4 mb-6">
-                    <div className="flex justify-between items-end border-t border-white/5 pt-3">
+                  <div className="border-t border-white/10 pt-4 mb-6 relative group">
+                    <div className="flex justify-between items-end border-t border-white/5 pt-3 mb-2">
                       <div className="text-white font-bold text-sm">Ödenecek Tutar</div>
                       <div className="text-3xl font-black text-primary drop-shadow-[0_0_10px_rgba(45,212,191,0.5)]">
                         {total} TL
                       </div>
                     </div>
+                    
+                    {/* Upsell to Premium Packages Banner */}
+                    {total >= 1500 && (
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mt-3 animate-fade-in">
+                        <div className="flex gap-2 items-start">
+                          <span className="material-symbols-outlined text-yellow-500 text-lg shrink-0">lightbulb</span>
+                          <div>
+                            <p className="text-white text-xs font-bold leading-tight mb-1">
+                              Bunu tek seferde ödemek yerine;
+                            </p>
+                            <p className="text-gray-400 text-[10px] leading-relaxed">
+                              Ayda sadece <strong className="text-yellow-500">249 TL</strong>'ye Gümüş Üye olup bu işlemi yılda 1 kez bedavaya getirebileceğinizi biliyor muydunuz? <a href="#fiyat-hesapla" onClick={(e) => { e.preventDefault(); document.getElementById('kasko-paketleri')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-yellow-500 hover:underline">Paketleri İncele</a>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* PayTR & Credit Card */}
                     <div className="mt-4 p-3 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3">
-                      <div className="flex -space-x-2">
+                      <div className="flex -space-x-2 shrink-0">
                         <div className="size-8 rounded-full bg-[#1c1f27] border border-white/20 flex items-center justify-center z-20"><span className="text-[10px] font-bold text-white">VISA</span></div>
                         <div className="size-8 rounded-full bg-[#1c1f27] border border-white/20 flex items-center justify-center z-10"><span className="text-[10px] font-bold text-white">MC</span></div>
                       </div>
                       <div>
-                        <p className="text-white text-xs font-bold">Kredi Kartı Geçerlidir</p>
-                        <p className="text-gray-400 text-[10px]">PayTR Güvencesiyle Taksit İmkanı</p>
+                        <p className="text-white text-xs font-bold">Tek Çekim & Nakit Ödeme</p>
+                        <p className="text-gray-400 text-[10px]">*Taksitlendirme işlemi sadece VIP (Altın/Platin) Paketlerde sunulmaktadır.</p>
                       </div>
                     </div>
 
                     {/* 7 Day Guarantee */}
-                    <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
-                      <span className="material-symbols-outlined text-red-400 text-lg">gavel</span>
+                    <div 
+                      onClick={() => setIsGuaranteeModalOpen(true)}
+                      className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 cursor-pointer hover:bg-red-500/20 transition-colors group"
+                    >
+                      <span className="material-symbols-outlined text-red-400 text-lg group-hover:scale-110 transition-transform">verified_user</span>
                       <div>
-                        <p className="text-red-400 text-xs font-bold">7 Gün Rest Garantisi!</p>
-                        <p className="text-gray-400 text-[10px] leading-relaxed">Memnun kalmazsanız 7 gün içinde ücretsiz yeniden yıkama veya uygun şartlarda para iade garantisi.</p>
+                        <p className="text-red-400 text-xs font-bold flex items-center gap-1">
+                          7 Gün Memnuniyet Garantisi 
+                          <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                        </p>
+                        <p className="text-gray-400 text-[10px] leading-relaxed">Şartları okumak için tıklayın. Ücretsiz yeniden yıkama veya iade güvencesi.</p>
                       </div>
                     </div>
 
@@ -339,13 +438,28 @@ const PricingCalculator: React.FC = () => {
                     Dikkat: Bu hafta için sadece 2 boş randevu kaldı!
                   </div>
 
+                  {/* Terms Checkbox */}
+                  <div className="mb-4 flex items-start gap-3">
+                    <input 
+                      type="checkbox" 
+                      id="terms" 
+                      checked={acceptedTerms}
+                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded border-white/20 bg-background-dark text-primary focus:ring-primary focus:ring-offset-background-dark cursor-pointer"
+                    />
+                    <label htmlFor="terms" className="text-xs text-gray-400 leading-relaxed cursor-pointer select-none">
+                      <button type="button" onClick={(e) => { e.preventDefault(); setIsGuaranteeModalOpen(true); }} className="text-primary hover:underline font-medium">Hizmet ve Garanti Şartnamesi</button>'ni okudum, anladım ve kabul ediyorum.
+                    </label>
+                  </div>
+
                   <button 
                     onClick={handleWhatsAppOrder}
-                    className="relative overflow-hidden w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(37,211,102,0.3)] hover:shadow-[0_0_30px_rgba(37,211,102,0.5)] flex items-center justify-center gap-2 text-lg group"
+                    disabled={!acceptedTerms}
+                    className={`relative overflow-hidden w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg group ${acceptedTerms ? 'bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-[0_0_20px_rgba(37,211,102,0.3)] hover:shadow-[0_0_30px_rgba(37,211,102,0.5)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
                   >
                     <span className="material-symbols-outlined relative z-10">chat</span>
                     <span className="relative z-10">WhatsApp'tan Randevu Al</span>
-                    <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shine z-0"></div>
+                    {acceptedTerms && <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shine z-0"></div>}
                   </button>
                 </>
               )}
@@ -353,6 +467,91 @@ const PricingCalculator: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Guarantee Modal */}
+      {isGuaranteeModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-dark border border-white/10 rounded-3xl p-6 md:p-8 max-w-2xl w-full relative max-h-[90vh] flex flex-col shadow-2xl">
+            <button 
+              onClick={() => setIsGuaranteeModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white bg-background-dark rounded-full p-1 transition-colors"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10 shrink-0">
+              <div className="size-10 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+                <span className="material-symbols-outlined">gavel</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Hizmet ve Garanti Şartnamesi</h3>
+                <p className="text-gray-400 text-xs">NisanProClean Müşteri Sözleşmesi</p>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto pr-2 custom-scrollbar text-sm text-gray-300 space-y-6">
+              <section>
+                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-sm">cleaning_services</span>
+                  1. Hizmetin Kapsamı
+                </h4>
+                <p className="leading-relaxed">Firmamız, endüstriyel vakum ve buhar makineleri ile profesyonel solüsyonlar kullanarak yerinde temizlik hizmeti sunmaktadır. Leke çıkarma işlemi, kumaşın türüne ve lekenin yapısına bağlı olarak kumaşa zarar vermeyecek maksimum eforla gerçekleştirilir.</p>
+              </section>
+
+              <section>
+                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-sm">person</span>
+                  2. Müşterinin Sorumlulukları
+                </h4>
+                <ul className="list-disc pl-5 space-y-1 leading-relaxed">
+                  <li>İşlem yapılacak alanda standart elektrik ve su temini müşteri tarafından sağlanmalıdır.</li>
+                  <li>Temizlenecek eşyaların üzerindeki veya çevresindeki kırılabilir, değerli eşyalar işlem öncesi kaldırılmalıdır.</li>
+                  <li>Daha önce kimyasal (çamaşır suyu, asitli temizleyiciler, market ürünleri vb.) müdahale görmüş lekeler işlem öncesinde ekibimize mutlaka bildirilmelidir.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-sm">verified_user</span>
+                  3. 7 Gün Memnuniyet Garantisi ve İade Şartları
+                </h4>
+                <p className="leading-relaxed mb-2">Müşteri memnuniyetini sağlamak temel prensibimizdir. İşlem sonrası aşağıdaki şartlar geçerlidir:</p>
+                <ul className="list-disc pl-5 space-y-1 leading-relaxed">
+                  <li>Hizmet tamamlandıktan sonraki <strong>7 (yedi) takvim günü</strong> içerisinde kusma, lekenin geri çıkması veya bariz temizlik eksikliği tespit edilirse, firmamız <strong>1 (bir) defaya mahsus ücretsiz yeniden yıkama (rötuş)</strong> hizmeti sunmayı taahhüt eder. İkinci bir rötuş işlemi garanti kapsamında değildir.</li>
+                  <li><strong>Ön Tespit ve Detaylı Analiz:</strong> Şikayet durumunda ekibimiz yerinde tespit yapar. İşlem öncesi ve sonrası çekilen fotoğraflar detaylı olarak incelenerek lekenin bizden mi kaynaklandığı, yoksa işlem sonrası yeni bir dökülme (kahve, çocuk/evcil hayvan idrarı vb.) mi olduğu kesin olarak tespit edilir. Yeni oluşan lekeler garanti dışıdır.</li>
+                  <li>Yeniden yıkama işlemine rağmen, firmamızdan kaynaklı teknik bir hata nedeniyle sonuç alınamaması durumunda, hizmet bedelinin uygun görülen kısmı veya tamamı iade edilir.</li>
+                  <li><strong>Puan İptali:</strong> İade işlemi gerçekleştiğinde veya garantinin kötüye kullanıldığı tespit edildiğinde, müşterinin hesabına tanımlanan tüm indirim kodları, nakit iadeler ve kazanılan puanlar sistemden kalıcı olarak silinir.</li>
+                </ul>
+              </section>
+
+              <section>
+                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-red-400 text-sm">warning</span>
+                  4. Garanti Kapsamı Dışındaki Durumlar
+                </h4>
+                <ul className="list-disc pl-5 space-y-1 leading-relaxed text-gray-400">
+                  <li>6 aydan eski, kumaşın dokusuna işlemiş ve boya formunu almış kronik lekeler.</li>
+                  <li>Müşteri tarafından daha önce yanlış kimyasallarla silinmiş ve kumaşa "sabitlenmiş" veya kumaşı yakmış lekeler.</li>
+                  <li>Güneş yanığı, kumaş yıpranması, iplik atması, renk solması gibi fiziksel deformasyonlar kir/leke olarak değerlendirilemez ve garanti kapsamına girmez.</li>
+                  <li>İşlem sonrası kuruma süresi (ortalama 4-6 saat) boyunca eşyanın kullanılması sonucu oluşan yeni lekeler ve deformasyonlar.</li>
+                </ul>
+              </section>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/10 shrink-0">
+              <button 
+                onClick={() => {
+                  setAcceptedTerms(true);
+                  setIsGuaranteeModalOpen(false);
+                }}
+                className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-primary/20"
+              >
+                Okudum ve Kabul Ediyorum
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

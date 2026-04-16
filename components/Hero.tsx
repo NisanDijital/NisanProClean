@@ -27,7 +27,7 @@ const Hero: React.FC = () => {
         </h1>
         
         <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-light leading-relaxed">
-          Yapay zeka destekli analiz ve yüksek vakum teknolojisi ile koltuklarınızın dokusunu yeniliyoruz. NisanProClean ile gerçek temizliği keşfedin.
+          Gelişmiş kumaş analizi ve yüksek vakum teknolojisi ile koltuklarınızın dokusunu yeniliyoruz. NisanProClean ile gerçek temizliği keşfedin.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
@@ -64,13 +64,25 @@ const Hero: React.FC = () => {
       </div>
 
       {/* Floating Guarantee Card (Designer Perspective) */}
-      <div className="absolute hidden lg:flex items-center gap-4 bottom-32 right-20 bg-gradient-to-r from-red-900/80 to-background-dark p-4 rounded-2xl animate-float border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.3)] backdrop-blur-md">
-        <div className="size-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
-          <span className="material-symbols-outlined">gavel</span>
+      <div className="absolute hidden lg:flex flex-col gap-3 bottom-32 right-20">
+        <div className="flex items-center gap-4 bg-gradient-to-r from-red-900/80 to-background-dark p-4 rounded-2xl animate-float border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.3)] backdrop-blur-md">
+          <div className="size-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
+            <span className="material-symbols-outlined">gavel</span>
+          </div>
+          <div className="text-left">
+            <p className="text-white font-bold text-sm">7 Gün Memnuniyet Garantisi</p>
+            <p className="text-gray-300 text-xs">Koşulsuz Destek & Güvence</p>
+          </div>
         </div>
-        <div className="text-left">
-          <p className="text-white font-bold text-sm">7 Gün Rest Garantisi!</p>
-          <p className="text-gray-300 text-xs">Para İade veya Yeniden Yıkama</p>
+        
+        <div className="flex items-center gap-4 bg-gradient-to-r from-green-900/80 to-background-dark p-4 rounded-2xl animate-float border border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.2)] backdrop-blur-md" style={{ animationDelay: '1s' }}>
+          <div className="size-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+            <span className="material-symbols-outlined">shield</span>
+          </div>
+          <div className="text-left">
+            <p className="text-white font-bold text-sm flex items-center gap-2">Eşya Koruma Sigortası <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Yakında</span></p>
+            <p className="text-gray-300 text-xs">%100 Güvenli Hizmet</p>
+          </div>
         </div>
       </div>
 

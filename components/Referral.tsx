@@ -191,22 +191,22 @@ const Referral: React.FC = () => {
                 <span className="material-symbols-outlined text-sm">domain</span>
                 Kurumsal Partnerlik
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">İşletmeler İçin B2B Referans Sistemi</h3>
+              <h3 className="text-2xl font-bold text-white mb-2">İşletmeler İçin B2B İndirim Sistemi</h3>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Sadece bireysel müşterilerimiz değil, kurumsal partnerlerimiz de kazanıyor. İş ağınızdaki diğer firmaları önererek <strong className="text-white">fatura indirimi</strong> kazanabilir veya çalışanlarınıza özel <strong className="text-white">"Personel İndirim Kodu"</strong> tanımlayarak onlara harika bir yan hak sunabilirsiniz.
+                Sadece bireysel müşterilerimiz değil, kurumsal partnerlerimiz de kazanıyor. İş ağınızdaki diğer firmaları önererek <strong className="text-white">kurumsal indirimler</strong> kazanabilir veya çalışanlarınıza özel <strong className="text-white">"Personel İndirim Kodu"</strong> tanımlayarak onlara harika bir yan hak sunabilirsiniz.
               </p>
               <div className="flex flex-wrap gap-4 mt-6">
                 <div className="flex items-center gap-2 text-sm text-gray-300 bg-surface-dark px-3 py-1.5 rounded-lg border border-gray-700">
                   <span className="material-symbols-outlined text-secondary text-sm">receipt_long</span>
-                  Fatura İndirimi
+                  Kurumsal İndirim
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-300 bg-surface-dark px-3 py-1.5 rounded-lg border border-gray-700">
                   <span className="material-symbols-outlined text-secondary text-sm">badge</span>
                   Personel Yan Hakkı
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-300 bg-surface-dark px-3 py-1.5 rounded-lg border border-gray-700">
-                  <span className="material-symbols-outlined text-secondary text-sm">handshake</span>
-                  Emlak & Mimar Komisyonu
+                  <span className="material-symbols-outlined text-secondary text-sm">verified</span>
+                  Öncelikli Hizmet
                 </div>
               </div>
             </div>

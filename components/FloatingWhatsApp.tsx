@@ -2,9 +2,11 @@ import React from 'react';
 import { CONTACT_INFO } from '../constants';
 
 const FloatingWhatsApp: React.FC = () => {
+  const message = encodeURIComponent("Merhaba, koltuğumdaki bu leke çıkar mı? Fotoğrafını iletiyorum, fiyat alabilir miyim?");
+  
   return (
     <a
-      href={CONTACT_INFO.whatsappLink}
+      href={`${CONTACT_INFO.whatsappLink}?text=${message}`}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 flex items-center justify-center size-14 bg-[#25D366] text-white rounded-full shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.6)] transition-all duration-300 group"
@@ -16,8 +18,12 @@ const FloatingWhatsApp: React.FC = () => {
       </svg>
       
       {/* Tooltip */}
-      <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-white text-gray-900 text-sm font-bold px-4 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap shadow-xl">
-        Hemen Fiyat Alın!
+      <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-white text-gray-900 text-sm font-bold px-4 py-3 rounded-xl opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap shadow-xl flex items-center gap-2 border border-gray-100">
+        <span className="material-symbols-outlined text-[#25D366] text-lg">photo_camera</span>
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500 font-medium">Lekeni Çek Gönder</span>
+          <span className="text-sm">Anında Fiyat Al!</span>
+        </div>
         <div className="absolute top-1/2 -right-2 -translate-y-1/2 border-8 border-transparent border-l-white"></div>
       </div>
     </a>

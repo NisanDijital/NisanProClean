@@ -4,22 +4,22 @@ import { CONTACT_INFO } from '../constants';
 const REVIEWS = [
   {
     id: 1,
-    text: "İki çocuklu bir evimiz var ve koltuklarımızın durumu gerçekten içler acısıydı. NisanProClean ekibi geldi, yapay zeka ile kumaşı analiz edip işleme başladılar. Sonuç inanılmaz! Koltuklar ilk günkü gibi oldu, üstelik 4 saatte kurudu.",
-    name: "Ayşe Yılmaz",
+    text: "İki çocuklu bir evimiz var ve koltuklarımızın durumu gerçekten içler acısıydı. NisanProClean ekibi geldi, kumaşı detaylıca analiz edip işleme başladılar. Sonuç inanılmaz! Koltuklar ilk günkü gibi oldu, üstelik 4 saatte kurudu.",
+    name: "Ayşe Y.",
     title: "Uydukent, Afyon",
     avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop"
   },
   {
     id: 2,
     text: "Daha önce başka firmalara da yıkatmıştım ama hep bir kusma veya koku kalıyordu. Bu sefer buharlı yıkama tercih ettim. Hem lekeler tamamen çıktı hem de ev mis gibi koktu. Kesinlikle tavsiye ederim.",
-    name: "Mehmet Demir",
+    name: "Mehmet D.",
     title: "Erenler, Afyon",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop"
   },
   {
     id: 3,
     text: "Kedimizin koltuğa bıraktığı o inatçı kokudan ne yaptıysak kurtulamamıştık. Özel enzim bazlı şampuanları sayesinde kokudan eser kalmadı. İşlerini gerçekten profesyonel yapıyorlar.",
-    name: "Zeynep Kaya",
+    name: "Zeynep K.",
     title: "Afyon Merkez",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&auto=format&fit=crop"
   }
