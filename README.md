@@ -1,20 +1,36 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# NisanProClean
 
-# Run and deploy your AI Studio app
+NisanProClean, Afyonkarahisar ve çevresinde profesyonel yerinde koltuk, yatak ve araç koltuk temizliği hizmetleri sunan yeni nesil bir temizlik firmasıdır. 
 
-This contains everything you need to run your app locally.
+Bu proje; sıradan bir kurumsal tanıtım sitesi olmak yerine, müşteri psikolojisine hitap eden ve doğrudan satışa yönelik tasarlanmış akıllı bir platformdur.
 
-View your app in AI Studio: https://ai.studio/apps/972ce5b1-6f8b-4ce0-ba2b-b96c799e3773
+## Pazarlama ve Satış Özellikleri
 
-## Run Locally
+* **Akıllı Fiyat Hesaplayıcı:** Ziyaretçilerin kendi eşyalarını seçerek anında sepet tutarı oluşturabilmesini sağlar.
+* **ProClean Care (Kasko Abonelik Sistemi):** Hizmet sektörüne uyarlanmış aylık ödemeli (Gümüş, Altın, Platin) koruma ve abonelik paketleri. Sepet tutarına göre akıllı "Upsell" (üst paket önerme) yapar.
+* **Canlı Sosyal Kanıt (FOMO):** Sayfanın sol alt köşesinde gerçek zamanlı "x kişi şu an inceliyor", "y kişi az önce Altın Kasko aldı" gibi psikolojik tetikleyici bildirimler çıkarır.
+* **Müşteri Yönlendirme (Referans) Programı:** Arkadaşını getirene nakit iade (cashback) vadederek kulaktan kulağa pazarlamayı teşvik eder.
+* **Lekeni Çek Gönder:** WhatsApp hızlı iletişim butonu aracılığıyla, üşengeç müşterilerden fotoğraf isteyerek hızlı fiyatlandırma sağlar.
+* **SEO Odaklı İçerik (Bait-and-Switch):** "Koltuk yıkama makinesi alınır mı", "Koltuk neyle silinir" gibi yüksek hacimli internet aramalarını yakalayıp profesyonel hizmete yönlendiren özel blog mimarisi.
 
-**Prerequisites:**  Node.js
+## Teknoloji Altyapısı
 
+* **Frontend:** React, TypeScript, Tailwind CSS
+* **Build Aracı:** Vite
+* **İkonlar:** Google Material Symbols
+* **Responsive Tasarım:** Mobil öncelikli (Mobile First) sorunsuz görünüm.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Kurulum ve Çalıştırma
+
+Geliştirme ortamını bilgisayarınızda başlatmak için aşağıdaki komutları kullanabilirsiniz:
+
+```bash
+# Kurulum
+npm install
+
+# Geliştirme Sunucusunu Başlatma
+npm run dev
+
+# Üretim (Production) İçin Derleme
+npm run build
+```
