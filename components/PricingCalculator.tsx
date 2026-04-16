@@ -354,6 +354,24 @@ const PricingCalculator: React.FC = () => {
                       </div>
                     </div>
                     
+                    {/* Return On Investment (Tasarruf) Banner */}
+                    {total > 0 && (
+                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mt-3 animate-fade-in relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                        <div className="flex gap-2 items-start relative z-10">
+                          <span className="material-symbols-outlined text-emerald-500 text-lg shrink-0">savings</span>
+                          <div>
+                            <p className="text-white text-xs font-bold leading-tight mb-1 flex items-center gap-1">
+                              Tebrikler! <strong className="text-emerald-400">{(45000 - total).toLocaleString('tr-TR')} TL</strong> Tasarruf Ettiniz
+                            </p>
+                            <p className="text-gray-400 text-[10px] leading-relaxed">
+                              Sıfır bir koltuk/yatak takımının ortalama maliyeti 45.000 TL'dir. NisanProClean ile eşyalarınızı ilk günkü yeniliğine kavuşturarak devasa bir bütçe tasarrufu sağladınız.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Upsell to Premium Packages Banner */}
                     {total >= 1500 && (
                       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mt-3 animate-fade-in">

@@ -19,6 +19,7 @@ import ScrollToTop from './components/ScrollToTop';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import SocialProof from './components/SocialProof';
 import ExitIntentPopup from './components/ExitIntentPopup';
+import EmergencyStainAssistant from './components/EmergencyStainAssistant';
 import { CONTACT_INFO, IMAGES } from './constants';
 
 const App: React.FC = () => {
@@ -118,6 +119,7 @@ const App: React.FC = () => {
       <FloatingWhatsApp />
       <SocialProof />
       <ExitIntentPopup />
+      <EmergencyStainAssistant />
     </div>
   );
 };
