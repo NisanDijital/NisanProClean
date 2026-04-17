@@ -93,6 +93,24 @@
       </div>
 
       <div class="card">
+        <h3>Uyelik Basvurulari</h3>
+        <div class="row">
+          <select id="subscriptionStatusFilter">
+            <option value="">Tum durumlar</option>
+            <option value="new">new</option>
+            <option value="contacted">contacted</option>
+            <option value="confirmed">confirmed</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+          <button id="loadSubscriptionsBtn">Basvurulari Getir</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>Musteri</th><th>Paket</th><th>Durum</th><th>Islem</th></tr></thead>
+          <tbody id="subBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
         <h3>Loglar</h3>
         <pre id="logsOut">Henuz yuklenmedi.</pre>
       </div>
@@ -107,6 +125,7 @@
     const panelMsg = $('panelMsg');
     const refBody = $('refBody');
     const appBody = $('appBody');
+    const subBody = $('subBody');
     const logsOut = $('logsOut');
 
     async function api(action, method='GET', payload=null) {
@@ -181,20 +200,59 @@
       });
     }
 
+    async function loadSubscriptions() {
+      const q = new URLSearchParams({ page: '1', page_size: '60' });
+      const status = $('subscriptionStatusFilter').value;
+      if (status) q.set('status', status);
+      const d = await api(`admin_subscriptions&${q.toString()}`);
+      subBody.innerHTML = '';
+      for (const s of d.records) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${s.id}</td>
+          <td>${s.customer_name}<br><span class="muted">${s.phone}</span><br><span class="muted">${s.customer_address || '-'}</span></td>
+          <td>${s.plan_name}<br><span class="muted">${s.plan_price} TL/ay</span></td>
+          <td><span class="pill ${s.status === 'new' ? 'pending' : s.status === 'contacted' ? 'confirmed' : s.status === 'confirmed' ? 'done' : 'cancelled'}">${s.status}</span></td>
+          <td>
+            <select data-sub-id="${s.id}">
+              <option value="new" ${s.status==='new'?'selected':''}>new</option>
+              <option value="contacted" ${s.status==='contacted'?'selected':''}>contacted</option>
+              <option value="confirmed" ${s.status==='confirmed'?'selected':''}>confirmed</option>
+              <option value="cancelled" ${s.status==='cancelled'?'selected':''}>cancelled</option>
+            </select>
+            <button data-sub-id="${s.id}" class="saveSubStatus">Kaydet</button>
+          </td>`;
+        subBody.appendChild(tr);
+      }
+      document.querySelectorAll('button.saveSubStatus').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = Number(btn.getAttribute('data-sub-id'));
+          const sel = subBody.querySelector(`select[data-sub-id="${id}"]`);
+          try {
+            await api('admin_subscription_status', 'POST', { id, status: sel.value });
+            panelMsg.textContent = `Basvuru #${id} guncellendi.`;
+            await loadSubscriptions();
+          } catch (e) { panelMsg.textContent = e.message; }
+        });
+      });
+    }
+
     $('loginBtn').addEventListener('click', async () => {
       try {
         await api('admin_login', 'POST', { password: $('password').value });
         setAuthed(true);
         await loadReferrals();
         await loadAppointments();
+        await loadSubscriptions();
       } catch (e) {
         loginMsg.textContent = e.message;
       }
     });
 
-    $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadAppointments(); });
+    $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadAppointments(); await loadSubscriptions(); });
     $('loadRefBtn').addEventListener('click', loadReferrals);
     $('loadAppointmentsBtn').addEventListener('click', loadAppointments);
+    $('loadSubscriptionsBtn').addEventListener('click', loadSubscriptions);
 
     $('updateBtn').addEventListener('click', async () => {
       try {
@@ -234,6 +292,7 @@
         if (d.authed) {
           await loadReferrals();
           await loadAppointments();
+          await loadSubscriptions();
         }
       } catch (_) {
         setAuthed(false);

@@ -22,8 +22,11 @@ Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 
 - `GET /api.php?action=health`
 - `POST /api.php?action=generate`
+- `POST /api.php?action=referral_otp_request`
+- `POST /api.php?action=referral_otp_verify`
 - `GET /api.php?action=appointment_slots`
 - `POST /api.php?action=appointment_book`
+- `POST /api.php?action=subscription_create`
 
 ## Admin Endpointler
 
@@ -36,6 +39,8 @@ Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 - `GET /api.php?action=admin_logs`
 - `GET /api.php?action=admin_appointments`
 - `POST /api.php?action=admin_appointment_status`
+- `GET /api.php?action=admin_subscriptions`
+- `POST /api.php?action=admin_subscription_status`
 
 ## Cron
 
@@ -48,3 +53,57 @@ Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 
 - `slot_days`: kac gun ileriye slot acilacagi
 - `slot_hours`: saat bloklari (varsayilan: `09:00`, `13:00`, `17:00`)
+
+## WhatsApp Bildirim (Agent)
+
+Randevu ve uyelik kayitlarinda otomatik bildirim icin:
+
+- `notify_enabled`: `true`
+- `notify_mode`: `webhook`
+- `notify_webhook_url`: agent webhook URL
+- `notify_webhook_token`: (opsiyonel) Bearer token
+
+Backend webhook'a su formatta POST atar:
+
+```json
+{
+  "event": "appointment_booked",
+  "ts": "2026-04-17T00:00:00+00:00",
+  "payload": {
+    "name": "Ad Soyad",
+    "phone": "905xxxxxxxxx",
+    "address": "Adres",
+    "service": "Koltuk Yikama",
+    "date": "2026-04-20",
+    "time": "13:00",
+    "note": "",
+    "message": "Yeni randevu talebi..."
+  }
+}
+```
+
+Desteklenen event degerleri:
+
+- `appointment_booked`
+- `subscription_created`
+
+## WhatsApp Cloud API (Direkt)
+
+Agent yerine direkt Meta Cloud API istersen:
+
+- `notify_enabled`: `true`
+- `notify_mode`: `whatsapp_cloud`
+- `wa_phone_number_id`
+- `wa_access_token`
+- `wa_to` (bildirim gidecek numara)
+
+## OTP Guvenli Musteri Sorgulama
+
+- `otp_enabled`: OTP zorunlulugu ac/kapat
+- `otp_secret`: hashleme anahtari (zorunlu)
+- `otp_ttl_seconds`: kod gecerlilik suresi (varsayilan 300)
+- `otp_max_attempts`: max deneme (varsayilan 5)
+- `otp_cooldown_seconds`: tekrar kod isteme bekleme suresi
+- `otp_rate_limit_hour`: 1 saatlik max kod talebi
+
+Not: OTP gonderimi mevcut bildirim sistemi uzerinden calisir (`notify_*` ayarlari).

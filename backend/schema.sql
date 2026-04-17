@@ -40,3 +40,34 @@ CREATE TABLE IF NOT EXISTS admin_backups (
     snapshot_json LONGTEXT NOT NULL,
     created_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    customer_name VARCHAR(120) NOT NULL,
+    phone VARCHAR(12) NOT NULL,
+    customer_address VARCHAR(255) NOT NULL DEFAULT '',
+    plan_name VARCHAR(80) NOT NULL,
+    plan_price INT NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'new',
+    payload_json TEXT NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    INDEX idx_subscriptions_status (status),
+    INDEX idx_subscriptions_phone (phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS referral_otps (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    phone VARCHAR(12) NOT NULL,
+    code_hash VARCHAR(128) NOT NULL,
+    attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    max_attempts TINYINT UNSIGNED NOT NULL DEFAULT 5,
+    expires_at DATETIME NOT NULL,
+    consumed TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    ip VARCHAR(64) NOT NULL DEFAULT '',
+    INDEX idx_referral_otps_phone (phone),
+    INDEX idx_referral_otps_expires (expires_at),
+    INDEX idx_referral_otps_consumed (consumed)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

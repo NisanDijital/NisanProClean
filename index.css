@@ -48,6 +48,16 @@
 html {
     scroll-behavior: smooth;
 }
+body {
+    margin: 0;
+    background: #0a0e17;
+    color: #e7edf8;
+    font-family: var(--font-display);
+}
+#root {
+    min-height: 100vh;
+    background: #0a0e17;
+}
 .glass {
     background: rgba(19, 24, 36, 0.85);
     backdrop-filter: blur(16px);

@@ -62,6 +62,20 @@ function loadAppConfig(): array
         'cron_token' => 'CHANGE_ME',
         'slot_days' => 14,
         'slot_hours' => ['09:00', '13:00', '17:00'],
+        'notify_enabled' => false,
+        'notify_mode' => 'webhook',
+        'notify_webhook_url' => '',
+        'notify_webhook_token' => '',
+        'wa_api_version' => 'v20.0',
+        'wa_phone_number_id' => '',
+        'wa_access_token' => '',
+        'wa_to' => '',
+        'otp_enabled' => true,
+        'otp_secret' => 'CHANGE_ME_OTP_SECRET',
+        'otp_ttl_seconds' => 300,
+        'otp_max_attempts' => 5,
+        'otp_cooldown_seconds' => 60,
+        'otp_rate_limit_hour' => 5,
     ];
 
     $configFile = __DIR__ . '/config.php';
@@ -82,6 +96,20 @@ function loadAppConfig(): array
         'REFERRAL_DB_CHARSET' => 'db_charset',
         'REFERRAL_ADMIN_PASSWORD' => 'admin_password',
         'REFERRAL_CRON_TOKEN' => 'cron_token',
+        'REFERRAL_NOTIFY_ENABLED' => 'notify_enabled',
+        'REFERRAL_NOTIFY_MODE' => 'notify_mode',
+        'REFERRAL_NOTIFY_WEBHOOK_URL' => 'notify_webhook_url',
+        'REFERRAL_NOTIFY_WEBHOOK_TOKEN' => 'notify_webhook_token',
+        'REFERRAL_WA_API_VERSION' => 'wa_api_version',
+        'REFERRAL_WA_PHONE_NUMBER_ID' => 'wa_phone_number_id',
+        'REFERRAL_WA_ACCESS_TOKEN' => 'wa_access_token',
+        'REFERRAL_WA_TO' => 'wa_to',
+        'REFERRAL_OTP_ENABLED' => 'otp_enabled',
+        'REFERRAL_OTP_SECRET' => 'otp_secret',
+        'REFERRAL_OTP_TTL_SECONDS' => 'otp_ttl_seconds',
+        'REFERRAL_OTP_MAX_ATTEMPTS' => 'otp_max_attempts',
+        'REFERRAL_OTP_COOLDOWN_SECONDS' => 'otp_cooldown_seconds',
+        'REFERRAL_OTP_RATE_LIMIT_HOUR' => 'otp_rate_limit_hour',
     ];
 
     foreach ($envMap as $env => $key) {
@@ -90,12 +118,12 @@ function loadAppConfig(): array
             continue;
         }
 
-        if ($key === 'db_enabled') {
+        if ($key === 'db_enabled' || $key === 'notify_enabled' || $key === 'otp_enabled') {
             $config[$key] = in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
             continue;
         }
 
-        if ($key === 'db_port') {
+        if (in_array($key, ['db_port', 'otp_ttl_seconds', 'otp_max_attempts', 'otp_cooldown_seconds', 'otp_rate_limit_hour'], true)) {
             $config[$key] = (int) $value;
             continue;
         }
@@ -221,6 +249,41 @@ function initializeDbSchema(PDO $pdo): void
             created_at DATETIME NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS subscriptions (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            customer_name VARCHAR(120) NOT NULL,
+            phone VARCHAR(12) NOT NULL,
+            customer_address VARCHAR(255) NOT NULL DEFAULT "",
+            plan_name VARCHAR(80) NOT NULL,
+            plan_price INT NOT NULL DEFAULT 0,
+            status VARCHAR(20) NOT NULL DEFAULT "new",
+            payload_json TEXT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            INDEX idx_subscriptions_status (status),
+            INDEX idx_subscriptions_phone (phone)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS referral_otps (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            phone VARCHAR(12) NOT NULL,
+            code_hash VARCHAR(128) NOT NULL,
+            attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+            max_attempts TINYINT UNSIGNED NOT NULL DEFAULT 5,
+            expires_at DATETIME NOT NULL,
+            consumed TINYINT(1) NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            ip VARCHAR(64) NOT NULL DEFAULT "",
+            INDEX idx_referral_otps_phone (phone),
+            INDEX idx_referral_otps_expires (expires_at),
+            INDEX idx_referral_otps_consumed (consumed)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
 }
 
 function storageDirectoryCandidates(): array
@@ -269,6 +332,11 @@ function backupsDir(string $dir): string
     return $dir . '/backups';
 }
 
+function otpPath(string $dir): string
+{
+    return $dir . '/referral_otps.json';
+}
+
 function readReferralsFromFile(string $path): array
 {
     if (!file_exists($path)) {
@@ -285,6 +353,41 @@ function readReferralsFromFile(string $path): array
 }
 
 function writeReferralsToFile(string $path, array $data): void
+{
+    $handle = fopen($path, 'c+');
+    if ($handle === false) {
+        respond(500, ['success' => false, 'error' => 'Storage dosyasi acilamadi.']);
+    }
+
+    if (!flock($handle, LOCK_EX)) {
+        fclose($handle);
+        respond(500, ['success' => false, 'error' => 'Storage kilidi alinamadi.']);
+    }
+
+    ftruncate($handle, 0);
+    rewind($handle);
+    fwrite($handle, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    fflush($handle);
+    flock($handle, LOCK_UN);
+    fclose($handle);
+}
+
+function readJsonArrayFile(string $path): array
+{
+    if (!file_exists($path)) {
+        return [];
+    }
+
+    $content = file_get_contents($path);
+    if ($content === false || trim($content) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($content, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function writeJsonArrayFile(string $path, array $data): void
 {
     $handle = fopen($path, 'c+');
     if ($handle === false) {
@@ -603,6 +706,485 @@ function adminPassword(): string
 {
     $cfg = appConfig();
     return (string) ($cfg['admin_password'] ?? 'CHANGE_ME');
+}
+
+function notificationsEnabled(): bool
+{
+    $cfg = appConfig();
+    return (bool) ($cfg['notify_enabled'] ?? false);
+}
+
+function normalizeE164(string $value): string
+{
+    $digits = preg_replace('/\D+/', '', $value) ?? '';
+    if ($digits === '') {
+        return '';
+    }
+    if (str_starts_with($digits, '00')) {
+        $digits = substr($digits, 2);
+    }
+    if ($digits[0] !== '9' && strlen($digits) === 10) {
+        $digits = '90' . $digits;
+    }
+    if ($digits[0] === '0' && strlen($digits) === 11) {
+        $digits = '90' . substr($digits, 1);
+    }
+    return '+' . $digits;
+}
+
+function postJson(string $url, array $payload, array $headers = [], int $timeout = 12): array
+{
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'error' => 'curl_extension_missing', 'status' => 0, 'body' => ''];
+    }
+
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return ['ok' => false, 'error' => 'curl_init_failed', 'status' => 0, 'body' => ''];
+    }
+
+    $httpHeaders = ['Content-Type: application/json', 'Accept: application/json'];
+    foreach ($headers as $header) {
+        if (is_string($header) && trim($header) !== '') {
+            $httpHeaders[] = $header;
+        }
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        CURLOPT_HTTPHEADER => $httpHeaders,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => $timeout,
+        CURLOPT_TIMEOUT => $timeout,
+    ]);
+
+    $body = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if (!is_string($body)) {
+        $body = '';
+    }
+
+    if ($curlError !== '') {
+        return ['ok' => false, 'error' => $curlError, 'status' => $status, 'body' => $body];
+    }
+
+    return ['ok' => $status >= 200 && $status < 300, 'error' => '', 'status' => $status, 'body' => $body];
+}
+
+function sendNotificationEvent(string $eventName, array $eventPayload): array
+{
+    if (!notificationsEnabled()) {
+        return ['ok' => false, 'error' => 'notify_disabled', 'status' => 0];
+    }
+
+    $cfg = appConfig();
+    $mode = strtolower(trim((string) ($cfg['notify_mode'] ?? 'webhook')));
+
+    if ($mode === 'whatsapp_cloud') {
+        $to = normalizeE164((string) ($cfg['wa_to'] ?? ''));
+        $phoneNumberId = trim((string) ($cfg['wa_phone_number_id'] ?? ''));
+        $accessToken = trim((string) ($cfg['wa_access_token'] ?? ''));
+        $apiVersion = trim((string) ($cfg['wa_api_version'] ?? 'v20.0'));
+
+        if ($to === '' || $phoneNumberId === '' || $accessToken === '') {
+            return ['ok' => false, 'error' => 'wa_config_missing', 'status' => 0];
+        }
+
+        $text = (string) ($eventPayload['message'] ?? '');
+        if ($text === '') {
+            return ['ok' => false, 'error' => 'wa_message_empty', 'status' => 0];
+        }
+
+        $url = 'https://graph.facebook.com/' . rawurlencode($apiVersion) . '/' . rawurlencode($phoneNumberId) . '/messages';
+        $result = postJson($url, [
+            'messaging_product' => 'whatsapp',
+            'to' => ltrim($to, '+'),
+            'type' => 'text',
+            'text' => ['body' => $text],
+        ], ['Authorization: Bearer ' . $accessToken], 15);
+
+        return $result;
+    }
+
+    $webhookUrl = trim((string) ($cfg['notify_webhook_url'] ?? ''));
+    if ($webhookUrl === '') {
+        return ['ok' => false, 'error' => 'webhook_url_missing', 'status' => 0];
+    }
+
+    $headers = [];
+    $webhookToken = trim((string) ($cfg['notify_webhook_token'] ?? ''));
+    if ($webhookToken !== '') {
+        $headers[] = 'Authorization: Bearer ' . $webhookToken;
+    }
+
+    $result = postJson($webhookUrl, [
+        'event' => $eventName,
+        'ts' => gmdate('c'),
+        'payload' => $eventPayload,
+    ], $headers, 15);
+
+    return $result;
+}
+
+function notifyAppointmentBooked(string $storageDir, array $data): void
+{
+    $message =
+        "Yeni randevu talebi\n" .
+        'Musteri: ' . ($data['name'] ?? '-') . "\n" .
+        'Telefon: ' . ($data['phone'] ?? '-') . "\n" .
+        'Adres: ' . ($data['address'] ?? '-') . "\n" .
+        'Hizmet: ' . ($data['service'] ?? '-') . "\n" .
+        'Tarih/Saat: ' . ($data['date'] ?? '-') . ' ' . ($data['time'] ?? '-') . "\n" .
+        'Not: ' . ($data['note'] ?? '-');
+
+    $result = sendNotificationEvent('appointment_booked', [
+        'name' => (string) ($data['name'] ?? ''),
+        'phone' => (string) ($data['phone'] ?? ''),
+        'address' => (string) ($data['address'] ?? ''),
+        'service' => (string) ($data['service'] ?? ''),
+        'date' => (string) ($data['date'] ?? ''),
+        'time' => (string) ($data['time'] ?? ''),
+        'note' => (string) ($data['note'] ?? ''),
+        'message' => $message,
+    ]);
+
+    logAdminAction($storageDir, 'notify_appointment_booked', (bool) ($result['ok'] ?? false), [
+        'status' => (int) ($result['status'] ?? 0),
+        'error' => (string) ($result['error'] ?? ''),
+    ]);
+}
+
+function notifySubscriptionCreated(string $storageDir, array $data): void
+{
+    $message =
+        "Yeni uyelik basvurusu\n" .
+        'Musteri: ' . ($data['name'] ?? '-') . "\n" .
+        'Telefon: ' . ($data['phone'] ?? '-') . "\n" .
+        'Adres: ' . ($data['address'] ?? '-') . "\n" .
+        'Paket: ' . ($data['plan_name'] ?? '-') . "\n" .
+        'Fiyat: ' . (string) ($data['plan_price'] ?? 0) . " TL/ay";
+
+    $result = sendNotificationEvent('subscription_created', [
+        'name' => (string) ($data['name'] ?? ''),
+        'phone' => (string) ($data['phone'] ?? ''),
+        'address' => (string) ($data['address'] ?? ''),
+        'plan_name' => (string) ($data['plan_name'] ?? ''),
+        'plan_price' => (int) ($data['plan_price'] ?? 0),
+        'message' => $message,
+    ]);
+
+    logAdminAction($storageDir, 'notify_subscription_created', (bool) ($result['ok'] ?? false), [
+        'status' => (int) ($result['status'] ?? 0),
+        'error' => (string) ($result['error'] ?? ''),
+    ]);
+}
+
+function otpEnabled(): bool
+{
+    return (bool) (appConfig()['otp_enabled'] ?? true);
+}
+
+function otpSecret(): string
+{
+    return (string) (appConfig()['otp_secret'] ?? 'CHANGE_ME_OTP_SECRET');
+}
+
+function otpTtlSeconds(): int
+{
+    return max(120, min(900, (int) (appConfig()['otp_ttl_seconds'] ?? 300)));
+}
+
+function otpMaxAttempts(): int
+{
+    return max(3, min(10, (int) (appConfig()['otp_max_attempts'] ?? 5)));
+}
+
+function otpCooldownSeconds(): int
+{
+    return max(30, min(180, (int) (appConfig()['otp_cooldown_seconds'] ?? 60)));
+}
+
+function otpRateLimitHour(): int
+{
+    return max(3, min(20, (int) (appConfig()['otp_rate_limit_hour'] ?? 5)));
+}
+
+function requestIp(): string
+{
+    return (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+}
+
+function otpHashForPhone(string $phone, string $otp): string
+{
+    return hash_hmac('sha256', $phone . '|' . $otp, otpSecret());
+}
+
+function createReferralOtp(string $storageDir, string $phone, string $code): void
+{
+    $maxAttempts = otpMaxAttempts();
+    $expiresAt = gmdate('Y-m-d H:i:s', time() + otpTtlSeconds());
+    $now = gmdate('Y-m-d H:i:s');
+    $codeHash = otpHashForPhone($phone, $code);
+
+    $pdo = dbConnection();
+    if ($pdo instanceof PDO) {
+        $stmt = $pdo->prepare(
+            'INSERT INTO referral_otps
+            (phone, code_hash, attempts, max_attempts, expires_at, consumed, created_at, updated_at, ip)
+            VALUES
+            (:phone, :code_hash, 0, :max_attempts, :expires_at, 0, :created_at, :updated_at, :ip)'
+        );
+        $stmt->execute([
+            'phone' => $phone,
+            'code_hash' => $codeHash,
+            'max_attempts' => $maxAttempts,
+            'expires_at' => $expiresAt,
+            'created_at' => $now,
+            'updated_at' => $now,
+            'ip' => requestIp(),
+        ]);
+        return;
+    }
+
+    $path = otpPath($storageDir);
+    $rows = readJsonArrayFile($path);
+    $rows[] = [
+        'id' => count($rows) + 1,
+        'phone' => $phone,
+        'code_hash' => $codeHash,
+        'attempts' => 0,
+        'max_attempts' => $maxAttempts,
+        'expires_at' => gmdate('c', time() + otpTtlSeconds()),
+        'consumed' => false,
+        'created_at' => gmdate('c'),
+        'updated_at' => gmdate('c'),
+        'ip' => requestIp(),
+    ];
+    writeJsonArrayFile($path, $rows);
+}
+
+function latestOtpRecord(string $storageDir, string $phone): ?array
+{
+    $pdo = dbConnection();
+    if ($pdo instanceof PDO) {
+        $stmt = $pdo->prepare(
+            'SELECT id, phone, code_hash, attempts, max_attempts, expires_at, consumed, created_at, updated_at
+             FROM referral_otps
+             WHERE phone = :phone
+             ORDER BY id DESC
+             LIMIT 1'
+        );
+        $stmt->execute(['phone' => $phone]);
+        $row = $stmt->fetch();
+        return is_array($row) ? $row : null;
+    }
+
+    $rows = readJsonArrayFile(otpPath($storageDir));
+    for ($i = count($rows) - 1; $i >= 0; $i--) {
+        $row = $rows[$i];
+        if ((string) ($row['phone'] ?? '') === $phone) {
+            return $row;
+        }
+    }
+    return null;
+}
+
+function otpRateLimitExceeded(string $storageDir, string $phone): bool
+{
+    $limit = otpRateLimitHour();
+    $sinceTs = gmdate('Y-m-d H:i:s', time() - 3600);
+
+    $pdo = dbConnection();
+    if ($pdo instanceof PDO) {
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(*) FROM referral_otps
+             WHERE phone = :phone
+               AND created_at >= :since_ts'
+        );
+        $stmt->execute(['phone' => $phone, 'since_ts' => $sinceTs]);
+        return ((int) $stmt->fetchColumn()) >= $limit;
+    }
+
+    $rows = readJsonArrayFile(otpPath($storageDir));
+    $count = 0;
+    $since = strtotime('-1 hour');
+    foreach ($rows as $row) {
+        if ((string) ($row['phone'] ?? '') !== $phone) {
+            continue;
+        }
+        $createdAt = strtotime((string) ($row['created_at'] ?? ''));
+        if ($createdAt !== false && $createdAt >= $since) {
+            $count++;
+        }
+    }
+    return $count >= $limit;
+}
+
+function otpCooldownRemaining(string $storageDir, string $phone): int
+{
+    $latest = latestOtpRecord($storageDir, $phone);
+    if (!is_array($latest)) {
+        return 0;
+    }
+
+    $createdAt = strtotime((string) ($latest['created_at'] ?? ''));
+    if ($createdAt === false) {
+        return 0;
+    }
+
+    $left = ($createdAt + otpCooldownSeconds()) - time();
+    return max(0, $left);
+}
+
+function markOtpAttempt(string $storageDir, int $otpId, bool $consume): void
+{
+    $pdo = dbConnection();
+    if ($pdo instanceof PDO) {
+        if ($consume) {
+            $stmt = $pdo->prepare(
+                'UPDATE referral_otps
+                 SET attempts = attempts + 1, consumed = 1, updated_at = :updated_at
+                 WHERE id = :id'
+            );
+            $stmt->execute(['updated_at' => gmdate('Y-m-d H:i:s'), 'id' => $otpId]);
+            return;
+        }
+
+        $stmt = $pdo->prepare(
+            'UPDATE referral_otps
+             SET attempts = attempts + 1, updated_at = :updated_at
+             WHERE id = :id'
+        );
+        $stmt->execute(['updated_at' => gmdate('Y-m-d H:i:s'), 'id' => $otpId]);
+        return;
+    }
+
+    $path = otpPath($storageDir);
+    $rows = readJsonArrayFile($path);
+    foreach ($rows as &$row) {
+        if ((int) ($row['id'] ?? 0) !== $otpId) {
+            continue;
+        }
+        $row['attempts'] = (int) ($row['attempts'] ?? 0) + 1;
+        if ($consume) {
+            $row['consumed'] = true;
+        }
+        $row['updated_at'] = gmdate('c');
+        break;
+    }
+    unset($row);
+    writeJsonArrayFile($path, $rows);
+}
+
+function handleReferralOtpRequest(string $storageDir): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
+    }
+    if (!otpEnabled()) {
+        respond(503, ['success' => false, 'error' => 'Dogrulama sistemi devre disi.']);
+    }
+
+    $payload = readJsonPayload();
+    $phone = normalizePhone((string) ($payload['phone'] ?? ''));
+    if (!preg_match('/^90[5][0-9]{9}$/', $phone)) {
+        respond(422, ['success' => false, 'error' => 'Telefon numarasi gecersiz.']);
+    }
+
+    $cooldown = otpCooldownRemaining($storageDir, $phone);
+    if ($cooldown > 0) {
+        respond(429, ['success' => false, 'error' => 'Lutfen tekrar denemeden once bekleyin.', 'cooldown_seconds' => $cooldown]);
+    }
+    if (otpRateLimitExceeded($storageDir, $phone)) {
+        respond(429, ['success' => false, 'error' => 'Cok fazla kod talebi. 1 saat sonra tekrar deneyin.']);
+    }
+
+    $otp = (string) random_int(100000, 999999);
+
+    $result = sendNotificationEvent('referral_otp', [
+        'phone' => $phone,
+        'otp' => $otp,
+        'message' => 'NisanProClean dogrulama kodunuz: ' . $otp . ' (5 dakika gecerli)',
+    ]);
+
+    if (!($result['ok'] ?? false)) {
+        logAdminAction($storageDir, 'referral_otp_send', false, ['phone' => $phone, 'error' => (string) ($result['error'] ?? '')]);
+        respond(503, ['success' => false, 'error' => 'Dogrulama kodu gonderilemedi. Bildirim servisini kontrol edin.']);
+    }
+
+    createReferralOtp($storageDir, $phone, $otp);
+    logAdminAction($storageDir, 'referral_otp_send', true, ['phone' => $phone]);
+    respond(200, [
+        'success' => true,
+        'ttl_seconds' => otpTtlSeconds(),
+        'cooldown_seconds' => otpCooldownSeconds(),
+    ]);
+}
+
+function handleReferralOtpVerify(string $storageDir): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
+    }
+    if (!otpEnabled()) {
+        respond(503, ['success' => false, 'error' => 'Dogrulama sistemi devre disi.']);
+    }
+
+    $payload = readJsonPayload();
+    $phone = normalizePhone((string) ($payload['phone'] ?? ''));
+    $otp = preg_replace('/\D+/', '', (string) ($payload['otp'] ?? '')) ?? '';
+    if (!preg_match('/^90[5][0-9]{9}$/', $phone) || strlen($otp) !== 6) {
+        respond(422, ['success' => false, 'error' => 'Telefon veya kod gecersiz.']);
+    }
+
+    $record = latestOtpRecord($storageDir, $phone);
+    if (!is_array($record)) {
+        respond(404, ['success' => false, 'error' => 'Aktif dogrulama kodu bulunamadi.']);
+    }
+
+    $expiresAtTs = strtotime((string) ($record['expires_at'] ?? ''));
+    $attempts = (int) ($record['attempts'] ?? 0);
+    $maxAttempts = max(1, (int) ($record['max_attempts'] ?? otpMaxAttempts()));
+    $consumed = (bool) ($record['consumed'] ?? false);
+
+    if ($consumed || $expiresAtTs === false || $expiresAtTs < time()) {
+        respond(410, ['success' => false, 'error' => 'Kodun suresi dolmus. Lutfen yeni kod isteyin.']);
+    }
+    if ($attempts >= $maxAttempts) {
+        respond(429, ['success' => false, 'error' => 'Maksimum deneme sayisina ulasildi.']);
+    }
+
+    $expectedHash = (string) ($record['code_hash'] ?? '');
+    $providedHash = otpHashForPhone($phone, $otp);
+    if (!hash_equals($expectedHash, $providedHash)) {
+        markOtpAttempt($storageDir, (int) ($record['id'] ?? 0), false);
+        $remaining = max(0, $maxAttempts - ($attempts + 1));
+        respond(401, ['success' => false, 'error' => 'Kod hatali.', 'remaining_attempts' => $remaining]);
+    }
+
+    markOtpAttempt($storageDir, (int) ($record['id'] ?? 0), true);
+
+    $existing = getReferralByPhone($storageDir, $phone);
+    if (is_array($existing)) {
+        respond(200, [
+            'success' => true,
+            'code' => (string) ($existing['referral_code'] ?? ''),
+            'points' => (int) ($existing['points'] ?? 0),
+            'existing' => true,
+        ]);
+    }
+
+    $created = createReferral($storageDir, $phone);
+    respond(201, [
+        'success' => true,
+        'code' => (string) ($created['referral_code'] ?? ''),
+        'points' => 0,
+        'existing' => false,
+    ]);
 }
 
 function handleGenerate(string $storageDir): void
@@ -944,7 +1526,149 @@ function handleAppointmentBook(string $storageDir): void
     ]);
 
     logAdminAction($storageDir, 'appointment_book', true, ['date' => $date, 'time' => $time, 'phone' => $phone]);
+    notifyAppointmentBooked($storageDir, [
+        'name' => $name,
+        'phone' => $phone,
+        'address' => $address,
+        'service' => $service,
+        'date' => $date,
+        'time' => $time,
+        'note' => $note,
+    ]);
     respond(201, ['success' => true, 'message' => 'Randevu olusturuldu.']);
+}
+
+function handleSubscriptionCreate(string $storageDir): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
+    }
+
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Uyelik sistemi su an aktif degil.']);
+    }
+
+    $payload = readJsonPayload();
+    $name = trim((string) ($payload['name'] ?? ''));
+    $phone = normalizePhone((string) ($payload['phone'] ?? ''));
+    $address = trim((string) ($payload['address'] ?? ''));
+    $planName = trim((string) ($payload['plan_name'] ?? ''));
+    $planPrice = (int) ($payload['plan_price'] ?? 0);
+
+    if ($name === '' || stringLength($name) < 2) {
+        respond(422, ['success' => false, 'error' => 'Isim gecersiz.']);
+    }
+    if (!preg_match('/^90[5][0-9]{9}$/', $phone)) {
+        respond(422, ['success' => false, 'error' => 'Telefon numarasi gecersiz.']);
+    }
+    if ($planName === '' || stringLength($planName) < 2) {
+        respond(422, ['success' => false, 'error' => 'Paket adi gecersiz.']);
+    }
+    if ($planPrice < 0 || $planPrice > 100000) {
+        respond(422, ['success' => false, 'error' => 'Paket fiyati gecersiz.']);
+    }
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO subscriptions
+         (customer_name, phone, customer_address, plan_name, plan_price, status, payload_json, created_at, updated_at)
+         VALUES
+         (:customer_name, :phone, :customer_address, :plan_name, :plan_price, "new", :payload_json, :created_at, :updated_at)'
+    );
+    $now = gmdate('Y-m-d H:i:s');
+    $stmt->execute([
+        'customer_name' => $name,
+        'phone' => $phone,
+        'customer_address' => substr($address, 0, 255),
+        'plan_name' => substr($planName, 0, 80),
+        'plan_price' => $planPrice,
+        'payload_json' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
+
+    logAdminAction($storageDir, 'subscription_create', true, ['phone' => $phone, 'plan' => $planName]);
+    notifySubscriptionCreated($storageDir, [
+        'name' => $name,
+        'phone' => $phone,
+        'address' => $address,
+        'plan_name' => $planName,
+        'plan_price' => $planPrice,
+    ]);
+    respond(201, ['success' => true, 'message' => 'Uyelik basvurunuz alindi. En kisa surede sizi arayacagiz.']);
+}
+
+function handleAdminSubscriptions(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Uyelik sistemi su an aktif degil.']);
+    }
+
+    $status = queryString('status', '');
+    $page = max(1, queryInt('page', 1));
+    $pageSize = max(5, min(100, queryInt('page_size', 20)));
+    $offset = ($page - 1) * $pageSize;
+
+    $where = '';
+    $params = [];
+    if ($status !== '' && in_array($status, ['new', 'contacted', 'confirmed', 'cancelled'], true)) {
+        $where = ' WHERE status = :status ';
+        $params['status'] = $status;
+    }
+
+    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM subscriptions' . $where);
+    $countStmt->execute($params);
+    $total = (int) $countStmt->fetchColumn();
+
+    $sql = 'SELECT id, customer_name, phone, customer_address, plan_name, plan_price, status, created_at
+            FROM subscriptions' . $where . '
+            ORDER BY id DESC
+            LIMIT :limit OFFSET :offset';
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $k => $v) {
+        $stmt->bindValue($k, $v);
+    }
+    $stmt->bindValue('limit', $pageSize, PDO::PARAM_INT);
+    $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $rows = $stmt->fetchAll();
+    if (!is_array($rows)) {
+        $rows = [];
+    }
+
+    logAdminAction($storageDir, 'admin_subscriptions', true, ['total' => $total, 'page' => $page]);
+    respond(200, ['success' => true, 'total' => $total, 'page' => $page, 'page_size' => $pageSize, 'records' => $rows]);
+}
+
+function handleAdminSubscriptionStatus(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
+    }
+
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Uyelik sistemi su an aktif degil.']);
+    }
+
+    $payload = readJsonPayload();
+    $id = (int) ($payload['id'] ?? 0);
+    $status = trim((string) ($payload['status'] ?? ''));
+    if ($id <= 0 || !in_array($status, ['new', 'contacted', 'confirmed', 'cancelled'], true)) {
+        respond(422, ['success' => false, 'error' => 'Parametre gecersiz.']);
+    }
+
+    $stmt = $pdo->prepare('UPDATE subscriptions SET status = :status, updated_at = :updated_at WHERE id = :id');
+    $stmt->execute(['status' => $status, 'updated_at' => gmdate('Y-m-d H:i:s'), 'id' => $id]);
+    if ($stmt->rowCount() === 0) {
+        respond(404, ['success' => false, 'error' => 'Basvuru bulunamadi.']);
+    }
+
+    logAdminAction($storageDir, 'admin_subscription_status', true, ['id' => $id, 'status' => $status]);
+    respond(200, ['success' => true]);
 }
 
 function handleAdminAppointments(string $storageDir): void
@@ -1038,6 +1762,12 @@ switch ($action) {
     case 'generate':
         handleGenerate($storageDir);
         break;
+    case 'referral_otp_request':
+        handleReferralOtpRequest($storageDir);
+        break;
+    case 'referral_otp_verify':
+        handleReferralOtpVerify($storageDir);
+        break;
     case 'admin_status':
         handleAdminStatus();
         break;
@@ -1068,11 +1798,20 @@ switch ($action) {
     case 'appointment_book':
         handleAppointmentBook($storageDir);
         break;
+    case 'subscription_create':
+        handleSubscriptionCreate($storageDir);
+        break;
     case 'admin_appointments':
         handleAdminAppointments($storageDir);
         break;
     case 'admin_appointment_status':
         handleAdminAppointmentStatus($storageDir);
+        break;
+    case 'admin_subscriptions':
+        handleAdminSubscriptions($storageDir);
+        break;
+    case 'admin_subscription_status':
+        handleAdminSubscriptionStatus($storageDir);
         break;
     default:
         respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);

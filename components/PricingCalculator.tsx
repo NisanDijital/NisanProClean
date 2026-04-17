@@ -33,6 +33,17 @@ const ADDONS = [
   { id: 'pet', name: 'Evcil Hayvan Koku Giderici', price: 250, desc: 'Enzim bazlı derinlemesine koku imhası' }
 ];
 
+type SubscriptionPlan = {
+  name: string;
+  price: number;
+};
+
+type SubscriptionForm = {
+  name: string;
+  phone: string;
+  address: string;
+};
+
 const PricingCalculator: React.FC = () => {
   const [items, setItems] = useState<Record<string, number>>({});
   const [addons, setAddons] = useState<Record<string, boolean>>({});
@@ -40,6 +51,16 @@ const PricingCalculator: React.FC = () => {
   const [time, setTime] = useState('Öğleden Önce (09:00 - 13:00)');
   const [isGuaranteeModalOpen, setIsGuaranteeModalOpen] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = useState('');
+  const [subscriptionError, setSubscriptionError] = useState('');
+  const [subscriptionLoadingPlan, setSubscriptionLoadingPlan] = useState('');
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [activeSubscriptionPlan, setActiveSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
+  const [subscriptionForm, setSubscriptionForm] = useState<SubscriptionForm>({
+    name: '',
+    phone: '',
+    address: '',
+  });
 
   const updateItem = (id: string, delta: number) => {
     setItems(prev => {
@@ -112,6 +133,74 @@ const PricingCalculator: React.FC = () => {
 
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodedMessage}`, '_blank');
+  };
+
+  const openSubscriptionModal = (planName: string, planPrice: number) => {
+    setSubscriptionMessage('');
+    setSubscriptionError('');
+    setActiveSubscriptionPlan({ name: planName, price: planPrice });
+    setSubscriptionForm({ name: '', phone: '', address: '' });
+    setIsSubscriptionModalOpen(true);
+  };
+
+  const closeSubscriptionModal = () => {
+    if (subscriptionLoadingPlan) return;
+    setIsSubscriptionModalOpen(false);
+    setActiveSubscriptionPlan(null);
+  };
+
+  const handleSubscriptionCreate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!activeSubscriptionPlan) return;
+
+    setSubscriptionMessage('');
+    setSubscriptionError('');
+
+    const name = subscriptionForm.name.trim();
+    const phone = subscriptionForm.phone.trim();
+    const address = subscriptionForm.address.trim();
+
+    if (name.length < 2) {
+      setSubscriptionError('Lutfen ad soyad bilgisini dogru girin.');
+      return;
+    }
+
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10) {
+      setSubscriptionError('Lutfen telefon numaranizi dogru girin.');
+      return;
+    }
+
+    setSubscriptionLoadingPlan(activeSubscriptionPlan.name);
+    try {
+      const response = await fetch('/api.php?action=subscription_create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          phone,
+          address,
+          plan_name: activeSubscriptionPlan.name,
+          plan_price: activeSubscriptionPlan.price,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Uyelik basvurusu gonderilemedi.');
+      }
+      setSubscriptionMessage('Uyelik basvurunuz alindi. Ekibimiz sizi arayacak.');
+      setIsSubscriptionModalOpen(false);
+      setActiveSubscriptionPlan(null);
+      setSubscriptionForm({ name: '', phone: '', address: '' });
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'Uyelik basvurusu gonderilemedi.';
+      setSubscriptionError(text);
+    } finally {
+      setSubscriptionLoadingPlan('');
+    }
   };
 
   return (
@@ -259,7 +348,14 @@ const PricingCalculator: React.FC = () => {
                     <li className="flex items-start gap-2"><span className="material-symbols-outlined text-gray-400 text-[18px]">check</span> Ek hizmetlerde %20 indirim</li>
                     <li className="flex items-start gap-2"><span className="material-symbols-outlined text-gray-400 text-[18px]">check</span> WhatsApp destek hattı</li>
                   </ul>
-                  <a href={`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodeURIComponent("Merhaba, ProClean Care (Gümüş Kasko) abonelik sistemi hakkında bilgi almak ve üye olmak istiyorum.")}`} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-xl transition-colors text-sm">Gümüş Üye Ol</a>
+                  <button
+                    type="button"
+                    onClick={() => openSubscriptionModal('Gümüş Kasko', 249)}
+                    disabled={subscriptionLoadingPlan === 'Gümüş Kasko'}
+                    className="block w-full text-center bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-xl transition-colors text-sm disabled:opacity-60"
+                  >
+                    {subscriptionLoadingPlan === 'Gümüş Kasko' ? 'Gönderiliyor...' : 'Gümüş Üye Ol'}
+                  </button>
                 </div>
 
                 {/* Gold */}
@@ -279,7 +375,14 @@ const PricingCalculator: React.FC = () => {
                     <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Ek hizmetlerde %30 indirim</li>
                     <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Öncelikli randevu hakkı</li>
                   </ul>
-                  <a href={`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodeURIComponent("Merhaba, ProClean Care (Altın Kasko) abonelik sistemi hakkında bilgi almak ve üye olmak istiyorum.")}`} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-background-dark font-bold py-3 rounded-xl transition-colors text-sm shadow-lg shadow-yellow-500/20">Altın Üye Ol</a>
+                  <button
+                    type="button"
+                    onClick={() => openSubscriptionModal('Altın Kasko', 399)}
+                    disabled={subscriptionLoadingPlan === 'Altın Kasko'}
+                    className="block w-full text-center bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-background-dark font-bold py-3 rounded-xl transition-colors text-sm shadow-lg shadow-yellow-500/20 disabled:opacity-60"
+                  >
+                    {subscriptionLoadingPlan === 'Altın Kasko' ? 'Gönderiliyor...' : 'Altın Üye Ol'}
+                  </button>
                 </div>
 
                 {/* Platinum */}
@@ -298,9 +401,26 @@ const PricingCalculator: React.FC = () => {
                     <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Tüm ek hizmetlerde %50 indirim</li>
                     <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Bayramlarda VIP randevu garantisi</li>
                   </ul>
-                  <a href={`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodeURIComponent("Merhaba, ProClean Care (Platin VIP Kasko) abonelik sistemi hakkında bilgi almak ve üye olmak istiyorum.")}`} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 font-bold py-3 rounded-xl transition-colors text-sm">Platin Üye Ol</a>
+                  <button
+                    type="button"
+                    onClick={() => openSubscriptionModal('Platin VIP Kasko', 599)}
+                    disabled={subscriptionLoadingPlan === 'Platin VIP Kasko'}
+                    className="block w-full text-center bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 font-bold py-3 rounded-xl transition-colors text-sm disabled:opacity-60"
+                  >
+                    {subscriptionLoadingPlan === 'Platin VIP Kasko' ? 'Gönderiliyor...' : 'Platin Üye Ol'}
+                  </button>
                 </div>
               </div>
+              {subscriptionMessage && (
+                <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                  {subscriptionMessage}
+                </div>
+              )}
+              {subscriptionError && (
+                <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {subscriptionError}
+                </div>
+              )}
             </div>
 
           </div>
@@ -481,6 +601,70 @@ const PricingCalculator: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {isSubscriptionModalOpen && activeSubscriptionPlan && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-dark border border-white/10 rounded-2xl p-5 md:p-6 max-w-md w-full relative shadow-2xl">
+            <button
+              type="button"
+              onClick={closeSubscriptionModal}
+              className="absolute top-3 right-3 text-gray-400 hover:text-white bg-background-dark rounded-full p-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+
+            <div className="mb-4 pr-8">
+              <p className="text-xs text-gray-400 mb-1">Seçilen Paket</p>
+              <h3 className="text-white font-bold text-lg">{activeSubscriptionPlan.name}</h3>
+              <p className="text-primary text-sm">{activeSubscriptionPlan.price} TL/ay</p>
+            </div>
+
+            <form className="space-y-3" onSubmit={handleSubscriptionCreate}>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Ad Soyad</label>
+                <input
+                  type="text"
+                  value={subscriptionForm.name}
+                  onChange={(e) => setSubscriptionForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
+                  placeholder="Ad Soyad"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Telefon</label>
+                <input
+                  type="tel"
+                  value={subscriptionForm.phone}
+                  onChange={(e) => setSubscriptionForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  className="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
+                  placeholder="05XX XXX XX XX"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Adres (Opsiyonel)</label>
+                <textarea
+                  value={subscriptionForm.address}
+                  onChange={(e) => setSubscriptionForm((prev) => ({ ...prev, address: e.target.value }))}
+                  className="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary min-h-[80px]"
+                  placeholder="Adresiniz"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={subscriptionLoadingPlan === activeSubscriptionPlan.name}
+                className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-60"
+              >
+                {subscriptionLoadingPlan === activeSubscriptionPlan.name ? 'Gönderiliyor...' : 'Üyelik Başvurusu Gönder'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Guarantee Modal */}
       {isGuaranteeModalOpen && (

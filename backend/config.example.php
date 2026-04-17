@@ -11,4 +11,18 @@ return [
     'cron_token' => 'CHANGE_ME',
     'slot_days' => 14,
     'slot_hours' => ['09:00', '13:00', '17:00'],
+    'notify_enabled' => false,
+    'notify_mode' => 'webhook', // webhook | whatsapp_cloud
+    'notify_webhook_url' => 'https://your-agent.example.com/webhook/whatsapp',
+    'notify_webhook_token' => 'CHANGE_ME',
+    'wa_api_version' => 'v20.0',
+    'wa_phone_number_id' => '',
+    'wa_access_token' => '',
+    'wa_to' => '',
+    'otp_enabled' => true,
+    'otp_secret' => 'CHANGE_ME_OTP_SECRET',
+    'otp_ttl_seconds' => 300,
+    'otp_max_attempts' => 5,
+    'otp_cooldown_seconds' => 60,
+    'otp_rate_limit_hour' => 5,
 ];
