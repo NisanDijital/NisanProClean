@@ -1,35 +1,50 @@
-# NisanProClean Backend (Hostinger İçin)
+# NisanProClean Backend
 
-Bu klasördeki dosyalar, sitenizin "Referans (Kazan)" sistemini Hostinger paylaşımlı hostinginizde çalıştırmak için hazırlanmıştır.
+Bu backend `api.php` uzerinden hem referans kodu sistemi hem de randevu + admin akisini yonetir.
 
-## Kurulum Adımları
+## Kurulum
 
-1. **Veritabanı Oluşturma:**
-   - Hostinger hPanel'e giriş yapın.
-   - Veritabanları > MySQL Veritabanları bölümünden yeni bir veritabanı ve kullanıcı oluşturun.
-   - phpMyAdmin'e girin ve `schema.sql` dosyasının içindeki SQL kodunu kopyalayıp "SQL" sekmesinde çalıştırın. Bu işlem `users` tablosunu oluşturacaktır.
+1. `backend/config.example.php` dosyasini `backend/config.php` olarak kopyalayin.
+2. `config.php` icindeki DB ve sifre alanlarini doldurun.
+3. Canliya yuklerken:
+   - `backend/api.php` -> `public_html/api.php`
+   - `backend/config.php` -> `public_html/config.php`
+   - (opsiyonel) `backend/admin.html` -> `public_html/admin.html`
 
-2. **API Dosyasını Düzenleme:**
-   - `api.php` dosyasını açın.
-   - 10, 11 ve 12. satırlardaki `$db_name`, `$username` ve `$password` alanlarına Hostinger'da oluşturduğunuz veritabanı bilgilerini yazın.
+Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 
-3. **Sunucuya Yükleme:**
-   - React projenizi `npm run build` komutuyla derleyin.
-   - `dist` klasörünün içindekileri Hostinger `public_html` klasörüne yükleyin.
-   - Bu `api.php` dosyasını da `public_html` klasörünün içine (index.html ile aynı yere) yükleyin.
+## Veri Modu
 
-4. **React Kodunu Güncelleme (Canlıya Alırken):**
-   - `src/components/Referral.tsx` dosyasındaki `setTimeout` ile yapılan simülasyonu silip yerine şu `fetch` kodunu eklemeniz yeterlidir:
+- `db_enabled=true` ise MySQL kullanir.
+- `db_enabled=false` ise `storage/` altinda JSON fallback kullanir.
 
-```javascript
-// Referral.tsx içindeki handleGenerateCode fonksiyonunun içi:
-const response = await fetch('https://siteniz.com/api.php?action=generate', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ phone })
-});
-const data = await response.json();
-if (data.success) {
-  setReferralData({ code: data.code, points: data.points });
-}
-```
+## Temel Endpointler
+
+- `GET /api.php?action=health`
+- `POST /api.php?action=generate`
+- `GET /api.php?action=appointment_slots`
+- `POST /api.php?action=appointment_book`
+
+## Admin Endpointler
+
+- `POST /api.php?action=admin_login`
+- `POST /api.php?action=admin_logout`
+- `GET /api.php?action=admin_status`
+- `GET /api.php?action=admin_list`
+- `POST /api.php?action=admin_update_points`
+- `POST /api.php?action=admin_backup`
+- `GET /api.php?action=admin_logs`
+- `GET /api.php?action=admin_appointments`
+- `POST /api.php?action=admin_appointment_status`
+
+## Cron
+
+- `GET /api.php?action=cron_backup&token=CRON_TOKEN`
+- `CRON_TOKEN` degeri `config.php` icindeki `cron_token` ile ayni olmali.
+
+## Slot Ayari
+
+`config.php`:
+
+- `slot_days`: kac gun ileriye slot acilacagi
+- `slot_hours`: saat bloklari (varsayilan: `09:00`, `13:00`, `17:00`)

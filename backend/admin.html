@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NisanProClean Admin</title>
+  <style>
+    :root { --bg:#0b1220; --card:#111a2b; --line:#25324d; --text:#e7edf8; --muted:#97a6c6; --accent:#00b3ff; --danger:#ff5f7a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Segoe UI, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 1200px; margin: 24px auto; padding: 0 14px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+    .row { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
+    input, select, button, textarea { border:1px solid var(--line); border-radius: 6px; background:#0e1627; color:var(--text); padding:8px 10px; }
+    button { background: var(--accent); color:#00131f; font-weight: 700; cursor: pointer; border: none; }
+    button.secondary { background:#25324d; color:var(--text); }
+    button.danger { background: var(--danger); color:#1a0006; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom:1px solid var(--line); padding: 8px 6px; text-align: left; vertical-align: top; }
+    .pill { padding:2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .pending { background:#4d3f1e; color:#ffd778; }
+    .confirmed { background:#203a5a; color:#8fc7ff; }
+    .done { background:#1f4b34; color:#8bf7c1; }
+    .cancelled { background:#4e2330; color:#ff98b0; }
+    pre { margin:0; max-height:260px; overflow:auto; background:#0b1220; border:1px solid var(--line); border-radius:6px; padding:10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>NisanProClean Admin</h1>
+    <p class="muted">Referans + Randevu + Log + Backup</p>
+
+    <div id="loginCard" class="card">
+      <h3>Admin Giris</h3>
+      <div class="row">
+        <input id="password" type="password" placeholder="Admin sifresi" />
+        <button id="loginBtn">Giris Yap</button>
+      </div>
+      <p id="loginMsg" class="muted"></p>
+    </div>
+
+    <div id="panel" class="hidden">
+      <div class="card row">
+        <button id="refreshBtn">Yenile</button>
+        <button id="backupBtn" class="secondary">Yedek Al</button>
+        <button id="logsBtn" class="secondary">Loglar</button>
+        <button id="logoutBtn" class="danger">Cikis</button>
+        <span id="panelMsg" class="muted"></span>
+      </div>
+
+      <div class="card">
+        <h3>Referanslar</h3>
+        <div class="row">
+          <input id="search" placeholder="Ara (kod / telefon)" />
+          <input id="minPoints" type="number" placeholder="Min puan" />
+          <input id="maxPoints" type="number" placeholder="Max puan" />
+          <button id="loadRefBtn">Getir</button>
+        </div>
+        <table>
+          <thead><tr><th>Kod</th><th>Telefon</th><th>Puan</th><th>Tarih</th></tr></thead>
+          <tbody id="refBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Puan Guncelle</h3>
+        <div class="row">
+          <input id="targetCode" placeholder="Kod (NPN...)" />
+          <input id="targetPhone" placeholder="Telefon (05...)" />
+          <input id="targetPoints" type="number" placeholder="Puan" />
+          <button id="updateBtn">Guncelle</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Randevular</h3>
+        <div class="row">
+          <select id="statusFilter">
+            <option value="">Tum durumlar</option>
+            <option value="pending">pending</option>
+            <option value="confirmed">confirmed</option>
+            <option value="done">done</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+          <button id="loadAppointmentsBtn">Randevulari Getir</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>Musteri</th><th>Tarih</th><th>Saat</th><th>Durum</th><th>Islem</th></tr></thead>
+          <tbody id="appBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Loglar</h3>
+        <pre id="logsOut">Henuz yuklenmedi.</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const loginCard = $('loginCard');
+    const panel = $('panel');
+    const loginMsg = $('loginMsg');
+    const panelMsg = $('panelMsg');
+    const refBody = $('refBody');
+    const appBody = $('appBody');
+    const logsOut = $('logsOut');
+
+    async function api(action, method='GET', payload=null) {
+      const init = { method, headers: { 'Accept': 'application/json' } };
+      if (payload) {
+        init.headers['Content-Type'] = 'application/json';
+        init.body = JSON.stringify(payload);
+      }
+      const res = await fetch(`/api.php?action=${action}`, init);
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || `Hata (${res.status})`);
+      return data;
+    }
+
+    function setAuthed(authed) {
+      loginCard.classList.toggle('hidden', authed);
+      panel.classList.toggle('hidden', !authed);
+    }
+
+    async function loadReferrals() {
+      const q = new URLSearchParams({
+        search: $('search').value || '',
+        min_points: $('minPoints').value || '0',
+        max_points: $('maxPoints').value || '100000',
+        page: '1',
+        page_size: '40'
+      });
+      const d = await api(`admin_list&${q.toString()}`);
+      refBody.innerHTML = '';
+      for (const r of d.records) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.referral_code || ''}</td><td>${r.phone || ''}</td><td>${r.points ?? 0}</td><td>${r.updated_at || ''}</td>`;
+        refBody.appendChild(tr);
+      }
+    }
+
+    async function loadAppointments() {
+      const q = new URLSearchParams({ page: '1', page_size: '60' });
+      const status = $('statusFilter').value;
+      if (status) q.set('status', status);
+      const d = await api(`admin_appointments&${q.toString()}`);
+      appBody.innerHTML = '';
+      for (const a of d.records) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.id}</td>
+          <td>${a.customer_name}<br><span class="muted">${a.phone}</span><br><span class="muted">${a.customer_address || '-'}</span></td>
+          <td>${a.appointment_date}</td>
+          <td>${String(a.appointment_time).slice(0,5)}</td>
+          <td><span class="pill ${a.status}">${a.status}</span></td>
+          <td>
+            <select data-id="${a.id}">
+              <option value="pending" ${a.status==='pending'?'selected':''}>pending</option>
+              <option value="confirmed" ${a.status==='confirmed'?'selected':''}>confirmed</option>
+              <option value="done" ${a.status==='done'?'selected':''}>done</option>
+              <option value="cancelled" ${a.status==='cancelled'?'selected':''}>cancelled</option>
+            </select>
+            <button data-id="${a.id}" class="saveStatus">Kaydet</button>
+          </td>`;
+        appBody.appendChild(tr);
+      }
+      document.querySelectorAll('button.saveStatus').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = Number(btn.getAttribute('data-id'));
+          const sel = appBody.querySelector(`select[data-id="${id}"]`);
+          try {
+            await api('admin_appointment_status', 'POST', { id, status: sel.value });
+            panelMsg.textContent = `Randevu #${id} guncellendi.`;
+            await loadAppointments();
+          } catch (e) { panelMsg.textContent = e.message; }
+        });
+      });
+    }
+
+    $('loginBtn').addEventListener('click', async () => {
+      try {
+        await api('admin_login', 'POST', { password: $('password').value });
+        setAuthed(true);
+        await loadReferrals();
+        await loadAppointments();
+      } catch (e) {
+        loginMsg.textContent = e.message;
+      }
+    });
+
+    $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadAppointments(); });
+    $('loadRefBtn').addEventListener('click', loadReferrals);
+    $('loadAppointmentsBtn').addEventListener('click', loadAppointments);
+
+    $('updateBtn').addEventListener('click', async () => {
+      try {
+        await api('admin_update_points', 'POST', {
+          code: $('targetCode').value.trim(),
+          phone: $('targetPhone').value.trim(),
+          points: Number($('targetPoints').value || '0')
+        });
+        panelMsg.textContent = 'Puan guncellendi.';
+        await loadReferrals();
+      } catch (e) { panelMsg.textContent = e.message; }
+    });
+
+    $('backupBtn').addEventListener('click', async () => {
+      try {
+        const d = await api('admin_backup', 'POST');
+        panelMsg.textContent = `Yedek alindi: ${d.file}`;
+      } catch (e) { panelMsg.textContent = e.message; }
+    });
+
+    $('logsBtn').addEventListener('click', async () => {
+      try {
+        const d = await api('admin_logs');
+        logsOut.textContent = JSON.stringify(d.logs, null, 2);
+      } catch (e) { logsOut.textContent = e.message; }
+    });
+
+    $('logoutBtn').addEventListener('click', async () => {
+      try { await api('admin_logout', 'POST'); } catch (_) {}
+      setAuthed(false);
+    });
+
+    (async function init() {
+      try {
+        const d = await api('admin_status');
+        setAuthed(!!d.authed);
+        if (d.authed) {
+          await loadReferrals();
+          await loadAppointments();
+        }
+      } catch (_) {
+        setAuthed(false);
+      }
+    })();
+  </script>
+</body>
+</html>

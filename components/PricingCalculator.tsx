@@ -239,10 +239,6 @@ const PricingCalculator: React.FC = () => {
             {/* ProClean Care (Kasko) - 3 Tier System */}
             <div id="kasko-paketleri" className="mt-12 scroll-mt-24">
               <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase tracking-wider mb-3">
-                  <span className="material-symbols-outlined text-[12px]">star</span>
-                  Mavi Okyanus Stratejisi
-                </div>
                 <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">ProClean Care <span className="text-gradient-primary">Koltuk Kaskosu</span></h3>
                 <p className="text-gray-400 text-sm">Koltuklarınızı yılda 1 kez yıkatıp kaderine terk etmeyin. İhtiyacınıza uygun paketi seçin, 365 gün koruma altına alın.</p>
               </div>
