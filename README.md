@@ -34,3 +34,22 @@ npm run dev
 # Üretim (Production) İçin Derleme
 npm run build
 ```
+
+## GitHub Actions ile Otomatik Deploy
+
+Repo icine `.github/workflows/deploy-frontend.yml` eklendi.
+`main` branch'e her push atildiginda:
+
+1. `npm ci`
+2. `npm run -s lint`
+3. `npm run -s build`
+4. `dist/` klasoru FTP ile canliya yuklenir
+
+GitHub repository secrets olarak su alanlari ekleyin:
+
+- `FTP_SERVER` (ornek: `ftp.nisankoltukyikama.com`)
+- `FTP_USERNAME` (ornek: `u171467859.deploytmp` veya canli hesap)
+- `FTP_PASSWORD`
+- `FTP_SERVER_DIR` (ornek: `/` veya `/public_html/`)
+
+Workflow'u manuel calistirmak icin Actions ekranindan `Deploy Frontend` -> `Run workflow` kullanabilirsiniz.

@@ -1,10 +1,10 @@
 export const IMAGES = {
   heroBg:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBiMi1qxgOK-E0miPBm1nrYVRJb02PNLCkfwr9e5WTkDuuK86j_W72fDx8j0Zuu-6QJgfTxoDUD6LI-PY5XI1s7bACRpgZIOchLtspIbE9jRcyPrJahMYrWkBM514evnv4jYaXGjOhBBVqbPwEm5Jk5hG1aSrn8uCQ8TZmWQINRiaf2fn_pnF0BQU73V_mQ3lEWDUAkB1V7Rba5uAUObLZ2m2lH1qUh0W3PyEE2gIYO9sigp9lWlBMuSths_I5BAdY6BdA47-nui2c",
+    "https://images.unsplash.com/photo-1567016549631-efa9ab7e8d63?q=65&w=1400&auto=format&fit=crop",
   livingRoom:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCSsv6RNrNomi4VtjwllML8bT76qiv6kOPoVyLBtdCC06sV-tbc_Sd99lIGDhicR5jfCfPajd9oN4CJF1shTsEL4z07t9qkIQE5y51utaqj6OUu9e2lxxbwC3xkIsIokfvv0tHZEUJjAdOLhfVJUDtCV8D0PYg3r225TGEeLxpfKyfR6yVXDCApuLc3updJ9EJ2P8LF0Ru1DX0is4KE8rMg0wfIt8GL1TqZBC55O6LsTYOs7HwDeXmw4S5TAbDXz8frF7j-aRc-Xvo",
+    "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?q=70&w=1200&auto=format&fit=crop",
   office:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAFmZzg5gsfGE2eSsqLWldqjfxk-BuGrwZNRPufF7k8Abts3Icdlw_ZX2Vh5SBGVrxvM4KCye4mAe5kdSUYWRYBuMJ9mNeqFXfwixjC2yNc3gj4Zo7K5NCFv00xET8Z6Y9wOS0i99sx6NF3TF2sc-Q_AEwWgublOP7ebuZ1cH3kzE8DF0lfzffB3r9F6mq1v42dorW8SZx8uoJPljqN3f6Iw4SO-74Y22_QqavTu2Q3P8AJ0mua3qqYDeWmWwKYItt_TBj3_T-RKs0",
+    "https://images.unsplash.com/photo-1497366216548-37526070297c?q=70&w=1200&auto=format&fit=crop",
   avatar:
     "https://lh3.googleusercontent.com/aida-public/AB6AXuA25b0zqOUUleMeteAr_I2fXSsraRi3nqALyC-l3IUmzgUAO3tMzo6aGh8V7puv1CWbiTMHuE5dMOKsNpRrue9DqQxIFyuC0uXjPzH0ED5fcSj-c555-sJrw5-OKNhjJvFn9jg-HeBiUZYHbaPLkz6Cm8oYWmZC5o5VYvQP0reWHJGh9tdjO6oNU_sU8eRDTf4BwGLf53zHkfAAwYg2Pjt9w1Wi0Cji98LOtEY40C_iajLNbAhHEtobgnUmrUkqnKjSXpFkqmaE_og",
   blog1:
