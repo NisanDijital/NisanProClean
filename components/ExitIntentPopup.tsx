@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { trackWhatsAppClick } from '../analytics';
 import { CONTACT_INFO } from '../constants';
 
 const OFFERS = [
@@ -59,6 +60,10 @@ const ExitIntentPopup: React.FC = () => {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(`Merhaba, web sitenizden çıkarken karşıma çıkan '${offer.title}' fırsatından yararlanarak randevu almak istiyorum. (Kod: ${offer.code})`);
+    trackWhatsAppClick('exit_intent_popup', {
+      offer_id: offer.id,
+      offer_code: offer.code,
+    });
     window.open(`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${message}`, '_blank');
     setIsVisible(false);
   };

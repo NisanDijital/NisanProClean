@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { trackWhatsAppClick } from '../analytics';
 import { CONTACT_INFO } from '../constants';
 
 const UVScanner: React.FC = () => {
@@ -136,7 +137,10 @@ const UVScanner: React.FC = () => {
 
         <div className="mt-12 text-center">
            <button 
-              onClick={() => window.open(`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=Merhaba,%20sitenizdeki%20UV%20ışık%20testini%20gördüm.%20Eşyalarımın%20derinlemesine%20temizlenmesi%20için%20randevu%20almak%20istiyorum.`, '_blank')}
+              onClick={() => {
+                trackWhatsAppClick('uv_scanner', { active_tab: activeTab });
+                window.open(`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=Merhaba,%20sitenizdeki%20UV%20ışık%20testini%20gördüm.%20Eşyalarımın%20derinlemesine%20temizlenmesi%20için%20randevu%20almak%20istiyorum.`, '_blank');
+              }}
               className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-8 rounded-xl transition-all shadow-[0_0_20px_rgba(147,51,234,0.4)] hover:shadow-[0_0_30px_rgba(147,51,234,0.6)] flex items-center justify-center gap-2 mx-auto"
             >
               <span className="material-symbols-outlined">coronavirus</span>

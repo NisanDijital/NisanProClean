@@ -39,6 +39,7 @@ const Hero: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <a
             href={CONTACT_INFO.phoneLink}
+            data-analytics-source="hero_call"
             className="group relative overflow-hidden flex items-center justify-center gap-3 bg-white text-background-dark px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]"
           >
             <span className="relative z-10">{CONTACT_INFO.phone}</span>

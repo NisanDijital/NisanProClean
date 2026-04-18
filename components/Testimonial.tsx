@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { trackFormSubmit, trackWhatsAppClick } from '../analytics';
 import { CONTACT_INFO } from '../constants';
 
 const REVIEWS = [
@@ -40,7 +41,9 @@ const Testimonial: React.FC = () => {
     // Format phone number (remove spaces)
     const phone = CONTACT_INFO.whatsapp.replace(/\s/g, '');
     const encodedMessage = encodeURIComponent(message);
-    
+
+    trackFormSubmit('testimonial_review_modal', { rating });
+    trackWhatsAppClick('testimonial_review_modal', { rating });
     window.open(`https://wa.me/90${phone}?text=${encodedMessage}`, '_blank');
     setIsModalOpen(false);
     

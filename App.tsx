@@ -10,6 +10,7 @@ import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import SocialProof from "./components/SocialProof";
 import ExitIntentPopup from "./components/ExitIntentPopup";
 import EmergencyStainAssistant from "./components/EmergencyStainAssistant";
+import { initializeAnalytics, initializeConversionTracking } from "./analytics";
 import { CONTACT_INFO, IMAGES } from "./constants";
 
 const BeforeAfterGallery = lazy(() => import("./components/BeforeAfterGallery"));
@@ -38,6 +39,11 @@ const App: React.FC = () => {
 
     window.addEventListener("load", reveal, { once: true });
     return () => window.removeEventListener("load", reveal);
+  }, []);
+
+  useEffect(() => {
+    initializeAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
+    return initializeConversionTracking();
   }, []);
 
   return (
@@ -75,6 +81,7 @@ const App: React.FC = () => {
               </ul>
               <a
                 href={CONTACT_INFO.phoneLink}
+                data-analytics-source="services_call_cta"
                 className="mt-4 flex items-center gap-2 text-white font-bold hover:gap-4 transition-all"
               >
                 <span>Hemen arayin: {CONTACT_INFO.phone}</span>

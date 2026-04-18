@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { trackFormSubmit, trackWhatsAppClick } from '../analytics';
 import { CONTACT_INFO } from '../constants';
 
 // Örnek Fiyatlandırma (Bu fiyatları daha sonra kolayca değiştirebilirsiniz)
@@ -132,6 +133,12 @@ const PricingCalculator: React.FC = () => {
     message += `Bu tarihte müsaitlik durumunuz nedir? Randevumu onaylar mısınız?`;
 
     const encodedMessage = encodeURIComponent(message);
+    trackWhatsAppClick('pricing_calculator', {
+      selected_items: summary.length,
+      total,
+      has_date: Boolean(date),
+      time_slot: time,
+    });
     window.open(`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodedMessage}`, '_blank');
   };
 
@@ -191,6 +198,10 @@ const PricingCalculator: React.FC = () => {
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Uyelik basvurusu gonderilemedi.');
       }
+      trackFormSubmit('pricing_subscription_modal', {
+        plan_name: activeSubscriptionPlan.name,
+        plan_price: activeSubscriptionPlan.price,
+      });
       setSubscriptionMessage('Uyelik basvurunuz alindi. Ekibimiz sizi arayacak.');
       setIsSubscriptionModalOpen(false);
       setActiveSubscriptionPlan(null);

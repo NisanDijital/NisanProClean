@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { trackWhatsAppClick } from '../analytics';
 import { CONTACT_INFO } from '../constants';
 
 const AIStainAnalyzer: React.FC = () => {
@@ -38,6 +39,7 @@ const AIStainAnalyzer: React.FC = () => {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(`Merhaba, web sitenizdeki Nisan AI™ Leke Analiz aracını kullandım. Koltuğumdaki leke için %98.5 başarı oranı verdi. Randevu almak istiyorum.`);
+    trackWhatsAppClick('ai_stain_analyzer', { analysis_result: 'success_probability_98_5' });
     window.open(`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${message}`, '_blank');
   };
 

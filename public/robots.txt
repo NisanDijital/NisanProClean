@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /api.php
+Disallow: /backend/
+Disallow: /storage/
+
+Sitemap: https://nisankoltukyikama.com/sitemap.xml

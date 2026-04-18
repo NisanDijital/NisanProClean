@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { trackFormSubmit } from '../analytics';
 
 const Referral: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -58,6 +59,7 @@ const Referral: React.FC = () => {
       }
       setOtpSent(true);
       setOtp('');
+      trackFormSubmit('referral_otp_request', { phone_length: normalizedPhone.length });
       setInfoMessage('Dogrulama kodu gonderildi. Lutfen kodu girin.');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sorgu isleminde bir hata olustu.';
@@ -109,6 +111,9 @@ const Referral: React.FC = () => {
       setReferralData({
         code: String(data.code || ''),
         points: Number(data.points || 0),
+      });
+      trackFormSubmit('referral_otp_verify', {
+        existing_customer: Boolean(data.existing),
       });
       setInfoMessage(
         data.existing

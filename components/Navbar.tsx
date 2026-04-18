@@ -31,6 +31,7 @@ const Navbar: React.FC = () => {
         <div className="flex items-center gap-4">
           <a 
             href={CONTACT_INFO.phoneLink} 
+            data-analytics-source="navbar_call"
             className="hidden lg:flex items-center gap-2 text-white font-bold hover:text-primary transition-colors text-sm"
           >
             <span className="material-symbols-outlined text-primary text-[20px]">call</span>
@@ -47,6 +48,7 @@ const Navbar: React.FC = () => {
             </a>
             <a 
               href={CONTACT_INFO.whatsappLink}
+              data-analytics-source="navbar_whatsapp"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 mt-1 text-[10px] text-green-400 hover:text-green-300 transition-colors font-medium"

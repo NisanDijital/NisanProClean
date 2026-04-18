@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { trackWhatsAppClick } from '../analytics';
 import { CONTACT_INFO } from '../constants';
 
 const EmergencyStainAssistant: React.FC = () => {
@@ -13,6 +14,11 @@ const EmergencyStainAssistant: React.FC = () => {
 
   const handleWhatsApp = () => {
     const text = `🚨 *ACİL LEKE BİLDİRİMİ* 🚨\n\n*Ne Döküldü:* ${stainType || 'Belirtilmedi'}\n*Ne Zaman:* ${timePassed || 'Belirtilmedi'}\n*Kumaş Türü:* ${fabricType || 'Belirtilmedi'}\n\nMerhaba, kumaşa zarar vermeden acil müdahale için bilgi veya fiyat alabilir miyim?`;
+    trackWhatsAppClick('emergency_stain_assistant', {
+      stain_type: stainType || 'unspecified',
+      time_passed: timePassed || 'unspecified',
+      fabric_type: fabricType || 'unspecified',
+    });
     window.open(`https://wa.me/${CONTACT_INFO.whatsapp.replace(/\s+/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
     setIsOpen(false);
   };

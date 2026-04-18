@@ -17,6 +17,7 @@ const CTA: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
             <a 
               href={CONTACT_INFO.whatsappLink}
+              data-analytics-source="cta_whatsapp"
               target="_blank"
               rel="noopener noreferrer"
               className="relative overflow-hidden bg-primary hover:bg-cyan-600 text-white text-lg font-bold px-10 py-4 rounded-full transition-all duration-300 transform hover:scale-105 shadow-[0_0_30px_rgba(6,182,212,0.4)] flex items-center justify-center gap-2 group"
@@ -27,6 +28,7 @@ const CTA: React.FC = () => {
             </a>
             <a 
               href={CONTACT_INFO.phoneLink}
+              data-analytics-source="cta_call"
               className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-lg font-bold px-10 py-4 rounded-full transition-all duration-300 transform hover:scale-105 border border-white/10 flex items-center justify-center gap-2"
             >
               <span>{CONTACT_INFO.phone}</span>
