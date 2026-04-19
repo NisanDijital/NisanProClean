@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
@@ -32,6 +32,14 @@ jobs:
       - name: Build
         run: npm run -s build
 
+      - name: Prepare deploy bundle
+        run: |
+          rm -rf .deploy
+          mkdir -p .deploy
+          cp -r dist/* .deploy/
+          cp backend/api.php .deploy/api.php
+          cp backend/admin.html .deploy/admin.html
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -40,7 +48,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
-          local-dir: ./dist/
+          local-dir: ./.deploy/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           exclude: |
             **/.git*
