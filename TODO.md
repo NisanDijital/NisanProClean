@@ -7,16 +7,17 @@ Bu backlog 3 sprint mantigiyla tutulur:
 3. CRO ve AI kanal entegrasyonu
 
 Not:
-`robots.txt`, `sitemap.xml` ve `canonical` icin AI Studio tarafinda calisma yapildigi bilgisi var. Ancak bu repo icinde dosya/etiket olarak gorulmedigi icin asagida tamamlandi degil, "repo ve canli dogrulama bekliyor" mantigiyla acik tutuldu.
+Asagidaki isaretler 2026-04-20 canli dogrulama sonucuna gore guncellendi.
 
 ## Sprint 1 - Olcum ve Teknik Temel
 
-- [ ] `robots.txt` dosyasini repo ve canlida aktif et
-- [ ] `sitemap.xml` uret ve Search Console'a gonder
-- [ ] Tum indexlenebilir sayfalara `canonical` ekle
+- [x] `robots.txt` dosyasini repo ve canlida aktif et
+- [ ] `sitemap.xml` uret ve Search Console'a gonder (sitemap canlida aktif, Search Console gonderimi bekliyor)
+- [x] Tum indexlenebilir sayfalara `canonical` ekle
 - [ ] `GA4` kur
 - [ ] `GSC` kur ve domain dogrulamasini tamamla
-- [ ] `call_click`, `whatsapp_click`, `form_submit` event'lerini ekle
+- [x] `call_click`, `whatsapp_click`, `form_submit` event'lerini ekle
+- [x] Clarity setup: sadece prod hostlarda calisacak sekilde aktif et ve export API ile dogrula
 - [ ] `Google Business Profile` optimizasyonunu tamamla
 - [ ] NAP tutarliligini kontrol et
 - [ ] KVKK aydinlatma, gizlilik politikasi ve cerez metinlerini yayinla
@@ -25,9 +26,10 @@ Not:
 - [ ] `CSRF`, server-side validation, spam korumasi ve rate limit kontrollerini tamamla
 - [ ] Canli sitede schema dogrulamasi yap
 - [ ] Mobil Lighthouse baz skorlarini kaydet
-- [ ] `http/https`, `www/non-www`, slash/no-slash yonlendirme disiplinini kontrol et
-- [ ] Security headers'i canlida teyit et
-- [ ] `HSTS`, `CSP`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options`, `X-Content-Type-Options`
+- [x] `http/https`, `www/non-www`, slash/no-slash yonlendirme disiplinini kontrol et
+- [x] Security headers'i canlida teyit et
+- [x] `HSTS`, `CSP`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options`, `X-Content-Type-Options`
+CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yazilacak.
 - [ ] GSC index coverage ve enhancement raporlarini ilk baz olarak kaydet
 
 ## Sprint 2 - Performans ve Sayfa Mimarisi
