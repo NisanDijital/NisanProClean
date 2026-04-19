@@ -74,6 +74,7 @@ VITE_CLARITY_ALLOWED_HOSTS=nisankoltukyikama.com,www.nisankoltukyikama.com
 Not:
 - Clarity `Project ID` degeri dashboarddaki script kodundan gelir.
 - `VITE_CLARITY_ALLOWED_HOSTS` bos birakilirsa varsayilan prod host listesi kullanilir.
+- `VITE_CLARITY_PROJECT_ID` bos kalirsa sistem mevcut aktif Clarity ID (`wctuxcebw4`) ile calismaya devam eder.
 
 ### 2) Canli Dogrulama
 

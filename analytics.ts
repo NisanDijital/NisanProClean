@@ -118,8 +118,7 @@ export const initializeAnalytics = (measurementId?: string) => {
 export const initializeClarity = (projectId?: string, allowedHosts?: string) => {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
-  const normalizedProjectId = projectId?.trim();
-  if (!normalizedProjectId) return;
+  const normalizedProjectId = projectId?.trim() || "wctuxcebw4";
 
   const defaultAllowed = new Set(["nisankoltukyikama.com", "www.nisankoltukyikama.com"]);
   const configuredHosts = safeHostSet(allowedHosts);
