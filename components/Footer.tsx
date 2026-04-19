@@ -88,10 +88,10 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="text-white font-bold mb-6">Hizmetlerimiz</h4>
             <ul className="flex flex-col gap-3 text-gray-400 text-sm">
-              <li><a href="#services" className="hover:text-primary transition-colors">Koltuk Yikama</a></li>
-              <li><a href="#services" className="hover:text-primary transition-colors">Yatak Yikama</a></li>
-              <li><a href="#services" className="hover:text-primary transition-colors">Arac Koltuk Yikama</a></li>
-              <li><a href="#services" className="hover:text-primary transition-colors">Sandalye Yikama</a></li>
+              <li><a href="/koltuk-yikama/" className="hover:text-primary transition-colors">Koltuk Yikama</a></li>
+              <li><a href="/yatak-yikama/" className="hover:text-primary transition-colors">Yatak Yikama</a></li>
+              <li><a href="/arac-koltugu-yikama/" className="hover:text-primary transition-colors">Arac Koltuk Yikama</a></li>
+              <li><a href="/sandalye-yikama/" className="hover:text-primary transition-colors">Sandalye Yikama</a></li>
             </ul>
           </div>
 

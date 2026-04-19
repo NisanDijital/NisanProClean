@@ -42,13 +42,13 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [ ] Gereksiz ucuncu parti script budget'i koy
 - [ ] Performans budget tanimla
 - [ ] Ilk ekran CTA'larini mobilde daha gorunur hale getir
-- [ ] Ana hizmetler icin ayri URL ac
-- [ ] `/koltuk-yikama/`
-- [ ] `/yatak-yikama/`
-- [ ] `/arac-koltugu-yikama/`
-- [ ] `/sandalye-yikama/`
-- [ ] Her hizmet sayfasina ayri H1, FAQ, surec, fiyat mantigi ve CTA koy
-- [ ] Hizmet sayfalari icin ic linkleme planini kur
+- [x] Ana hizmetler icin ayri URL ac
+- [x] `/koltuk-yikama/`
+- [x] `/yatak-yikama/`
+- [x] `/arac-koltugu-yikama/`
+- [x] `/sandalye-yikama/`
+- [x] Her hizmet sayfasina ayri H1, FAQ, surec, fiyat mantigi ve CTA koy
+- [x] Hizmet sayfalari icin ic linkleme planini kur
 - [x] `Breadcrumb` schema ekle
 - [ ] Afyon merkez ve oncelikli mahalle/ilce landing page'leri ac
 

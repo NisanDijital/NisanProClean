@@ -106,6 +106,13 @@ const App: React.FC = () => {
                 <span>Hemen arayin: {CONTACT_INFO.phone}</span>
                 <span className="material-symbols-outlined text-primary">call</span>
               </a>
+              <a
+                href="/koltuk-yikama/"
+                className="mt-2 inline-flex items-center gap-2 text-primary font-semibold hover:text-cyan-300 transition-colors"
+              >
+                <span>Detayli hizmet sayfasi</span>
+                <span className="material-symbols-outlined text-sm">arrow_outward</span>
+              </a>
             </SplitSection>
 
             <SplitSection
@@ -131,6 +138,13 @@ const App: React.FC = () => {
                   <span className="material-symbols-outlined text-secondary text-sm">check_circle</span>
                 </li>
               </ul>
+              <a
+                href="/arac-koltugu-yikama/"
+                className="mt-4 inline-flex items-center gap-2 text-secondary font-semibold hover:text-cyan-300 transition-colors lg:self-end"
+              >
+                <span>Kurumsal ve arac hizmet detaylari</span>
+                <span className="material-symbols-outlined text-sm">arrow_outward</span>
+              </a>
             </SplitSection>
           </div>
         </section>
