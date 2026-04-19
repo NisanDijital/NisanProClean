@@ -76,6 +76,11 @@ function loadAppConfig(): array
         'otp_max_attempts' => 5,
         'otp_cooldown_seconds' => 60,
         'otp_rate_limit_hour' => 5,
+        'csrf_token_ttl_seconds' => 7200,
+        'rate_limit_enabled' => true,
+        'rate_limit_window_seconds' => 600,
+        'rate_limit_max_public' => 20,
+        'rate_limit_max_admin_login' => 8,
     ];
 
     $configFile = __DIR__ . '/config.php';
@@ -110,6 +115,11 @@ function loadAppConfig(): array
         'REFERRAL_OTP_MAX_ATTEMPTS' => 'otp_max_attempts',
         'REFERRAL_OTP_COOLDOWN_SECONDS' => 'otp_cooldown_seconds',
         'REFERRAL_OTP_RATE_LIMIT_HOUR' => 'otp_rate_limit_hour',
+        'REFERRAL_CSRF_TOKEN_TTL_SECONDS' => 'csrf_token_ttl_seconds',
+        'REFERRAL_RATE_LIMIT_ENABLED' => 'rate_limit_enabled',
+        'REFERRAL_RATE_LIMIT_WINDOW_SECONDS' => 'rate_limit_window_seconds',
+        'REFERRAL_RATE_LIMIT_MAX_PUBLIC' => 'rate_limit_max_public',
+        'REFERRAL_RATE_LIMIT_MAX_ADMIN_LOGIN' => 'rate_limit_max_admin_login',
     ];
 
     foreach ($envMap as $env => $key) {
@@ -118,12 +128,12 @@ function loadAppConfig(): array
             continue;
         }
 
-        if ($key === 'db_enabled' || $key === 'notify_enabled' || $key === 'otp_enabled') {
+        if ($key === 'db_enabled' || $key === 'notify_enabled' || $key === 'otp_enabled' || $key === 'rate_limit_enabled') {
             $config[$key] = in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
             continue;
         }
 
-        if (in_array($key, ['db_port', 'otp_ttl_seconds', 'otp_max_attempts', 'otp_cooldown_seconds', 'otp_rate_limit_hour'], true)) {
+        if (in_array($key, ['db_port', 'otp_ttl_seconds', 'otp_max_attempts', 'otp_cooldown_seconds', 'otp_rate_limit_hour', 'csrf_token_ttl_seconds', 'rate_limit_window_seconds', 'rate_limit_max_public', 'rate_limit_max_admin_login'], true)) {
             $config[$key] = (int) $value;
             continue;
         }
@@ -582,7 +592,7 @@ function logAdminAction(string $storageDir, string $action, bool $ok, array $met
         'ts' => gmdate('c'),
         'action' => $action,
         'ok' => $ok,
-        'ip' => (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
+        'ip' => clientIp(),
         'ua' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 180),
         'meta' => $meta,
     ];
@@ -598,7 +608,7 @@ function logAdminAction(string $storageDir, string $action, bool $ok, array $met
                 'ts' => gmdate('Y-m-d H:i:s'),
                 'action_name' => $action,
                 'ok' => $ok ? 1 : 0,
-                'ip' => (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'),
+                'ip' => clientIp(),
                 'ua' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 180),
                 'meta_json' => json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
@@ -668,11 +678,209 @@ function readAdminLogs(string $storageDir, int $max = 200): array
 
 function readJsonPayload(): array
 {
+    static $cachedPayload = null;
+    if (is_array($cachedPayload)) {
+        return $cachedPayload;
+    }
+
     $payload = json_decode(file_get_contents('php://input') ?: '{}', true);
     if (!is_array($payload)) {
         respond(400, ['success' => false, 'error' => 'Gecersiz veri gonderildi.']);
     }
-    return $payload;
+    $cachedPayload = $payload;
+    return $cachedPayload;
+}
+
+function headerValue(string $name): string
+{
+    $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+    $value = $_SERVER[$serverKey] ?? '';
+    return is_string($value) ? trim($value) : '';
+}
+
+function clientIp(): string
+{
+    $direct = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+    return $direct !== '' ? $direct : 'unknown';
+}
+
+function rateLimitPath(string $dir): string
+{
+    return $dir . '/rate_limits.json';
+}
+
+function csrfTokenTtlSeconds(): int
+{
+    return max(600, min(86400, (int) (appConfig()['csrf_token_ttl_seconds'] ?? 7200)));
+}
+
+function csrfToken(): string
+{
+    $token = (string) ($_SESSION['csrf_token'] ?? '');
+    $issuedAt = (int) ($_SESSION['csrf_token_issued_at'] ?? 0);
+    $ttl = csrfTokenTtlSeconds();
+    $now = time();
+
+    if ($token !== '' && $issuedAt > 0 && ($now - $issuedAt) < $ttl) {
+        return $token;
+    }
+
+    $token = bin2hex(random_bytes(32));
+    $_SESSION['csrf_token'] = $token;
+    $_SESSION['csrf_token_issued_at'] = $now;
+    return $token;
+}
+
+function verifyCsrfToken(): bool
+{
+    $sessionToken = (string) ($_SESSION['csrf_token'] ?? '');
+    if ($sessionToken === '') {
+        return false;
+    }
+
+    $headerToken = headerValue('X-CSRF-Token');
+    if ($headerToken !== '' && hash_equals($sessionToken, $headerToken)) {
+        return true;
+    }
+
+    $payload = readJsonPayload();
+    $payloadToken = trim((string) ($payload['csrf_token'] ?? ''));
+    if ($payloadToken !== '' && hash_equals($sessionToken, $payloadToken)) {
+        return true;
+    }
+
+    return false;
+}
+
+function isRateLimitEnabled(): bool
+{
+    return (bool) (appConfig()['rate_limit_enabled'] ?? true);
+}
+
+function rateLimitWindowSeconds(): int
+{
+    return max(30, min(7200, (int) (appConfig()['rate_limit_window_seconds'] ?? 600)));
+}
+
+function rateLimitMaxPublic(): int
+{
+    return max(5, min(200, (int) (appConfig()['rate_limit_max_public'] ?? 20)));
+}
+
+function rateLimitMaxAdminLogin(): int
+{
+    return max(3, min(50, (int) (appConfig()['rate_limit_max_admin_login'] ?? 8)));
+}
+
+function consumeRateLimit(string $storageDir, string $key, int $maxAttempts, int $windowSeconds): array
+{
+    $path = rateLimitPath($storageDir);
+    $state = readJsonArrayFile($path);
+    $now = time();
+    $windowStart = $now;
+    $attempts = 0;
+
+    $entry = $state[$key] ?? null;
+    if (is_array($entry)) {
+        $entryStart = (int) ($entry['window_start'] ?? 0);
+        $entryAttempts = (int) ($entry['attempts'] ?? 0);
+        if ($entryStart > 0 && ($now - $entryStart) < $windowSeconds) {
+            $windowStart = $entryStart;
+            $attempts = $entryAttempts;
+        }
+    }
+
+    if ($attempts >= $maxAttempts) {
+        $retryAfter = max(1, $windowSeconds - ($now - $windowStart));
+        return ['ok' => false, 'retry_after' => $retryAfter];
+    }
+
+    $state[$key] = [
+        'window_start' => $windowStart,
+        'attempts' => $attempts + 1,
+    ];
+
+    foreach ($state as $stateKey => $stateEntry) {
+        if (!is_array($stateEntry)) {
+            unset($state[$stateKey]);
+            continue;
+        }
+        $entryStart = (int) ($stateEntry['window_start'] ?? 0);
+        if ($entryStart <= 0 || ($now - $entryStart) >= ($windowSeconds * 2)) {
+            unset($state[$stateKey]);
+        }
+    }
+
+    writeJsonArrayFile($path, $state);
+    return ['ok' => true, 'retry_after' => 0];
+}
+
+function containsSpamPayloadValue(string $value): bool
+{
+    if ($value === '') {
+        return false;
+    }
+    if (preg_match('/https?:\/\/|www\.|<script|<a\s|<\/\w+>/i', $value)) {
+        return true;
+    }
+    return false;
+}
+
+function enforcePostSecurity(string $storageDir, string $action): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        return;
+    }
+
+    if (!verifyCsrfToken()) {
+        respond(419, ['success' => false, 'error' => 'Guvenlik dogrulamasi basarisiz. Sayfayi yenileyip tekrar deneyin.']);
+    }
+
+    if (!isRateLimitEnabled()) {
+        return;
+    }
+
+    $window = rateLimitWindowSeconds();
+    $ip = clientIp();
+
+    if ($action === 'admin_login') {
+        $result = consumeRateLimit($storageDir, 'admin_login:' . $ip, rateLimitMaxAdminLogin(), $window);
+        if (!$result['ok']) {
+            respond(429, ['success' => false, 'error' => 'Cok fazla giris denemesi. Lutfen biraz sonra tekrar deneyin.', 'retry_after' => $result['retry_after']]);
+        }
+        return;
+    }
+
+    $publicActions = ['generate', 'referral_otp_request', 'referral_otp_verify', 'appointment_book', 'subscription_create'];
+    if (!in_array($action, $publicActions, true)) {
+        return;
+    }
+
+    $payload = readJsonPayload();
+    $honeypotFields = ['website', 'hp', 'company_website'];
+    foreach ($honeypotFields as $field) {
+        $value = trim((string) ($payload[$field] ?? ''));
+        if ($value !== '') {
+            respond(422, ['success' => false, 'error' => 'Gecersiz istek.']);
+        }
+    }
+
+    foreach (['name', 'address', 'service', 'plan_name', 'note'] as $field) {
+        $value = trim((string) ($payload[$field] ?? ''));
+        if (containsSpamPayloadValue($value)) {
+            respond(422, ['success' => false, 'error' => 'Icerikte gecersiz karakter veya link tespit edildi.']);
+        }
+    }
+
+    $phone = normalizePhone((string) ($payload['phone'] ?? ''));
+    $bucketKey = $action . ':' . $ip;
+    if ($phone !== '') {
+        $bucketKey .= ':' . $phone;
+    }
+    $result = consumeRateLimit($storageDir, $bucketKey, rateLimitMaxPublic(), $window);
+    if (!$result['ok']) {
+        respond(429, ['success' => false, 'error' => 'Cok fazla deneme yapildi. Lutfen biraz sonra tekrar deneyin.', 'retry_after' => $result['retry_after']]);
+    }
 }
 
 function queryString(string $key, string $default = ''): string
@@ -1223,6 +1431,11 @@ function handleAdminStatus(): void
     respond(200, ['success' => true, 'authed' => isAdminAuthed(), 'using_db' => dbConnection() instanceof PDO]);
 }
 
+function handleCsrfToken(): void
+{
+    respond(200, ['success' => true, 'token' => csrfToken(), 'ttl_seconds' => csrfTokenTtlSeconds()]);
+}
+
 function handleAdminLogin(string $storageDir): void
 {
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
@@ -1470,11 +1683,23 @@ function handleAppointmentBook(string $storageDir): void
     if ($name === '' || stringLength($name) < 2) {
         respond(422, ['success' => false, 'error' => 'Isim gecersiz.']);
     }
+    if (stringLength($name) > 120) {
+        respond(422, ['success' => false, 'error' => 'Isim cok uzun.']);
+    }
     if (!preg_match('/^90[5][0-9]{9}$/', $phone)) {
         respond(422, ['success' => false, 'error' => 'Telefon numarasi gecersiz.']);
     }
     if ($address === '' || stringLength($address) < 5) {
         respond(422, ['success' => false, 'error' => 'Adres bilgisi gecersiz.']);
+    }
+    if (stringLength($address) > 255) {
+        respond(422, ['success' => false, 'error' => 'Adres cok uzun.']);
+    }
+    if ($service === '' || stringLength($service) > 120) {
+        respond(422, ['success' => false, 'error' => 'Hizmet tipi gecersiz.']);
+    }
+    if (stringLength($note) > 500) {
+        respond(422, ['success' => false, 'error' => 'Not alani cok uzun.']);
     }
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || !preg_match('/^\d{2}:\d{2}$/', $time)) {
         respond(422, ['success' => false, 'error' => 'Tarih veya saat gecersiz.']);
@@ -1559,11 +1784,20 @@ function handleSubscriptionCreate(string $storageDir): void
     if ($name === '' || stringLength($name) < 2) {
         respond(422, ['success' => false, 'error' => 'Isim gecersiz.']);
     }
+    if (stringLength($name) > 120) {
+        respond(422, ['success' => false, 'error' => 'Isim cok uzun.']);
+    }
     if (!preg_match('/^90[5][0-9]{9}$/', $phone)) {
         respond(422, ['success' => false, 'error' => 'Telefon numarasi gecersiz.']);
     }
+    if ($address !== '' && stringLength($address) > 255) {
+        respond(422, ['success' => false, 'error' => 'Adres cok uzun.']);
+    }
     if ($planName === '' || stringLength($planName) < 2) {
         respond(422, ['success' => false, 'error' => 'Paket adi gecersiz.']);
+    }
+    if (stringLength($planName) > 80) {
+        respond(422, ['success' => false, 'error' => 'Paket adi cok uzun.']);
     }
     if ($planPrice < 0 || $planPrice > 100000) {
         respond(422, ['success' => false, 'error' => 'Paket fiyati gecersiz.']);
@@ -1755,9 +1989,13 @@ if ($pdo instanceof PDO) {
 }
 
 $action = (string) ($_GET['action'] ?? 'health');
+enforcePostSecurity($storageDir, $action);
 switch ($action) {
     case 'health':
         respond(200, ['success' => true, 'status' => 'ok', 'using_db' => $pdo instanceof PDO]);
+        break;
+    case 'csrf_token':
+        handleCsrfToken();
         break;
     case 'generate':
         handleGenerate($storageDir);

@@ -127,9 +127,23 @@
     const appBody = $('appBody');
     const subBody = $('subBody');
     const logsOut = $('logsOut');
+    let csrfToken = '';
+
+    async function ensureCsrfToken() {
+      if (csrfToken) return csrfToken;
+      const res = await fetch('/api.php?action=csrf_token', { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.token) throw new Error(data.error || 'CSRF token alinamadi.');
+      csrfToken = data.token;
+      return csrfToken;
+    }
 
     async function api(action, method='GET', payload=null) {
       const init = { method, headers: { 'Accept': 'application/json' } };
+      if (method !== 'GET') {
+        const token = await ensureCsrfToken();
+        init.headers['X-CSRF-Token'] = token;
+      }
       if (payload) {
         init.headers['Content-Type'] = 'application/json';
         init.body = JSON.stringify(payload);

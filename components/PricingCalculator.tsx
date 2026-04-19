@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { trackFormSubmit, trackWhatsAppClick } from '../analytics';
 import { CONTACT_INFO } from '../constants';
+import { apiPost } from '../apiClient';
 
 // Örnek Fiyatlandırma (Bu fiyatları daha sonra kolayca değiştirebilirsiniz)
 const PRICING = {
@@ -180,24 +181,14 @@ const PricingCalculator: React.FC = () => {
 
     setSubscriptionLoadingPlan(activeSubscriptionPlan.name);
     try {
-      const response = await fetch('/api.php?action=subscription_create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          phone,
-          address,
-          plan_name: activeSubscriptionPlan.name,
-          plan_price: activeSubscriptionPlan.price,
-        }),
+      await apiPost('subscription_create', {
+        name,
+        phone,
+        address,
+        plan_name: activeSubscriptionPlan.name,
+        plan_price: activeSubscriptionPlan.price,
+        hp: '',
       });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Uyelik basvurusu gonderilemedi.');
-      }
       trackFormSubmit('pricing_subscription_modal', {
         plan_name: activeSubscriptionPlan.name,
         plan_price: activeSubscriptionPlan.price,

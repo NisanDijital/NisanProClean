@@ -22,8 +22,8 @@ Asagidaki isaretler 2026-04-20 canli dogrulama sonucuna gore guncellendi.
 - [ ] NAP tutarliligini kontrol et
 - [x] KVKK aydinlatma, gizlilik politikasi ve cerez metinlerini yayinla
 - [x] Consent mode / cerez onay akisini ekle
-- [ ] Form guvenligini tamamla
-- [ ] `CSRF`, server-side validation, spam korumasi ve rate limit kontrollerini tamamla
+- [x] Form guvenligini tamamla
+- [x] `CSRF`, server-side validation, spam korumasi ve rate limit kontrollerini tamamla
 - [ ] Canli sitede schema dogrulamasi yap
 - [ ] Mobil Lighthouse baz skorlarini kaydet
 - [x] `http/https`, `www/non-www`, slash/no-slash yonlendirme disiplinini kontrol et

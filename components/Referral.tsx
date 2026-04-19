@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { trackFormSubmit } from '../analytics';
+import { apiPost } from '../apiClient';
 
 const Referral: React.FC = () => {
   const [phone, setPhone] = useState('');
@@ -12,18 +13,7 @@ const Referral: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
 
   const fallbackGenerate = async (normalizedPhone: string) => {
-    const response = await fetch('/api.php?action=generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ phone: normalizedPhone }),
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Sorgu isleminde bir hata olustu.');
-    }
+    const data = await apiPost('generate', { phone: normalizedPhone, hp: '' });
     setReferralData({
       code: String(data.code || ''),
       points: Number(data.points || 0),
@@ -44,19 +34,7 @@ const Referral: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api.php?action=referral_otp_request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ phone: normalizedPhone }),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Sorgu isleminde bir hata olustu.');
-      }
+      await apiPost('referral_otp_request', { phone: normalizedPhone, hp: '' });
       setOtpSent(true);
       setOtp('');
       trackFormSubmit('referral_otp_request', { phone_length: normalizedPhone.length });
@@ -96,18 +74,7 @@ const Referral: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api.php?action=referral_otp_verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ phone: normalizedPhone, otp: normalizedOtp }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Kod dogrulanamadi.');
-      }
+      const data = await apiPost('referral_otp_verify', { phone: normalizedPhone, otp: normalizedOtp, hp: '' });
       setReferralData({
         code: String(data.code || ''),
         points: Number(data.points || 0),

@@ -21,6 +21,7 @@ Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 ## Temel Endpointler
 
 - `GET /api.php?action=health`
+- `GET /api.php?action=csrf_token`
 - `POST /api.php?action=generate`
 - `POST /api.php?action=referral_otp_request`
 - `POST /api.php?action=referral_otp_verify`
@@ -41,6 +42,22 @@ Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 - `POST /api.php?action=admin_appointment_status`
 - `GET /api.php?action=admin_subscriptions`
 - `POST /api.php?action=admin_subscription_status`
+
+## Guvenlik Notlari
+
+- Tum `POST` endpointleri icin `X-CSRF-Token` zorunludur.
+- Token almak icin once `GET /api.php?action=csrf_token` cagrisi yapin.
+- Public endpointlerde spam/honeypot kontrolu (`hp`, `website`, `company_website`) aktiftir.
+- Public form endpointlerinde IP+telefon bazli rate limit uygulanir.
+- `admin_login` endpointinde ayri brute-force rate limit vardir.
+
+Config alanlari:
+
+- `csrf_token_ttl_seconds`
+- `rate_limit_enabled`
+- `rate_limit_window_seconds`
+- `rate_limit_max_public`
+- `rate_limit_max_admin_login`
 
 ## Cron
 
