@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import Marquee from "./components/Marquee";
@@ -30,23 +30,18 @@ const Blog = lazy(() => import("./components/Blog"));
 const CTA = lazy(() => import("./components/CTA"));
 const SEOContent = lazy(() => import("./components/SEOContent"));
 
+const DeferredSectionsFallback: React.FC = () => (
+  <section className="py-16 px-4" aria-hidden="true">
+    <div className="max-w-7xl mx-auto space-y-8">
+      <div className="h-72 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
+      <div className="h-64 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
+      <div className="h-[28rem] rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
+      <div className="h-72 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
+    </div>
+  </section>
+);
+
 const App: React.FC = () => {
-  const [showDeferredSections, setShowDeferredSections] = useState(false);
-
-  useEffect(() => {
-    const reveal = () => {
-      window.setTimeout(() => setShowDeferredSections(true), 1200);
-    };
-
-    if (document.readyState === "complete") {
-      reveal();
-      return;
-    }
-
-    window.addEventListener("load", reveal, { once: true });
-    return () => window.removeEventListener("load", reveal);
-  }, []);
-
   useEffect(() => {
     const runTrackingInit = () => {
       if (!hasTrackingConsent()) return;
@@ -149,14 +144,8 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {showDeferredSections ? (
-          <Suspense
-            fallback={
-              <section className="py-16 px-4">
-                <div className="max-w-7xl mx-auto text-center text-gray-400">Icerik yukleniyor...</div>
-              </section>
-            }
-          >
+        <Suspense fallback={<DeferredSectionsFallback />}>
+          <div style={{ contentVisibility: "auto", containIntrinsicSize: "2200px" }}>
             <BeforeAfterGallery />
             <AIStainAnalyzer />
             <UVScanner />
@@ -167,8 +156,8 @@ const App: React.FC = () => {
             <Testimonial />
             <CTA />
             <SEOContent />
-          </Suspense>
-        ) : null}
+          </div>
+        </Suspense>
       </main>
       <Footer />
       <ScrollToTop />

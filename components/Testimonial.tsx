@@ -60,7 +60,15 @@ const Testimonial: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" className="w-5 h-5" />
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+              alt="Google"
+              className="w-5 h-5"
+              width={20}
+              height={20}
+              loading="lazy"
+              decoding="async"
+            />
             <div className="flex text-yellow-500">
               <span className="material-symbols-outlined text-[16px] font-solid">star</span>
               <span className="material-symbols-outlined text-[16px] font-solid">star</span>
@@ -91,6 +99,10 @@ const Testimonial: React.FC = () => {
                     alt={review.name} 
                     className="w-full h-full object-cover" 
                     src={review.avatar}
+                    width={48}
+                    height={48}
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 <div>

@@ -41,7 +41,7 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [ ] `WebP/AVIF`, sabit boyut, responsive image kural seti uygula
 - [ ] Gereksiz ucuncu parti script budget'i koy
 - [ ] Performans budget tanimla
-- [ ] Ilk ekran CTA'larini mobilde daha gorunur hale getir
+- [x] Ilk ekran CTA'larini mobilde daha gorunur hale getir
 - [x] Ana hizmetler icin ayri URL ac
 - [x] `/koltuk-yikama/`
 - [x] `/yatak-yikama/`
