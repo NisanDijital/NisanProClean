@@ -1,5 +1,14 @@
 import React from "react";
 import { CONTACT_INFO, IMAGES } from "../constants";
+import { trackEvent } from "../analytics";
+
+const scrollToNextSection = (event: React.MouseEvent<HTMLAnchorElement>) => {
+  event.preventDefault();
+  const target = document.getElementById("features");
+  if (!target) return;
+  trackEvent("scroll_hint_click", { source: "hero", target: "features" });
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+};
 
 const Hero: React.FC = () => {
   return (
@@ -101,9 +110,15 @@ const Hero: React.FC = () => {
         </div>
       </div>
 
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce text-white/30">
-        <span className="material-symbols-outlined text-4xl">keyboard_arrow_down</span>
-      </div>
+      <a
+        href="#features"
+        onClick={scrollToNextSection}
+        data-analytics-source="hero_scroll_hint"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-1 text-white/50 hover:text-white transition-colors"
+      >
+        <span className="text-[10px] tracking-[0.24em] font-semibold uppercase animate-pulse">Asagi Kaydir</span>
+        <span className="material-symbols-outlined text-4xl animate-bounce">keyboard_arrow_down</span>
+      </a>
     </header>
   );
 };

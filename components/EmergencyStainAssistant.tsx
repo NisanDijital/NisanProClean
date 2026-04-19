@@ -41,7 +41,8 @@ const EmergencyStainAssistant: React.FC = () => {
           <div className="bg-surface-dark border border-red-500/30 rounded-3xl p-6 md:p-8 max-w-md w-full relative shadow-[0_0_40px_rgba(220,38,38,0.2)]">
             <button 
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white bg-background-dark rounded-full p-1 transition-colors"
+              className="absolute top-3 right-3 md:top-4 md:right-4 text-gray-300 hover:text-white bg-background-dark rounded-full p-3 md:p-1 transition-colors"
+              aria-label="Modal kapat"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
