@@ -1,5 +1,6 @@
 type AnalyticsPrimitive = string | number | boolean;
 type AnalyticsParams = Record<string, AnalyticsPrimitive | null | undefined>;
+type TrackingConsentState = "granted" | "denied";
 
 declare global {
   interface Window {
@@ -25,6 +26,22 @@ const normalizeParams = (params: AnalyticsParams = {}) =>
 const toFlatValue = (value: AnalyticsPrimitive | null | undefined) => {
   if (value === undefined || value === null) return "";
   return String(value).slice(0, 120);
+};
+
+const TRACKING_CONSENT_KEY = "nisan_tracking_consent";
+
+export const getTrackingConsent = (): TrackingConsentState | null => {
+  if (typeof window === "undefined") return null;
+  const value = window.localStorage.getItem(TRACKING_CONSENT_KEY);
+  if (value === "granted" || value === "denied") return value;
+  return null;
+};
+
+export const hasTrackingConsent = () => getTrackingConsent() === "granted";
+
+export const setTrackingConsent = (state: TrackingConsentState) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(TRACKING_CONSENT_KEY, state);
 };
 
 const safeHostSet = (allowedHosts?: string) => {
@@ -90,6 +107,7 @@ export const trackFormSubmit = (source: string, params: AnalyticsParams = {}) =>
 
 export const initializeAnalytics = (measurementId?: string) => {
   if (typeof window === "undefined") return;
+  if (!hasTrackingConsent()) return;
 
   window.dataLayer = window.dataLayer || [];
   window.gtag =
@@ -117,6 +135,7 @@ export const initializeAnalytics = (measurementId?: string) => {
 
 export const initializeClarity = (projectId?: string, allowedHosts?: string) => {
   if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (!hasTrackingConsent()) return;
 
   const normalizedProjectId = projectId?.trim() || "wctuxcebw4";
 

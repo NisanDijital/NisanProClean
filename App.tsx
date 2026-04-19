@@ -10,7 +10,13 @@ import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import SocialProof from "./components/SocialProof";
 import ExitIntentPopup from "./components/ExitIntentPopup";
 import EmergencyStainAssistant from "./components/EmergencyStainAssistant";
-import { initializeAnalytics, initializeClarity, initializeConversionTracking } from "./analytics";
+import CookieConsent from "./components/CookieConsent";
+import {
+  hasTrackingConsent,
+  initializeAnalytics,
+  initializeClarity,
+  initializeConversionTracking,
+} from "./analytics";
 import { CONTACT_INFO, IMAGES } from "./constants";
 
 const BeforeAfterGallery = lazy(() => import("./components/BeforeAfterGallery"));
@@ -42,9 +48,21 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    initializeAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
-    initializeClarity(import.meta.env.VITE_CLARITY_PROJECT_ID, import.meta.env.VITE_CLARITY_ALLOWED_HOSTS);
-    return initializeConversionTracking();
+    const runTrackingInit = () => {
+      if (!hasTrackingConsent()) return;
+      initializeAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
+      initializeClarity(import.meta.env.VITE_CLARITY_PROJECT_ID, import.meta.env.VITE_CLARITY_ALLOWED_HOSTS);
+    };
+
+    const handleConsent = () => runTrackingInit();
+
+    runTrackingInit();
+    window.addEventListener("nisan:consent-updated", handleConsent as EventListener);
+    const cleanupConversion = initializeConversionTracking();
+    return () => {
+      window.removeEventListener("nisan:consent-updated", handleConsent as EventListener);
+      cleanupConversion();
+    };
   }, []);
 
   return (
@@ -144,6 +162,7 @@ const App: React.FC = () => {
       <SocialProof />
       <ExitIntentPopup />
       <EmergencyStainAssistant />
+      <CookieConsent />
     </div>
   );
 };

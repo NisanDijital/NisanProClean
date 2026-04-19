@@ -129,6 +129,7 @@ const Footer: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-4 md:gap-6">
             <a href="/kvkk.html" className="text-gray-600 hover:text-white transition-colors text-xs">KVKK Aydinlatma Metni</a>
             <a href="/gizlilik.html" className="text-gray-600 hover:text-white transition-colors text-xs">Gizlilik Politikasi</a>
+            <a href="/cerez-politikasi.html" className="text-gray-600 hover:text-white transition-colors text-xs">Cerez Politikasi</a>
             <a href="/kullanim-sartlari.html" className="text-gray-600 hover:text-white transition-colors text-xs">Kullanim Sartlari</a>
           </div>
         </div>

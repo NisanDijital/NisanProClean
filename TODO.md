@@ -20,8 +20,8 @@ Asagidaki isaretler 2026-04-20 canli dogrulama sonucuna gore guncellendi.
 - [x] Clarity setup: sadece prod hostlarda calisacak sekilde aktif et ve export API ile dogrula
 - [ ] `Google Business Profile` optimizasyonunu tamamla
 - [ ] NAP tutarliligini kontrol et
-- [ ] KVKK aydinlatma, gizlilik politikasi ve cerez metinlerini yayinla
-- [ ] Consent mode / cerez onay akisini ekle
+- [x] KVKK aydinlatma, gizlilik politikasi ve cerez metinlerini yayinla
+- [x] Consent mode / cerez onay akisini ekle
 - [ ] Form guvenligini tamamla
 - [ ] `CSRF`, server-side validation, spam korumasi ve rate limit kontrollerini tamamla
 - [ ] Canli sitede schema dogrulamasi yap
@@ -49,7 +49,7 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [ ] `/sandalye-yikama/`
 - [ ] Her hizmet sayfasina ayri H1, FAQ, surec, fiyat mantigi ve CTA koy
 - [ ] Hizmet sayfalari icin ic linkleme planini kur
-- [ ] `Breadcrumb` schema ekle
+- [x] `Breadcrumb` schema ekle
 - [ ] Afyon merkez ve oncelikli mahalle/ilce landing page'leri ac
 
 ## Sprint 3 - CRO ve AI Kanal Entegrasyonu
