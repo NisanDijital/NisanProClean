@@ -5,6 +5,7 @@ declare global {
   interface Window {
     dataLayer: unknown[];
     gtag?: (...args: unknown[]) => void;
+    clarity?: (...args: unknown[]) => void;
     __nisanConversionTrackingCleanup__?: () => void;
   }
 }
@@ -20,6 +21,19 @@ const normalizeParams = (params: AnalyticsParams = {}) =>
   Object.fromEntries(
     Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== "")
   );
+
+const toFlatValue = (value: AnalyticsPrimitive | null | undefined) => {
+  if (value === undefined || value === null) return "";
+  return String(value).slice(0, 120);
+};
+
+const safeHostSet = (allowedHosts?: string) => {
+  const list = (allowedHosts || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set(list);
+};
 
 const getElementSource = (element: HTMLElement) => {
   const explicit = element.dataset.analyticsSource;
@@ -52,6 +66,17 @@ export const trackEvent = (eventName: string, params: AnalyticsParams = {}) => {
   }
 
   window.dataLayer.push({ event: eventName, ...payload });
+
+  if (typeof window.clarity === "function") {
+    window.clarity("set", "last_event_name", eventName);
+    if (payload.source) {
+      window.clarity("set", "last_event_source", toFlatValue(payload.source));
+    }
+    for (const [key, value] of Object.entries(payload)) {
+      window.clarity("set", `evt_${toSlug(key)}`, toFlatValue(value));
+    }
+    window.clarity("event", eventName);
+  }
 };
 
 export const trackCallClick = (source: string, params: AnalyticsParams = {}) =>
@@ -88,6 +113,37 @@ export const initializeAnalytics = (measurementId?: string) => {
     anonymize_ip: true,
     transport_type: "beacon",
   });
+};
+
+export const initializeClarity = (projectId?: string, allowedHosts?: string) => {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+
+  const normalizedProjectId = projectId?.trim();
+  if (!normalizedProjectId) return;
+
+  const defaultAllowed = new Set(["nisankoltukyikama.com", "www.nisankoltukyikama.com"]);
+  const configuredHosts = safeHostSet(allowedHosts);
+  const allowHosts = configuredHosts.size > 0 ? configuredHosts : defaultAllowed;
+  const currentHost = window.location.hostname.toLowerCase();
+  if (!allowHosts.has(currentHost)) return;
+
+  if (document.querySelector(`script[data-clarity-loader="${normalizedProjectId}"]`)) return;
+
+  window.clarity =
+    window.clarity ||
+    function (...args: unknown[]) {
+      (window.clarity as unknown as { q?: unknown[] }).q =
+        (window.clarity as unknown as { q?: unknown[] }).q || [];
+      (window.clarity as unknown as { q?: unknown[] }).q?.push(args);
+    };
+
+  window.setTimeout(() => {
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.clarity.ms/tag/${normalizedProjectId}`;
+    script.dataset.clarityLoader = normalizedProjectId;
+    document.head.appendChild(script);
+  }, 1200);
 };
 
 export const initializeConversionTracking = () => {

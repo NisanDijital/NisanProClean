@@ -10,7 +10,7 @@ import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import SocialProof from "./components/SocialProof";
 import ExitIntentPopup from "./components/ExitIntentPopup";
 import EmergencyStainAssistant from "./components/EmergencyStainAssistant";
-import { initializeAnalytics, initializeConversionTracking } from "./analytics";
+import { initializeAnalytics, initializeClarity, initializeConversionTracking } from "./analytics";
 import { CONTACT_INFO, IMAGES } from "./constants";
 
 const BeforeAfterGallery = lazy(() => import("./components/BeforeAfterGallery"));
@@ -43,6 +43,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     initializeAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
+    initializeClarity(import.meta.env.VITE_CLARITY_PROJECT_ID, import.meta.env.VITE_CLARITY_ALLOWED_HOSTS);
     return initializeConversionTracking();
   }, []);
 

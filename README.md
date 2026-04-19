@@ -53,3 +53,50 @@ GitHub repository secrets olarak su alanlari ekleyin:
 - `FTP_SERVER_DIR` (ornek: `/` veya `/public_html/`)
 
 Workflow'u manuel calistirmak icin Actions ekranindan `Deploy Frontend` -> `Run workflow` kullanabilirsiniz.
+
+## Clarity Kurulumu (Detayli)
+
+Clarity entegrasyonu artik runtime tarafinda yonetiliyor:
+- Sadece izin verilen hostlarda (varsayilan: `nisankoltukyikama.com`, `www.nisankoltukyikama.com`) script yuklenir.
+- Boylece dev/staging URL'leri Clarity datasini kirletmez.
+- `call_click`, `whatsapp_click`, `form_submit` event'leri Clarity custom event/tag olarak da gonderilir.
+
+### 1) Env Degerleri
+
+`.env` dosyasina su alanlari girin:
+
+```bash
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+VITE_CLARITY_PROJECT_ID=xxxxxxxxxx
+VITE_CLARITY_ALLOWED_HOSTS=nisankoltukyikama.com,www.nisankoltukyikama.com
+```
+
+Not:
+- Clarity `Project ID` degeri dashboarddaki script kodundan gelir.
+- `VITE_CLARITY_ALLOWED_HOSTS` bos birakilirsa varsayilan prod host listesi kullanilir.
+
+### 2) Canli Dogrulama
+
+Tarayici konsolunda:
+- `window.clarity` fonksiyonu tanimli olmali.
+- Test olarak sayfada WhatsApp veya telefon CTA tiklandiginda custom event akisina dusmeli.
+
+### 3) Clarity Data Export ile Hizli Rapor
+
+Repo icinde rapor scripti var:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\clarity-live-insights.ps1 -Token "<CLARITY_JWT>" -Days 1
+```
+
+Script prod URL filtreli olarak su metrikleri verir:
+- `Traffic`
+- `DeadClickCount`
+- `RageClickCount`
+- `QuickbackClick`
+- `EngagementTime`
+- `ScrollDepth`
+
+### 4) Onemli Operasyon Notu
+
+Clarity API rate-limit (`429`) verebilir. Bu durumda 30-60 saniye bekleyip tekrar deneyin.
