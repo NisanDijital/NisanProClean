@@ -16,6 +16,7 @@ import {
   initializeAnalytics,
   initializeClarity,
   initializeConversionTracking,
+  trackGaRealtimePing,
 } from "./analytics";
 import { CONTACT_INFO, IMAGES } from "./constants";
 
@@ -47,6 +48,7 @@ const App: React.FC = () => {
       if (!hasTrackingConsent()) return;
       initializeAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
       initializeClarity(import.meta.env.VITE_CLARITY_PROJECT_ID, import.meta.env.VITE_CLARITY_ALLOWED_HOSTS);
+      trackGaRealtimePing("app_init");
     };
 
     const handleConsent = () => runTrackingInit();

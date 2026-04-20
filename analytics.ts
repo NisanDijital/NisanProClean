@@ -134,6 +134,20 @@ export const initializeAnalytics = (measurementId?: string) => {
   });
 };
 
+export const trackGaRealtimePing = (source = "consent_granted") => {
+  if (typeof window === "undefined") return;
+  if (!hasTrackingConsent()) return;
+  if (typeof window.gtag !== "function") return;
+
+  window.gtag("event", "ga4_realtime_ping", {
+    source,
+    non_interaction: true,
+    page_path: window.location.pathname || "/",
+    page_location: window.location.href,
+    ping_ts: Date.now(),
+  });
+};
+
 export const initializeClarity = (projectId?: string, allowedHosts?: string) => {
   if (typeof window === "undefined" || typeof document === "undefined") return;
   if (!hasTrackingConsent()) return;
