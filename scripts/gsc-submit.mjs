@@ -2,250 +2,204 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
 
-const TARGET_URLS = [
-  "https://nisankoltukyikama.com/",
-  "https://nisankoltukyikama.com/afyon-merkez-koltuk-yikama/",
-  "https://nisankoltukyikama.com/erenler-koltuk-yikama/",
-];
 const PROPERTY_NAME = process.env.GSC_PROPERTY || "nisankoltukyikama.com";
-
 const REPORT_DIR = path.resolve("reports", "gsc");
+const profileDir = path.resolve(".playwright-gsc-profile");
+const resourceId = encodeURIComponent(`sc-domain:${PROPERTY_NAME}`);
+const MAX_URLS = Number.parseInt(process.env.GSC_MAX_URLS || "100", 10);
+
 await fs.mkdir(REPORT_DIR, { recursive: true });
+await fs.mkdir(profileDir, { recursive: true });
 
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+const logs = [];
+const pushLog = (line) => {
+  const row = `[${new Date().toISOString()}] ${line}`;
+  logs.push(row);
+  console.log(line);
+};
+
 const screenshot = async (page, name) => {
   const file = path.join(REPORT_DIR, `${stamp}-${name}.png`);
   await page.screenshot({ path: file, fullPage: true });
   return file;
 };
 
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const resourceId = encodeURIComponent(`sc-domain:${PROPERTY_NAME}`);
-const clickByTextFallback = async (page, texts) => {
-  return page.evaluate((candidates) => {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const normalize = (text) =>
+  (text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+
+const clickByTokens = async (page, tokens) => {
+  const normalizedTokens = tokens.map((t) => normalize(t));
+  return page.evaluate((candidateTokens) => {
+    const normalizeInPage = (txt) =>
+      (txt || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
+
     const all = Array.from(document.querySelectorAll("*"));
-    for (const text of candidates) {
-      const el = all.find((node) => {
-        if (!(node instanceof HTMLElement)) return false;
-        if (!node.innerText) return false;
-        if (!node.innerText.includes(text)) return false;
-        const style = window.getComputedStyle(node);
-        return style.display !== "none" && style.visibility !== "hidden" && node.offsetParent !== null;
+    for (const token of candidateTokens) {
+      const node = all.find((n) => {
+        if (!(n instanceof HTMLElement)) return false;
+        const text = normalizeInPage(n.innerText || "");
+        if (!text.includes(token)) return false;
+        const style = window.getComputedStyle(n);
+        return style.display !== "none" && style.visibility !== "hidden" && n.offsetParent !== null;
       });
-      if (el instanceof HTMLElement) {
-        el.click();
-        return true;
+      if (!(node instanceof HTMLElement)) continue;
+      let clickable = node;
+      for (let i = 0; i < 8; i += 1) {
+        if (!clickable) break;
+        const role = clickable.getAttribute("role");
+        if (clickable.tagName === "BUTTON" || role === "button" || clickable.onclick) break;
+        clickable = clickable.parentElement;
       }
+      (clickable || node).click();
+      return true;
     }
     return false;
-  }, texts);
+  }, normalizedTokens);
 };
 
-const profileDir = path.resolve(".playwright-gsc-profile");
-await fs.mkdir(profileDir, { recursive: true });
-const context = await chromium.launchPersistentContext(profileDir, { headless: false });
-const page = context.pages()[0] ?? (await context.newPage());
-
-const log = [];
-const pushLog = (line) => {
-  log.push(`[${new Date().toISOString()}] ${line}`);
-  console.log(line);
+const parseSitemapUrls = async () => {
+  const xml = await fs.readFile(path.resolve("public", "sitemap.xml"), "utf8");
+  const matches = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1].trim());
+  const unique = Array.from(new Set(matches));
+  return unique.filter(Boolean).slice(0, Math.max(1, MAX_URLS));
 };
+
+const closeLiveTestDialog = async (page) => {
+  for (let i = 0; i < 6; i += 1) {
+    const cancelled = await clickByTokens(page, ["IPTAL", "CANCEL"]);
+    if (!cancelled) break;
+    await sleep(900);
+  }
+};
+
+const findVisibleLocator = async (page, selectors) => {
+  for (const sel of selectors) {
+    const candidate = page.locator(sel).first();
+    if (await candidate.isVisible({ timeout: 2000 }).catch(() => false)) return candidate;
+  }
+  return null;
+};
+
+const urls = await parseSitemapUrls();
+pushLog(`Loaded ${urls.length} URLs from sitemap`);
+
+const browser = await chromium.launchPersistentContext(profileDir, { headless: false });
+const page = browser.pages()[0] ?? (await browser.newPage());
+
+let confirmed = 0;
+let clickedOnly = 0;
+let unavailable = 0;
 
 try {
   pushLog("Opening Search Console");
   await page.goto("https://search.google.com/search-console", { waitUntil: "domcontentloaded" });
 
   if (page.url().includes("accounts.google.com")) {
-    pushLog("Google login page detected; waiting up to 180s for session");
+    pushLog("Login screen detected, waiting for session");
     const deadline = Date.now() + 180000;
-    while (Date.now() < deadline) {
-      await wait(3000);
-      if (!page.url().includes("accounts.google.com")) break;
+    while (Date.now() < deadline && page.url().includes("accounts.google.com")) {
+      await sleep(2500);
     }
   }
-
-  await page.waitForTimeout(2500);
-  await screenshot(page, "after-open");
 
   if (page.url().includes("accounts.google.com")) {
-    pushLog("Still on login page; cannot proceed automatically");
-    throw new Error("Not authenticated in GSC session");
+    throw new Error("GSC session is not authenticated");
   }
 
-  const noPropertyText = page.getByText(/Lütfen bir mülk seçin|Please select a property/i).first();
-  if (await noPropertyText.isVisible({ timeout: 3000 }).catch(() => false)) {
-    pushLog("No property selected; attempting to select domain property");
-    const propertyButtonCandidates = [
-      page.getByRole("button", { name: /Arama özelliği|Search property/i }).first(),
-      page.locator('div[role="button"]').filter({ hasText: /Arama özelliği|Search property/i }).first(),
-    ];
-    let propertyButton = null;
-    for (const candidate of propertyButtonCandidates) {
-      if (await candidate.isVisible({ timeout: 2500 }).catch(() => false)) {
-        propertyButton = candidate;
-        break;
-      }
-    }
-    if (!propertyButton) throw new Error("Property selector button not found");
-    await propertyButton.click();
-    await page.waitForTimeout(1200);
+  await screenshot(page, "after-open");
 
-    const searchInput = page.locator('input[type="text"]:not([disabled])').first();
-    if (await searchInput.isVisible({ timeout: 4000 }).catch(() => false)) {
-      await searchInput.fill(PROPERTY_NAME);
-      await page.waitForTimeout(1200);
-    }
-
-    const propertyOption = page.getByText(PROPERTY_NAME, { exact: false }).first();
-    if (await propertyOption.isVisible({ timeout: 4000 }).catch(() => false)) {
-      await propertyOption.click();
-    } else if (await searchInput.isVisible({ timeout: 1500 }).catch(() => false)) {
-      await searchInput.press("Enter");
-    } else {
-      throw new Error("Property option not found");
-    }
-    await page.waitForTimeout(4500);
-    await screenshot(page, "after-property-select");
-  }
-
-  pushLog("Opening property sitemap page");
+  pushLog("Opening property sitemap screen");
   await page.goto(`https://search.google.com/search-console/sitemaps?resource_id=${resourceId}`, {
     waitUntil: "domcontentloaded",
   });
-  await page.waitForTimeout(3500);
+  await sleep(3000);
+
   await page.addStyleTag({
-    content:
-      "#google-feedback, #google-feedback iframe { pointer-events: none !important; opacity: 0 !important; }",
+    content: "#google-feedback, #google-feedback iframe { pointer-events:none !important; opacity:0 !important; }",
   });
 
-  pushLog("Trying to submit sitemap.xml");
-  const sitemapSelectors = [
+  pushLog("Submitting sitemap.xml");
+  const sitemapInput = await findVisibleLocator(page, [
     'input[aria-label*="sitemap"]:not([disabled])',
     'input[aria-label*="Sitemap"]:not([disabled])',
-    'input[aria-label*="harita"]:not([disabled])',
-    'input[placeholder*="sitemap"]:not([disabled])',
-    'input[placeholder*="Sitemap"]:not([disabled])',
     'input[type="text"]:not([disabled])',
-  ];
-
-  let sitemapInput = null;
-  for (const sel of sitemapSelectors) {
-    const candidate = page.locator(sel).first();
-    if (await candidate.isVisible({ timeout: 2500 }).catch(() => false)) {
-      sitemapInput = candidate;
-      break;
-    }
-  }
+  ]);
   if (!sitemapInput) throw new Error("Sitemap input not found");
   await sitemapInput.fill("sitemap.xml");
-  const submitCandidates = [
-    page.getByRole("button", { name: /submit|gonder|gönder|GONDER|GÖNDER/i }).first(),
-    page.locator("button").filter({ hasText: /GÖNDER|GONDER|SUBMIT/ }).first(),
-    page.locator('[role="button"]').filter({ hasText: /GÖNDER|GONDER|SUBMIT/ }).first(),
-  ];
-  let submitted = false;
-  for (const btn of submitCandidates) {
-    if (await btn.isVisible({ timeout: 2500 }).catch(() => false)) {
-      await btn.click({ force: true });
-      submitted = true;
-      break;
-    }
-  }
-  if (!submitted) {
-    submitted = await clickByTextFallback(page, ["GÖNDER", "GONDER", "SUBMIT"]);
-  }
+  const submitted = await clickByTokens(page, ["GONDER", "SUBMIT"]);
   if (!submitted) await sitemapInput.press("Enter");
-  await page.waitForTimeout(3500);
+  await sleep(2500);
   await screenshot(page, "after-sitemap-submit");
-  pushLog("Sitemap submit step attempted");
 
-  const inspectBoxCandidates = [
-    'input[aria-label*="Inspect"], input[placeholder*="Inspect"]',
-    'input[aria-label*="URL"], input[placeholder*="URL"]',
-    'input[aria-label*="incele"], input[placeholder*="incele"]',
-    'input[type="search"]',
-    'input[type="text"]:not([disabled])',
-  ];
+  pushLog("Opening URL inspection page");
+  await page.goto(`https://search.google.com/search-console?resource_id=${resourceId}`, {
+    waitUntil: "domcontentloaded",
+  });
+  await sleep(3000);
 
-  for (const target of TARGET_URLS) {
+  for (const target of urls) {
     pushLog(`Inspecting ${target}`);
-    let box = null;
-    for (const sel of inspectBoxCandidates) {
-      const candidate = page.locator(sel).first();
-      if (await candidate.isVisible({ timeout: 2000 }).catch(() => false)) {
-        box = candidate;
-        break;
-      }
-    }
+    const box = await findVisibleLocator(page, [
+      'input[aria-label*="URL"]:not([disabled])',
+      'input[aria-label*="incele"]:not([disabled])',
+      'input[type="text"]:not([disabled])',
+    ]);
     if (!box) {
-      box = page.locator("input").first();
-      await box.waitFor({ timeout: 10000 });
+      unavailable += 1;
+      pushLog(`Input not found for ${target}`);
+      continue;
     }
 
     await box.click({ force: true });
     await box.fill(target);
     await box.press("Enter");
-    await page.waitForTimeout(6000);
+    await sleep(5500);
 
-    // Some runs auto-open the live URL test dialog and block the "Request indexing" action.
-    for (let i = 0; i < 4; i++) {
-      const liveTestDialog = page
-        .getByText(/Yayınlanmış URL'nin dizine eklenebilir olup olmadığını test etme|test etme/i)
-        .first();
-      if (await liveTestDialog.isVisible({ timeout: 1200 }).catch(() => false)) {
-        const cancelBtn = page.getByRole("button", { name: /İptal|Iptal|Cancel/i }).first();
-        if (await cancelBtn.isVisible({ timeout: 1200 }).catch(() => false)) {
-          await cancelBtn.click({ force: true });
-          await page.waitForTimeout(1200);
-          continue;
-        }
-      }
-      break;
+    await closeLiveTestDialog(page);
+
+    let clicked = await clickByTokens(page, ["DIZINE EKLENMESINI ISTE", "REQUEST INDEXING"]);
+    if (!clicked) {
+      clicked = await clickByTokens(page, ["EKLENMESINI ISTE"]);
     }
 
-    const requestCandidates = [
-      page.getByText("DİZİNE EKLENMESİNİ İSTE", { exact: false }).first(),
-      page.getByText("DIZINE EKLENMESINI ISTE", { exact: false }).first(),
-      page.locator("text=/DİZİNE EKLENMESİNİ İSTE|DIZINE EKLENMESINI ISTE|Request indexing/i").first(),
-    ];
-    let requested = false;
-    for (const requestText of requestCandidates) {
-      if (await requestText.isVisible({ timeout: 2500 }).catch(() => false)) {
-        await requestText.click({ force: true });
-        await page.waitForTimeout(2800);
-        requested = true;
-        break;
-      }
-    }
-    if (!requested) {
-      requested = await clickByTextFallback(page, [
-        "DİZİNE EKLENMESİNİ İSTE",
-        "DIZINE EKLENMESINI ISTE",
-        "Request indexing",
-      ]);
-      if (requested) await page.waitForTimeout(2800);
-    }
+    await sleep(2200);
+    const confirmedNow = await page
+      .getByText(/Dizine eklenmesi istendi|Indexing requested/i)
+      .first()
+      .isVisible({ timeout: 1000 })
+      .catch(() => false);
 
-    const successDialog = page.getByText(/Dizine eklenmesi istendi|Indexing requested/i).first();
-    if (await successDialog.isVisible({ timeout: 2000 }).catch(() => false)) {
-      pushLog(`Request indexing confirmed for ${target}`);
-    } else if (requested) {
-      pushLog(`Request indexing clicked for ${target} (confirmation not detected)`);
+    if (confirmedNow) {
+      confirmed += 1;
+      pushLog(`Confirmed: ${target}`);
+    } else if (clicked) {
+      clickedOnly += 1;
+      pushLog(`Clicked (no popup): ${target}`);
     } else {
-      pushLog(`Request indexing action not available for ${target}`);
+      unavailable += 1;
+      pushLog(`Request action unavailable: ${target}`);
     }
+
     await screenshot(page, `inspect-${target.replace(/https?:\/\//, "").replace(/[\/:]/g, "_")}`);
   }
 
-  pushLog("GSC automation steps completed");
+  pushLog(`Done. confirmed=${confirmed} clicked_only=${clickedOnly} unavailable=${unavailable}`);
 } catch (err) {
   pushLog(`Error: ${err.message}`);
   await screenshot(page, "error");
   process.exitCode = 1;
 } finally {
   const logPath = path.join(REPORT_DIR, `${stamp}-gsc-run.log`);
-  await fs.writeFile(logPath, `${log.join("\n")}\n`, "utf8");
+  await fs.writeFile(logPath, `${logs.join("\n")}\n`, "utf8");
   pushLog(`Log written: ${logPath}`);
-  await context.close();
+  await browser.close();
 }
