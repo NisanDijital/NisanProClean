@@ -11,14 +11,22 @@ const scrollToNextSection = (event: React.MouseEvent<HTMLAnchorElement>) => {
 };
 
 const Hero: React.FC = () => {
+  const heroSrcSet = [
+    "https://images.unsplash.com/photo-1567016549631-efa9ab7e8d63?q=60&w=768&auto=format&fit=crop 768w",
+    "https://images.unsplash.com/photo-1567016549631-efa9ab7e8d63?q=62&w=1280&auto=format&fit=crop 1280w",
+    "https://images.unsplash.com/photo-1567016549631-efa9ab7e8d63?q=64&w=1920&auto=format&fit=crop 1920w",
+  ].join(", ");
+
   return (
     <header className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-background-dark/30 via-background-dark/80 to-background-dark z-10" />
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/20 rounded-full blur-[120px] animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-secondary/20 rounded-full blur-[100px] animate-float" />
+        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/20 rounded-full blur-[120px] animate-pulse-slow hidden md:block" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-secondary/20 rounded-full blur-[100px] animate-float hidden md:block" />
         <img
           src={IMAGES.heroBg}
+          srcSet={heroSrcSet}
+          sizes="100vw"
           alt="Yerinde koltuk temizligi hizmeti"
           className="w-full h-full object-cover opacity-40"
           loading="eager"

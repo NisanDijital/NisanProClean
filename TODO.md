@@ -35,8 +35,8 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 ## Sprint 2 - Performans ve Sayfa Mimarisi
 
 - [ ] `LCP`, `FCP`, `CLS` ve `INP` odakli performans sprinti yap
-- [ ] Hero ve ust bolum gorsellerini daha da optimize et
-- [ ] Font yukleme stratejisini optimize et
+- [x] Hero ve ust bolum gorsellerini daha da optimize et
+- [x] Font yukleme stratejisini optimize et
 - [ ] Gorsel standardi belirle
 - [ ] `WebP/AVIF`, sabit boyut, responsive image kural seti uygula
 - [ ] Gereksiz ucuncu parti script budget'i koy
