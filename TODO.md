@@ -14,7 +14,7 @@ Asagidaki isaretler 2026-04-20 canli dogrulama sonucuna gore guncellendi.
 - [x] `robots.txt` dosyasini repo ve canlida aktif et
 - [ ] `sitemap.xml` uret ve Search Console'a gonder (sitemap canlida aktif, Search Console gonderimi bekliyor)
 - [x] Tum indexlenebilir sayfalara `canonical` ekle
-- [ ] `GA4` kur
+- [x] `GA4` kur (fallback measurement id + `ga4_realtime_ping` eventi eklendi)
 - [ ] `GSC` kur ve domain dogrulamasini tamamla
 - [x] `call_click`, `whatsapp_click`, `form_submit` event'lerini ekle
 - [x] Clarity setup: sadece prod hostlarda calisacak sekilde aktif et ve export API ile dogrula
@@ -51,6 +51,15 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [x] Hizmet sayfalari icin ic linkleme planini kur
 - [x] `Breadcrumb` schema ekle
 - [x] Afyon merkez ve oncelikli mahalle/ilce landing page'leri ac
+
+### Keyword aksiyonlari (2026-04-21 CSV)
+
+- [x] Keyword export analizi tamamlandi (85 satir, ana kumeler: koltuk 28, arac 24, yatak 23, sandalye 5)
+- [ ] "fiyat" niyetine ozel landing page ac (`/fiyatlar/`) ve servis bazli fiyat bloklari ekle
+- [ ] "yerinde koltuk yikama" niyetini mevcut `/koltuk-yikama/` sayfasinda H2 + FAQ + internal link ile guclendir
+- [ ] "arac ici koltuk yikama / arac koltuk temizleyici" niyetini `/arac-koltugu-yikama/` sayfasinda ayri alt bolumlerle isle
+- [ ] "evde yatak yikama fiyatlari" icin `/yatak-yikama/` sayfasinda lokal fiyat/SSS bolumu ac
+- [ ] Yazim varyasyonlarini (yikama/yıkama, fiyatlari/fiyatları) FAQ ve blog iceriginde dogal sekilde kapsa
 
 ## Sprint 3 - CRO ve AI Kanal Entegrasyonu
 
