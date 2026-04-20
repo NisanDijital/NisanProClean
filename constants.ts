@@ -79,7 +79,7 @@ export const FAQ_ITEMS = [
   {
     question: "Afyon'da yerinde koltuk hijyeni hangi bolgelerde var?",
     answer:
-      "Afyonkarahisar merkez ve tum mahallelerde hizmet veriyoruz. Sandikli, Bolvadin, Cay ve Emirda gibi cevre ilceler icin yogunluga gore planlama yapiliyor.",
+      "Afyonkarahisar merkez ve tum mahallelerde hizmet veriyoruz. Sandikli, Bolvadin, Cay ve Emirda gibi cevre ilceler icin yogunluga gore planlama yapiliyor. Aramalarda koltuk yikama ve koltuk yıkama yazimlari birlikte geldigi icin bu varyasyonlari bilgilendirme iceriklerinde kapsiyoruz.",
   },
   {
     question: "Yatak hijyeni mayt ve bakterileri temizler mi?",
@@ -109,7 +109,7 @@ export const FAQ_ITEMS = [
   {
     question: "Leke cikarma garantisi var mi?",
     answer:
-      "Leke turu, bekleme suresi ve daha once yapilan mudahaleye gore oran degisir. Kumaşa zarar vermeden en yuksek cikarma oranini hedefliyoruz.",
+      "Leke turu, bekleme suresi ve daha once yapilan mudahaleye gore oran degisir. Kumasa zarar vermeden en yuksek cikarma oranini hedefliyoruz.",
   },
 ];
 
@@ -123,9 +123,9 @@ export const BLOG_POSTS = [
     image: IMAGES.blog1,
     date: "12 Nisan 2026",
     excerpt:
-      "Afyon Merkez, Erenler, Uydukent ve Erkmen icin ayni gun yerinde koltuk yikama plani.",
+      "Afyon Merkez, Erenler, Uydukent ve Erkmen icin ayni gun yerinde koltuk yikama plani. Koltuk yıkama aramalarini da kapsar.",
     content:
-      "Afyon yerinde koltuk yikama hizmetinde en cok sorulan konu randevu hizi ve kuruma suresidir. NisanProClean ekibi Afyon Merkez, Erenler koltuk yikama, Uydukent koltuk yikama ve Erkmen koltuk temizligi taleplerini ayni hafta icinde planlar. Islemlerimizde dusuk nemli yikama ve yuksek vakum kullanildigi icin koltuklar ortalama 4-6 saatte kullanima doner. Bolgesel yogunluk durumunu anlik gormek ve fiyat almak icin <a href='#fiyat-hesapla' class='text-primary hover:underline'>fiyat hesaplama ekranina</a> gecin.",
+      "Afyon yerinde koltuk yikama hizmetinde en cok sorulan konu randevu hizi ve kuruma suresidir. NisanProClean ekibi Afyon Merkez, Erenler koltuk yikama, Uydukent koltuk yikama ve Erkmen koltuk temizligi taleplerini ayni hafta icinde planlar. Kullanici tarafinda koltuk yikama ve koltuk yıkama yazimlari birlikte kullanildigi icin iceriklerimizi bu varyasyonlari dogal sekilde kapsayacak yapida kuruyoruz. Islemlerimizde dusuk nemli yikama ve yuksek vakum kullanildigi icin koltuklar ortalama 4-6 saatte kullanima doner. Bolgesel yogunluk durumunu anlik gormek ve fiyat almak icin <a href='#fiyat-hesapla' class='text-primary hover:underline'>fiyat hesaplama ekranina</a> gecin.",
   },
   {
     id: 2,
@@ -134,9 +134,9 @@ export const BLOG_POSTS = [
     image: IMAGES.blog2,
     date: "10 Nisan 2026",
     excerpt:
-      "Her kumas ayni urunle temizlenmez. Yanlis urun, renk acilmasi ve doku sertlesmesi yapabilir.",
+      "Her kumas ayni urunle temizlenmez. Yanlis urun, renk acilmasi ve doku sertlesmesi yapabilir. Fiyatlari ve fiyatları niyetlerini dogru aciklamak gerekir.",
     content:
-      "Afyon koltuk yikama fiyatlari kadar onemli olan konu kumas tipine uygun yikama protokoludur. Kadife koltuklarda dusuk devir firca ve pH dengeli sampuan kullanilir. Keten kumasta asiri islatmadan kademeli leke cozme uygulanir. Nubuk ve tay tuyu gibi hassas yuzeylerde ise noktasal test, kontrollu buhar ve hizli cekim gerekir. Bu protokol sayesinde renk kaybi riskini azaltip derin temizlik sagliyoruz.",
+      "Afyon koltuk yikama fiyatlari kadar onemli olan konu kumas tipine uygun yikama protokoludur. Kullanici aramalarinda fiyatlari ve fiyatları gibi yazim varyasyonlari birlikte geldigi icin hizmet iceriklerinde fiyat mantigini net acikliyoruz. Kadife koltuklarda dusuk devir firca ve pH dengeli sampuan kullanilir. Keten kumasta asiri islatmadan kademeli leke cozme uygulanir. Nubuk ve tay tuyu gibi hassas yuzeylerde ise noktasal test, kontrollu buhar ve hizli cekim gerekir. Bu protokol sayesinde renk kaybi riskini azaltip derin temizlik sagliyoruz.",
   },
   {
     id: 3,

@@ -1,5 +1,5 @@
-import React from 'react';
-import { FAQ_ITEMS } from '../constants';
+import React from "react";
+import { FAQ_ITEMS } from "../constants";
 
 const FAQ: React.FC = () => {
   return (
@@ -7,7 +7,7 @@ const FAQ: React.FC = () => {
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
           <span className="text-primary font-bold tracking-widest text-sm uppercase mb-3 block">Merak Ettikleriniz</span>
-          <h2 className="text-3xl md:text-5xl font-bold text-white">Sıkça Sorulan Sorular</h2>
+          <h2 className="text-3xl md:text-5xl font-bold text-white">Sikca Sorulan Sorular</h2>
         </div>
 
         <div className="flex flex-col gap-4">
