@@ -55,7 +55,7 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 ### Keyword aksiyonlari (2026-04-21 CSV)
 
 - [x] Keyword export analizi tamamlandi (85 satir, ana kumeler: koltuk 28, arac 24, yatak 23, sandalye 5)
-- [ ] "fiyat" niyetine ozel landing page ac (`/fiyatlar/`) ve servis bazli fiyat bloklari ekle
+- [x] "fiyat" niyetine ozel landing page ac (`/fiyatlar/`) ve servis bazli fiyat bloklari ekle
 - [ ] "yerinde koltuk yikama" niyetini mevcut `/koltuk-yikama/` sayfasinda H2 + FAQ + internal link ile guclendir
 - [ ] "arac ici koltuk yikama / arac koltuk temizleyici" niyetini `/arac-koltugu-yikama/` sayfasinda ayri alt bolumlerle isle
 - [ ] "evde yatak yikama fiyatlari" icin `/yatak-yikama/` sayfasinda lokal fiyat/SSS bolumu ac

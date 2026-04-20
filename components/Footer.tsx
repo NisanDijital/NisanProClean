@@ -92,6 +92,7 @@ const Footer: React.FC = () => {
               <li><a href="/yatak-yikama/" className="hover:text-primary transition-colors">Yatak Yikama</a></li>
               <li><a href="/arac-koltugu-yikama/" className="hover:text-primary transition-colors">Arac Koltuk Yikama</a></li>
               <li><a href="/sandalye-yikama/" className="hover:text-primary transition-colors">Sandalye Yikama</a></li>
+              <li><a href="/fiyatlar/" className="hover:text-primary transition-colors">Fiyatlar</a></li>
             </ul>
           </div>
 
