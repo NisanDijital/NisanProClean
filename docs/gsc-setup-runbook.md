@@ -7,6 +7,8 @@ Bu dosya `nisankoltukyikama.com` icin GSC kurulumunu hizli tamamlamak icin hazir
 - Property tipi: `Domain` (`nisankoltukyikama.com`)
 - DNS TXT kaydi ile dogrulama yap.
 - Dogrulamadan sonra property secimi: `nisankoltukyikama.com` (URL prefix degil).
+- Operasyonel onerilen kullanim: sadece bu `Domain property` aktif izleme icin kullanilsin.
+- Ayni siteye ait URL-prefix property'ler zorunlu degil; silinebilir veya pasif birakilabilir.
 
 ## 2) Sitemap gonderimi
 
@@ -70,3 +72,18 @@ Notlar:
 
 - Bu secret'lar yoksa deploy yine basarili olur, sadece GSC submit adimi atlanir.
 - URL bazli manuel `Request indexing` kadar agresif degildir; temel amac sitemap'i otomatik guncel tutmaktir.
+
+## 7) Clarity vs GSC trafik farki icin otomatik rapor
+
+Repo'da gunluk rapor workflow'u vardir:
+
+- Workflow: `.github/workflows/traffic-gap-report.yml`
+- Script: `scripts/traffic-gap-report.mjs`
+- Cikti: `reports/traffic-gap-*.md` ve `reports/traffic-gap-*.json` (artifact olarak saklanir)
+
+Gerekli GitHub Secrets:
+
+- `CLARITY_EXPORT_TOKEN` (Clarity live insights icin)
+- `GSC_CLIENT_ID`
+- `GSC_CLIENT_SECRET`
+- `GSC_REFRESH_TOKEN`

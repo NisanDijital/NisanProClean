@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "sitemap:generate": "node ./scripts/generate-sitemap.mjs",
+    "traffic:gap": "node ./scripts/traffic-gap-report.mjs",
     "prebuild": "npm run -s sitemap:generate",
     "build": "vite build",
     "perf:budget": "node ./scripts/check-performance-budget.mjs",
