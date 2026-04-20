@@ -28,3 +28,5 @@ backend/config.php
 
 # Local automation artifacts
 .playwright-cli/
+.playwright-gsc-profile/
+reports/
