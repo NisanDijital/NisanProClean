@@ -50,7 +50,7 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [x] Her hizmet sayfasina ayri H1, FAQ, surec, fiyat mantigi ve CTA koy
 - [x] Hizmet sayfalari icin ic linkleme planini kur
 - [x] `Breadcrumb` schema ekle
-- [ ] Afyon merkez ve oncelikli mahalle/ilce landing page'leri ac
+- [x] Afyon merkez ve oncelikli mahalle/ilce landing page'leri ac
 
 ## Sprint 3 - CRO ve AI Kanal Entegrasyonu
 

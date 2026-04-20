@@ -70,6 +70,9 @@ const App: React.FC = () => {
 
         <section id="services" className="py-20 px-4 scroll-mt-24">
           <div className="max-w-7xl mx-auto flex flex-col gap-24">
+            <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-gray-100">
+              Hizmet bolgesi: Afyon Merkez
+            </div>
             <SplitSection
               image={IMAGES.livingRoom}
               imageAlt="Modern salon koltugu"
