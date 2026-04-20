@@ -29,6 +29,7 @@ const toFlatValue = (value: AnalyticsPrimitive | null | undefined) => {
 };
 
 const TRACKING_CONSENT_KEY = "nisan_tracking_consent";
+const DEFAULT_GA_MEASUREMENT_ID = "G-PK4MQ9F45Z";
 
 export const getTrackingConsent = (): TrackingConsentState | null => {
   if (typeof window === "undefined") return null;
@@ -116,7 +117,7 @@ export const initializeAnalytics = (measurementId?: string) => {
       window.dataLayer.push(args);
     };
 
-  const normalizedId = measurementId?.trim();
+  const normalizedId = measurementId?.trim() || DEFAULT_GA_MEASUREMENT_ID;
   if (!normalizedId) return;
   if (document.querySelector(`script[data-ga-loader="${normalizedId}"]`)) return;
 
