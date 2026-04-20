@@ -59,8 +59,13 @@ const Blog: React.FC = () => {
                 <img
                   src={post.image}
                   alt={post.title}
+                  width={1200}
+                  height={675}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                   className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                   loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
                 />
               </div>
 

@@ -36,8 +36,12 @@ const SplitSection: React.FC<SplitSectionProps> = ({
         <img
           src={image}
           alt={imageAlt}
+          width={1200}
+          height={900}
+          sizes="(max-width: 1024px) 100vw, 50vw"
           loading="lazy"
           decoding="async"
+          referrerPolicy="no-referrer"
           className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
         />
       </div>
