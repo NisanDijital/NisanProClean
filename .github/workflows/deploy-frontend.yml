@@ -55,3 +55,12 @@ jobs:
             **/.git*/**
             **/node_modules/**
             .github/**
+
+      - name: Submit sitemap to Google Search Console (optional)
+        env:
+          GSC_SITE_DOMAIN: nisankoltukyikama.com
+          SITEMAP_URL: https://nisankoltukyikama.com/sitemap.xml
+          GSC_CLIENT_ID: ${{ secrets.GSC_CLIENT_ID }}
+          GSC_CLIENT_SECRET: ${{ secrets.GSC_CLIENT_SECRET }}
+          GSC_REFRESH_TOKEN: ${{ secrets.GSC_REFRESH_TOKEN }}
+        run: node ./scripts/gsc-submit-sitemap-api.mjs

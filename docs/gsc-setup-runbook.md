@@ -54,3 +54,19 @@ Mevcut teknik durum:
 - `robots.txt` canlida aktif ve `sitemap` referansi var.
 - `sitemap.xml` canlida aciliyor ve lokasyon URL'lerini iceriyor.
 - Lokasyon sayfalarinda `Service`, `BreadcrumbList`, `FAQPage`, `LocalBusiness` JSON-LD var.
+
+## 6) Otomatik Search Console submit (deploy sonrasi)
+
+Repo artik her build'de `public/sitemap.xml` dosyasini otomatik uretir.
+Deploy workflow'u da opsiyonel olarak Search Console API'ye sitemap submit eder.
+
+Gerekli GitHub Secrets:
+
+- `GSC_CLIENT_ID`
+- `GSC_CLIENT_SECRET`
+- `GSC_REFRESH_TOKEN`
+
+Notlar:
+
+- Bu secret'lar yoksa deploy yine basarili olur, sadece GSC submit adimi atlanir.
+- URL bazli manuel `Request indexing` kadar agresif degildir; temel amac sitemap'i otomatik guncel tutmaktir.
