@@ -38,7 +38,7 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [x] Hero ve ust bolum gorsellerini daha da optimize et
 - [x] Font yukleme stratejisini optimize et
 - [x] Gorsel standardi belirle
-- [ ] `WebP/AVIF`, sabit boyut, responsive image kural seti uygula
+- [x] `WebP/AVIF`, sabit boyut, responsive image kural seti uygula
 - [x] Gereksiz ucuncu parti script budget'i koy
 - [x] Performans budget tanimla
 - [x] Ilk ekran CTA'larini mobilde daha gorunur hale getir

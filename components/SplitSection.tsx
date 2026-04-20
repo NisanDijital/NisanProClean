@@ -1,4 +1,5 @@
 import React from "react";
+import OptimizedImage from "./OptimizedImage";
 
 interface SplitSectionProps {
   image: string;
@@ -33,7 +34,7 @@ const SplitSection: React.FC<SplitSectionProps> = ({
         }`}
       >
         <div className={`absolute inset-0 ${overlayColor} group-hover:bg-transparent transition-all duration-500 z-10`} />
-        <img
+        <OptimizedImage
           src={image}
           alt={imageAlt}
           width={1200}

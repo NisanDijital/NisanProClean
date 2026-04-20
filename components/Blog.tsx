@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { BLOG_CATEGORIES, BLOG_POSTS } from "../constants";
+import OptimizedImage from "./OptimizedImage";
 
 const Blog: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState("Tumu");
@@ -56,7 +57,7 @@ const Blog: React.FC = () => {
                     {post.category}
                   </span>
                 </div>
-                <img
+                <OptimizedImage
                   src={post.image}
                   alt={post.title}
                   width={1200}

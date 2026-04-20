@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { GALLERY_ITEMS } from "../constants";
+import OptimizedImage from "./OptimizedImage";
 
 const ImageSlider: React.FC<{ beforeImage: string; afterImage: string; title: string }> = ({
   beforeImage,
@@ -50,9 +51,12 @@ const ImageSlider: React.FC<{ beforeImage: string; afterImage: string; title: st
         handleMove(e.touches[0].clientX);
       }}
     >
-      <img
+      <OptimizedImage
         src={afterImage}
         alt={`${title} sonrasi`}
+        width={800}
+        height={600}
+        sizes="(max-width: 768px) 100vw, 33vw"
         className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         loading="lazy"
         decoding="async"
@@ -68,9 +72,12 @@ const ImageSlider: React.FC<{ beforeImage: string; afterImage: string; title: st
         className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none"
         style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}
       >
-        <img
+        <OptimizedImage
           src={beforeImage}
           alt={`${title} oncesi`}
+          width={800}
+          height={600}
+          sizes="(max-width: 768px) 100vw, 33vw"
           className="absolute inset-0 w-full h-full object-cover"
           style={{ filter: "sepia(40%) brightness(60%) contrast(120%) saturate(60%)" }}
           loading="lazy"
