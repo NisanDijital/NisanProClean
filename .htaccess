@@ -9,6 +9,7 @@ RewriteRule ^ https://nisankoltukyikama.com%{REQUEST_URI} [L,R=301]
 AddDefaultCharset UTF-8
 
 <IfModule mod_headers.c>
-  Header set X-Powered-By "NisanProClean"
-  Header set X-UA-Compatible "IE=edge"
+  Header always set X-Powered-By "NisanProClean"
+  Header always set X-UA-Compatible "IE=edge"
+  Header always set X-Site-Name "nisankoltukyikama.com"
 </IfModule>
