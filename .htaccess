@@ -7,3 +7,8 @@ RewriteRule ^ https://nisankoltukyikama.com%{REQUEST_URI} [L,R=301]
 
 # Ensure charset header for text responses
 AddDefaultCharset UTF-8
+
+<IfModule mod_headers.c>
+  Header set X-Powered-By "NisanProClean"
+  Header set X-UA-Compatible "IE=edge"
+</IfModule>
