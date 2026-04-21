@@ -40,6 +40,7 @@ jobs:
           cp -r dist/* .deploy/
           cp backend/api.php .deploy/api.php
           cp backend/admin.html .deploy/admin.html
+          if [ -f .htaccess ]; then cp .htaccess .deploy/.htaccess; fi
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
