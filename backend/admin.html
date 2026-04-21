@@ -87,7 +87,7 @@
           <button id="loadAppointmentsBtn">Randevulari Getir</button>
         </div>
         <table>
-          <thead><tr><th>ID</th><th>Musteri</th><th>Tarih</th><th>Saat</th><th>Durum</th><th>Islem</th></tr></thead>
+          <thead><tr><th>ID</th><th>Musteri</th><th>Kaynak</th><th>Tarih</th><th>Saat</th><th>Durum</th><th>Islem</th></tr></thead>
           <tbody id="appBody"></tbody>
         </table>
       </div>
@@ -111,6 +111,23 @@
       </div>
 
       <div class="card">
+        <h3>Lead Kaynak Raporu (Son 30 Gun)</h3>
+        <div class="row">
+          <button id="loadLeadReportBtn">Raporu Yenile</button>
+        </div>
+        <div class="row">
+          <table>
+            <thead><tr><th>Randevu Kaynagi</th><th>Adet</th></tr></thead>
+            <tbody id="leadAppBody"></tbody>
+          </table>
+          <table>
+            <thead><tr><th>Uyelik Kaynagi</th><th>Adet</th></tr></thead>
+            <tbody id="leadSubBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
         <h3>Loglar</h3>
         <pre id="logsOut">Henuz yuklenmedi.</pre>
       </div>
@@ -126,6 +143,8 @@
     const refBody = $('refBody');
     const appBody = $('appBody');
     const subBody = $('subBody');
+    const leadAppBody = $('leadAppBody');
+    const leadSubBody = $('leadSubBody');
     const logsOut = $('logsOut');
     let csrfToken = '';
 
@@ -187,6 +206,7 @@
         tr.innerHTML = `
           <td>${a.id}</td>
           <td>${a.customer_name}<br><span class="muted">${a.phone}</span><br><span class="muted">${a.customer_address || '-'}</span></td>
+          <td><span class="muted">${a.lead_source || 'direct'}</span></td>
           <td>${a.appointment_date}</td>
           <td>${String(a.appointment_time).slice(0,5)}</td>
           <td><span class="pill ${a.status}">${a.status}</span></td>
@@ -225,7 +245,7 @@
         tr.innerHTML = `
           <td>${s.id}</td>
           <td>${s.customer_name}<br><span class="muted">${s.phone}</span><br><span class="muted">${s.customer_address || '-'}</span></td>
-          <td>${s.plan_name}<br><span class="muted">${s.plan_price} TL/ay</span></td>
+          <td>${s.plan_name}<br><span class="muted">${s.plan_price} TL/ay</span><br><span class="muted">kaynak: ${s.lead_source || 'direct'}</span></td>
           <td><span class="pill ${s.status === 'new' ? 'pending' : s.status === 'contacted' ? 'confirmed' : s.status === 'confirmed' ? 'done' : 'cancelled'}">${s.status}</span></td>
           <td>
             <select data-sub-id="${s.id}">
@@ -251,6 +271,28 @@
       });
     }
 
+    async function loadLeadReport() {
+      const d = await api('admin_lead_report&days=30');
+      leadAppBody.innerHTML = '';
+      leadSubBody.innerHTML = '';
+      for (const item of (d.appointments || [])) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${item.lead_source || 'direct'}</td><td>${item.total || 0}</td>`;
+        leadAppBody.appendChild(tr);
+      }
+      for (const item of (d.subscriptions || [])) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${item.lead_source || 'direct'}</td><td>${item.total || 0}</td>`;
+        leadSubBody.appendChild(tr);
+      }
+      if (!leadAppBody.children.length) {
+        leadAppBody.innerHTML = '<tr><td colspan="2" class="muted">Veri yok.</td></tr>';
+      }
+      if (!leadSubBody.children.length) {
+        leadSubBody.innerHTML = '<tr><td colspan="2" class="muted">Veri yok.</td></tr>';
+      }
+    }
+
     $('loginBtn').addEventListener('click', async () => {
       try {
         await api('admin_login', 'POST', { password: $('password').value });
@@ -258,15 +300,17 @@
         await loadReferrals();
         await loadAppointments();
         await loadSubscriptions();
+        await loadLeadReport();
       } catch (e) {
         loginMsg.textContent = e.message;
       }
     });
 
-    $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadAppointments(); await loadSubscriptions(); });
+    $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
     $('loadRefBtn').addEventListener('click', loadReferrals);
     $('loadAppointmentsBtn').addEventListener('click', loadAppointments);
     $('loadSubscriptionsBtn').addEventListener('click', loadSubscriptions);
+    $('loadLeadReportBtn').addEventListener('click', loadLeadReport);
 
     $('updateBtn').addEventListener('click', async () => {
       try {
@@ -307,6 +351,7 @@
           await loadReferrals();
           await loadAppointments();
           await loadSubscriptions();
+          await loadLeadReport();
         }
       } catch (_) {
         setAuthed(false);

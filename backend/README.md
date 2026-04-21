@@ -42,6 +42,9 @@ Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 - `POST /api.php?action=admin_appointment_status`
 - `GET /api.php?action=admin_subscriptions`
 - `POST /api.php?action=admin_subscription_status`
+- `GET /api.php?action=admin_lead_report&days=30`
+
+`admin_lead_report` son `days` gun icindeki (1-365) lead source dagilimini randevu ve uyelik icin ayri verir.
 
 ## Guvenlik Notlari
 
@@ -103,6 +106,17 @@ Desteklenen event degerleri:
 
 - `appointment_booked`
 - `subscription_created`
+
+## Lead Attribution
+
+`appointment_book` ve `subscription_create` endpointleri su alanlari alir:
+
+- `source` (ornek: `whatsapp`, `instagram`, `google`)
+- `utm_source`
+- `utm_medium`
+- `utm_campaign`
+
+Girilmeyen kayitlar otomatik `direct` olarak isaretlenir.
 
 ## WhatsApp Cloud API (Direkt)
 

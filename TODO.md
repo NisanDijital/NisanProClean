@@ -66,14 +66,14 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [ ] Once/sonra vaka icerikleri ekle
 - [ ] Yorum toplama akislarini kur
 - [ ] Yorumlari sayfa ici guven katmanina ve structured data tarafina bagla
-- [ ] Admin panelde lead kaynak raporu ekle
+- [x] Admin panelde lead kaynak raporu ekle
 - [ ] Lead pipeline status yapisini netlestir
 - [ ] `new`, `contacted`, `appointment`, `won`, `lost`
 - [ ] WhatsApp ve Instagram mesajlarini tek yerde toplayan AI ajan mimarisini kur
 - [ ] Webhook guvenligi ve loglamayi ekle
 - [ ] AI ajan icin insan devri fallback akisini tanimla
 - [ ] Twilio ile sesli cagri PoC baslat
-- [ ] UTM ve source bazli lead attribution raporu ekle
+- [x] UTM ve source bazli lead attribution raporu ekle
 - [ ] Remarketing ve donusum optimizasyon testleri yap
 
 ## Oncelik Sirasi

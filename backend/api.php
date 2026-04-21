@@ -209,6 +209,14 @@ function dbConnection(): ?PDO
 
 function initializeDbSchema(PDO $pdo): void
 {
+    $safeExec = static function (string $sql) use ($pdo): void {
+        try {
+            $pdo->exec($sql);
+        } catch (Throwable $e) {
+            // Ignore duplicate-column style migration errors.
+        }
+    };
+
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS referrals (
             id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -227,6 +235,10 @@ function initializeDbSchema(PDO $pdo): void
             phone VARCHAR(12) NOT NULL,
             customer_address VARCHAR(255) NOT NULL DEFAULT "",
             service_type VARCHAR(120) NOT NULL,
+            lead_source VARCHAR(64) NOT NULL DEFAULT "direct",
+            utm_source VARCHAR(80) NOT NULL DEFAULT "",
+            utm_medium VARCHAR(80) NOT NULL DEFAULT "",
+            utm_campaign VARCHAR(120) NOT NULL DEFAULT "",
             appointment_date DATE NOT NULL,
             appointment_time TIME NOT NULL,
             status VARCHAR(20) NOT NULL DEFAULT "pending",
@@ -268,6 +280,10 @@ function initializeDbSchema(PDO $pdo): void
             customer_address VARCHAR(255) NOT NULL DEFAULT "",
             plan_name VARCHAR(80) NOT NULL,
             plan_price INT NOT NULL DEFAULT 0,
+            lead_source VARCHAR(64) NOT NULL DEFAULT "direct",
+            utm_source VARCHAR(80) NOT NULL DEFAULT "",
+            utm_medium VARCHAR(80) NOT NULL DEFAULT "",
+            utm_campaign VARCHAR(120) NOT NULL DEFAULT "",
             status VARCHAR(20) NOT NULL DEFAULT "new",
             payload_json TEXT NULL,
             created_at DATETIME NOT NULL,
@@ -276,6 +292,17 @@ function initializeDbSchema(PDO $pdo): void
             INDEX idx_subscriptions_phone (phone)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+
+    // Backward-compatible migrations for existing tables.
+    $safeExec('ALTER TABLE appointments ADD COLUMN lead_source VARCHAR(64) NOT NULL DEFAULT "direct"');
+    $safeExec('ALTER TABLE appointments ADD COLUMN utm_source VARCHAR(80) NOT NULL DEFAULT ""');
+    $safeExec('ALTER TABLE appointments ADD COLUMN utm_medium VARCHAR(80) NOT NULL DEFAULT ""');
+    $safeExec('ALTER TABLE appointments ADD COLUMN utm_campaign VARCHAR(120) NOT NULL DEFAULT ""');
+
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN lead_source VARCHAR(64) NOT NULL DEFAULT "direct"');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN utm_source VARCHAR(80) NOT NULL DEFAULT ""');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN utm_medium VARCHAR(80) NOT NULL DEFAULT ""');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN utm_campaign VARCHAR(120) NOT NULL DEFAULT ""');
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS referral_otps (
@@ -893,6 +920,31 @@ function queryInt(string $key, int $default): int
 {
     $value = $_GET[$key] ?? $default;
     return is_numeric($value) ? (int) $value : $default;
+}
+
+function cleanAttribution(string $value, int $max = 120): string
+{
+    $v = strtolower(trim($value));
+    $v = preg_replace('/[^a-z0-9_\-\.]+/i', '_', $v) ?? '';
+    return substr($v, 0, $max);
+}
+
+function leadAttributionFromPayload(array $payload): array
+{
+    $source = cleanAttribution((string) ($payload['source'] ?? ''), 64);
+    if ($source === '') {
+        $source = cleanAttribution((string) ($_GET['source'] ?? ''), 64);
+    }
+    if ($source === '') {
+        $source = 'direct';
+    }
+
+    return [
+        'source' => $source,
+        'utm_source' => cleanAttribution((string) ($payload['utm_source'] ?? ($_GET['utm_source'] ?? '')), 80),
+        'utm_medium' => cleanAttribution((string) ($payload['utm_medium'] ?? ($_GET['utm_medium'] ?? '')), 80),
+        'utm_campaign' => cleanAttribution((string) ($payload['utm_campaign'] ?? ($_GET['utm_campaign'] ?? '')), 120),
+    ];
 }
 
 function isAdminAuthed(): bool
@@ -1672,6 +1724,7 @@ function handleAppointmentBook(string $storageDir): void
     }
 
     $payload = readJsonPayload();
+    $attribution = leadAttributionFromPayload($payload);
     $name = trim((string) ($payload['name'] ?? ''));
     $phone = normalizePhone((string) ($payload['phone'] ?? ''));
     $address = trim((string) ($payload['address'] ?? ''));
@@ -1733,9 +1786,9 @@ function handleAppointmentBook(string $storageDir): void
 
     $stmt = $pdo->prepare(
         'INSERT INTO appointments
-         (customer_name, phone, customer_address, service_type, appointment_date, appointment_time, status, note, created_at, updated_at)
+         (customer_name, phone, customer_address, service_type, lead_source, utm_source, utm_medium, utm_campaign, appointment_date, appointment_time, status, note, created_at, updated_at)
          VALUES
-         (:customer_name, :phone, :customer_address, :service_type, :appointment_date, :appointment_time, "pending", :note, :created_at, :updated_at)'
+         (:customer_name, :phone, :customer_address, :service_type, :lead_source, :utm_source, :utm_medium, :utm_campaign, :appointment_date, :appointment_time, "pending", :note, :created_at, :updated_at)'
     );
     $now = gmdate('Y-m-d H:i:s');
     $stmt->execute([
@@ -1743,6 +1796,10 @@ function handleAppointmentBook(string $storageDir): void
         'phone' => $phone,
         'customer_address' => substr($address, 0, 255),
         'service_type' => $service,
+        'lead_source' => $attribution['source'],
+        'utm_source' => $attribution['utm_source'],
+        'utm_medium' => $attribution['utm_medium'],
+        'utm_campaign' => $attribution['utm_campaign'],
         'appointment_date' => $date,
         'appointment_time' => $time . ':00',
         'note' => $note,
@@ -1775,6 +1832,7 @@ function handleSubscriptionCreate(string $storageDir): void
     }
 
     $payload = readJsonPayload();
+    $attribution = leadAttributionFromPayload($payload);
     $name = trim((string) ($payload['name'] ?? ''));
     $phone = normalizePhone((string) ($payload['phone'] ?? ''));
     $address = trim((string) ($payload['address'] ?? ''));
@@ -1805,9 +1863,9 @@ function handleSubscriptionCreate(string $storageDir): void
 
     $stmt = $pdo->prepare(
         'INSERT INTO subscriptions
-         (customer_name, phone, customer_address, plan_name, plan_price, status, payload_json, created_at, updated_at)
+         (customer_name, phone, customer_address, plan_name, plan_price, lead_source, utm_source, utm_medium, utm_campaign, status, payload_json, created_at, updated_at)
          VALUES
-         (:customer_name, :phone, :customer_address, :plan_name, :plan_price, "new", :payload_json, :created_at, :updated_at)'
+         (:customer_name, :phone, :customer_address, :plan_name, :plan_price, :lead_source, :utm_source, :utm_medium, :utm_campaign, "new", :payload_json, :created_at, :updated_at)'
     );
     $now = gmdate('Y-m-d H:i:s');
     $stmt->execute([
@@ -1816,6 +1874,10 @@ function handleSubscriptionCreate(string $storageDir): void
         'customer_address' => substr($address, 0, 255),
         'plan_name' => substr($planName, 0, 80),
         'plan_price' => $planPrice,
+        'lead_source' => $attribution['source'],
+        'utm_source' => $attribution['utm_source'],
+        'utm_medium' => $attribution['utm_medium'],
+        'utm_campaign' => $attribution['utm_campaign'],
         'payload_json' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         'created_at' => $now,
         'updated_at' => $now,
@@ -1856,7 +1918,7 @@ function handleAdminSubscriptions(string $storageDir): void
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
 
-    $sql = 'SELECT id, customer_name, phone, customer_address, plan_name, plan_price, status, created_at
+    $sql = 'SELECT id, customer_name, phone, customer_address, plan_name, plan_price, lead_source, utm_source, utm_medium, utm_campaign, status, created_at
             FROM subscriptions' . $where . '
             ORDER BY id DESC
             LIMIT :limit OFFSET :offset';
@@ -1929,7 +1991,7 @@ function handleAdminAppointments(string $storageDir): void
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
 
-    $sql = 'SELECT id, customer_name, phone, customer_address, service_type, appointment_date, appointment_time, status, note, created_at
+    $sql = 'SELECT id, customer_name, phone, customer_address, service_type, lead_source, utm_source, utm_medium, utm_campaign, appointment_date, appointment_time, status, note, created_at
             FROM appointments' . $where . '
             ORDER BY appointment_date DESC, appointment_time DESC
             LIMIT :limit OFFSET :offset';
@@ -1976,6 +2038,44 @@ function handleAdminAppointmentStatus(string $storageDir): void
 
     logAdminAction($storageDir, 'admin_appointment_status', true, ['id' => $id, 'status' => $status]);
     respond(200, ['success' => true]);
+}
+
+function handleAdminLeadReport(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Rapor sistemi su an aktif degil.']);
+    }
+
+    $days = max(1, min(365, queryInt('days', 30)));
+    $since = (new DateTimeImmutable('-' . ($days - 1) . ' days'))->format('Y-m-d 00:00:00');
+
+    $aggregate = static function (PDO $pdo, string $table, string $since): array {
+        $sql = 'SELECT
+                    COALESCE(NULLIF(lead_source, ""), "direct") AS lead_source,
+                    COUNT(*) AS total
+                FROM ' . $table . '
+                WHERE created_at >= :since
+                GROUP BY COALESCE(NULLIF(lead_source, ""), "direct")
+                ORDER BY total DESC';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['since' => $since]);
+        $rows = $stmt->fetchAll();
+        return is_array($rows) ? $rows : [];
+    };
+
+    $appointments = $aggregate($pdo, 'appointments', $since);
+    $subscriptions = $aggregate($pdo, 'subscriptions', $since);
+
+    logAdminAction($storageDir, 'admin_lead_report', true, ['days' => $days]);
+    respond(200, [
+        'success' => true,
+        'days' => $days,
+        'since' => $since,
+        'appointments' => $appointments,
+        'subscriptions' => $subscriptions,
+    ]);
 }
 
 $storageDir = storageDir();
@@ -2050,6 +2150,9 @@ switch ($action) {
         break;
     case 'admin_subscription_status':
         handleAdminSubscriptionStatus($storageDir);
+        break;
+    case 'admin_lead_report':
+        handleAdminLeadReport($storageDir);
         break;
     default:
         respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
