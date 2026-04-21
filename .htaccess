@@ -1,9 +1,9 @@
 RewriteEngine On
 
-# Force HTTPS
-RewriteCond %{HTTPS} !=on
-RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-# Force non-www
+# Force canonical URL in a single hop: https + non-www
+RewriteCond %{HTTPS} !=on [OR]
 RewriteCond %{HTTP_HOST} ^www\.nisankoltukyikama\.com$ [NC]
 RewriteRule ^ https://nisankoltukyikama.com%{REQUEST_URI} [L,R=301]
+
+# Ensure charset header for text responses
+AddDefaultCharset UTF-8
