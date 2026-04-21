@@ -25,6 +25,25 @@ URL: `http://127.0.0.1:4173/` (vite preview)
 
 Kaynak dosya (lokal): `reports/lighthouse-mobile-local-after.json`
 
+## Canli Lighthouse (mobile) - yeniden olcum
+
+URL: `https://nisankoltukyikama.com/`
+
+- Before (2026-04-21 baseline):
+  - Performance: **41**
+  - FCP: **8.1 s**
+  - LCP: **8.5 s**
+  - CLS: **0.33**
+- After (2026-04-21):
+  - Performance: **58**
+  - FCP: **7.9 s**
+  - LCP: **7.9 s**
+  - CLS: **0**
+
+Kaynak dosyalar (lokal):
+- `reports/lighthouse-mobile-baseline.json`
+- `reports/lighthouse-mobile-live-after-lazy.json`
+
 ## Not
 
-Canli ortam metriği icin deploy sonrasi yeniden olcum alinmalidir.
+CLS iyilesmesi kalici hale geldi. LCP/FCP halen hedefin uzerinde oldugu icin bir sonraki adimda "ilk ekran SSR/prerender" ve "critical CSS azaltma" uygulanacak.

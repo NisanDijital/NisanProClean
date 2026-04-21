@@ -34,7 +34,7 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 
 ## Sprint 2 - Performans ve Sayfa Mimarisi
 
-- [ ] `LCP`, `FCP`, `CLS` ve `INP` odakli performans sprinti yap (2026-04-21: local optimizasyon yapildi, canli yeniden olcum bekleniyor)
+- [ ] `LCP`, `FCP`, `CLS` ve `INP` odakli performans sprinti yap (2026-04-21: canli mobile 41 -> 58, CLS 0.33 -> 0; LCP/FCP icin ikinci tur gerekiyor)
 - [x] Hero ve ust bolum gorsellerini daha da optimize et
 - [x] Font yukleme stratejisini optimize et
 - [x] Gorsel standardi belirle
