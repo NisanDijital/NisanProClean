@@ -21,6 +21,22 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
     </noscript>
     <link rel="stylesheet" href="/index.css">
+    <style>
+      body:not(.app-ready) #root { display: none; }
+      #app-shell {
+        min-height: 100vh;
+        color: #fff;
+        background: linear-gradient(rgba(10, 14, 23, 0.35), rgba(10, 14, 23, 0.85)), url('/media/hero-1280.jpg') center / cover no-repeat;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 32px 16px;
+      }
+      #app-shell .shell-wrap { max-width: 920px; }
+      #app-shell h1 { margin: 0 0 12px; font-size: clamp(30px, 6vw, 64px); line-height: 1.1; }
+      #app-shell p { margin: 0 auto; max-width: 640px; color: #d0dae8; font-size: clamp(16px, 2.5vw, 22px); }
+    </style>
 
     <script type="application/ld+json">
       [
@@ -182,6 +198,12 @@
     </script>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-x-hidden antialiased selection:bg-primary selection:text-white">
+    <div id="app-shell" aria-hidden="true">
+      <div class="shell-wrap">
+        <h1>Koltuklarinizda Derinlemesine Hijyen</h1>
+        <p>Afyon'da yerinde koltuk, yatak ve arac koltugu temizligi.</p>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
     <!-- deploy-test: 2026-04-19-auto-ok -->

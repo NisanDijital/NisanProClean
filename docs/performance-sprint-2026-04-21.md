@@ -25,6 +25,18 @@ URL: `http://127.0.0.1:4173/` (vite preview)
 
 Kaynak dosya (lokal): `reports/lighthouse-mobile-local-after.json`
 
+## Local Lighthouse (mobile) - app-shell + lazy load
+
+URL: `http://127.0.0.1:4173/` (vite preview)
+
+- Performance: **95**
+- FCP: **1.2 s**
+- LCP: **2.8 s**
+- CLS: **0.045**
+- TBT: **10 ms**
+
+Kaynak dosya (lokal): `reports/lighthouse-mobile-local-appshell.json`
+
 ## Canli Lighthouse (mobile) - yeniden olcum
 
 URL: `https://nisankoltukyikama.com/`
