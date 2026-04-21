@@ -12,10 +12,10 @@ Asagidaki isaretler 2026-04-20 canli dogrulama sonucuna gore guncellendi.
 ## Sprint 1 - Olcum ve Teknik Temel
 
 - [x] `robots.txt` dosyasini repo ve canlida aktif et
-- [ ] `sitemap.xml` uret ve Search Console'a gonder (sitemap canlida aktif, Search Console gonderimi bekliyor)
+- [x] `sitemap.xml` uret ve Search Console'a gonder (2026-04-21: `scripts/gsc-submit.mjs` ile gonderim akisi calistirildi)
 - [x] Tum indexlenebilir sayfalara `canonical` ekle
 - [x] `GA4` kur (fallback measurement id + `ga4_realtime_ping` eventi eklendi)
-- [ ] `GSC` kur ve domain dogrulamasini tamamla
+- [x] `GSC` kur ve domain dogrulamasini tamamla (2026-04-21: `sc-domain:nisankoltukyikama.com` uzerinde otomasyon calisti)
 - [x] `call_click`, `whatsapp_click`, `form_submit` event'lerini ekle
 - [x] Clarity setup: sadece prod hostlarda calisacak sekilde aktif et ve export API ile dogrula
 - [ ] `Google Business Profile` optimizasyonunu tamamla
@@ -25,12 +25,12 @@ Asagidaki isaretler 2026-04-20 canli dogrulama sonucuna gore guncellendi.
 - [x] Form guvenligini tamamla
 - [x] `CSRF`, server-side validation, spam korumasi ve rate limit kontrollerini tamamla
 - [ ] Canli sitede schema dogrulamasi yap
-- [ ] Mobil Lighthouse baz skorlarini kaydet
+- [x] Mobil Lighthouse baz skorlarini kaydet (2026-04-21: mobile score 41, FCP 8.1s, LCP 8.5s, CLS 0.33)
 - [x] `http/https`, `www/non-www`, slash/no-slash yonlendirme disiplinini kontrol et
 - [x] Security headers'i canlida teyit et
 - [x] `HSTS`, `CSP`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options`, `X-Content-Type-Options`
 CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yazilacak.
-- [ ] GSC index coverage ve enhancement raporlarini ilk baz olarak kaydet
+- [x] GSC index coverage ve enhancement raporlarini ilk baz olarak kaydet (2026-04-21: 18 URL icin request indexing aksiyonu tetiklendi, log raporu olustu)
 
 ## Sprint 2 - Performans ve Sayfa Mimarisi
 
