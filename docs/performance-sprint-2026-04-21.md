@@ -52,10 +52,17 @@ URL: `https://nisankoltukyikama.com/`
   - LCP: **7.9 s**
   - CLS: **0**
 
+- After app-shell + lazy (2026-04-21):
+  - Performance: **93**
+  - FCP: **2.0 s**
+  - LCP: **2.2 s**
+  - CLS: **0**
+
 Kaynak dosyalar (lokal):
 - `reports/lighthouse-mobile-baseline.json`
 - `reports/lighthouse-mobile-live-after-lazy.json`
+- `reports/lighthouse-mobile-live-after-appshell.json`
 
 ## Not
 
-CLS iyilesmesi kalici hale geldi. LCP/FCP halen hedefin uzerinde oldugu icin bir sonraki adimda "ilk ekran SSR/prerender" ve "critical CSS azaltma" uygulanacak.
+Performans sprintinin ana hedefleri bu turda karsilandi. Sonraki turda desktop parity ve script budget optimizasyonu devam edecek.
