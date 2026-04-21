@@ -47,12 +47,23 @@
 }
 html {
     scroll-behavior: smooth;
+    scrollbar-gutter: stable;
 }
 body {
     margin: 0;
     background: #0a0e17;
     color: #e7edf8;
     font-family: var(--font-display);
+}
+
+.material-symbols-outlined {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    line-height: 1;
+    vertical-align: middle;
 }
 #root {
     min-height: 100vh;

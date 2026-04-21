@@ -13,9 +13,9 @@ const scrollToNextSection = (event: React.MouseEvent<HTMLAnchorElement>) => {
 
 const Hero: React.FC = () => {
   const heroSrcSet = [
-    "https://images.unsplash.com/photo-1567016549631-efa9ab7e8d63?q=60&w=768&auto=format&fit=crop 768w",
-    "https://images.unsplash.com/photo-1567016549631-efa9ab7e8d63?q=62&w=1280&auto=format&fit=crop 1280w",
-    "https://images.unsplash.com/photo-1567016549631-efa9ab7e8d63?q=64&w=1920&auto=format&fit=crop 1920w",
+    "/media/hero-768.jpg 768w",
+    "/media/hero-1280.jpg 1280w",
+    "/media/hero-1920.jpg 1920w",
   ].join(", ");
 
   return (

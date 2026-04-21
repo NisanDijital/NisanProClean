@@ -1,6 +1,5 @@
 export const IMAGES = {
-  heroBg:
-    "https://images.unsplash.com/photo-1567016549631-efa9ab7e8d63?q=65&w=1400&auto=format&fit=crop",
+  heroBg: "/media/hero-1280.jpg",
   livingRoom:
     "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?q=70&w=1200&auto=format&fit=crop",
   office:
