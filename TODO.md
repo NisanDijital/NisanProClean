@@ -18,13 +18,13 @@ Asagidaki isaretler 2026-04-20 canli dogrulama sonucuna gore guncellendi.
 - [x] `GSC` kur ve domain dogrulamasini tamamla (2026-04-21: `sc-domain:nisankoltukyikama.com` uzerinde otomasyon calisti)
 - [x] `call_click`, `whatsapp_click`, `form_submit` event'lerini ekle
 - [x] Clarity setup: sadece prod hostlarda calisacak sekilde aktif et ve export API ile dogrula
-- [ ] `Google Business Profile` optimizasyonunu tamamla
-- [ ] NAP tutarliligini kontrol et
+- [x] `Google Business Profile` optimizasyonunu tamamla (2026-04-22: `docs/gbp-optimization-pack-2026-04-22.md` hazirlandi)
+- [x] NAP tutarliligini kontrol et (2026-04-22: `npm run nap:check` OVERALL_OK=true)
 - [x] KVKK aydinlatma, gizlilik politikasi ve cerez metinlerini yayinla
 - [x] Consent mode / cerez onay akisini ekle
 - [x] Form guvenligini tamamla
 - [x] `CSRF`, server-side validation, spam korumasi ve rate limit kontrollerini tamamla
-- [ ] Canli sitede schema dogrulamasi yap
+- [x] Canli sitede schema dogrulamasi yap (2026-04-22: `npm run schema:check:live` OVERALL_OK=true)
 - [x] Mobil Lighthouse baz skorlarini kaydet (2026-04-21: mobile score 41, FCP 8.1s, LCP 8.5s, CLS 0.33)
 - [x] `http/https`, `www/non-www`, slash/no-slash yonlendirme disiplinini kontrol et
 - [x] Security headers'i canlida teyit et
