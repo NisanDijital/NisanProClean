@@ -42,8 +42,10 @@ jobs:
           cp backend/admin.html .deploy/admin.html
           if [ -f .htaccess ]; then cp .htaccess .deploy/.htaccess; fi
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy via FTP (attempt 1)
+        id: ftp_deploy_1
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -52,6 +54,25 @@ jobs:
           port: 21
           local-dir: ./.deploy/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          timeout: 180000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .github/**
+
+      - name: Deploy via FTP (retry on timeout)
+        if: steps.ftp_deploy_1.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./.deploy/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          timeout: 180000
           exclude: |
             **/.git*
             **/.git*/**
