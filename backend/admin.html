@@ -63,8 +63,22 @@
         <button id="refreshBtn">Yenile</button>
         <button id="backupBtn" class="secondary">Yedek Al</button>
         <button id="logsBtn" class="secondary">Loglar</button>
+        <button id="dailySummaryBtn" class="secondary">Gunluk Ozeti Yenile</button>
         <button id="logoutBtn" class="danger">Cikis</button>
         <span id="panelMsg" class="muted"></span>
+      </div>
+
+      <div class="card">
+        <h3>Gunluk Kapanis Ozeti</h3>
+        <div class="stats">
+          <div class="stat"><span class="muted">Bugun Yeni Lead</span><strong id="summaryNew">0</strong></div>
+          <div class="stat"><span class="muted">Bugun Islenen</span><strong id="summaryProcessed">0</strong></div>
+          <div class="stat"><span class="muted">Bugun Aranan</span><strong id="summaryCalled">0</strong></div>
+          <div class="stat"><span class="muted">Bugun Tamamlanan</span><strong id="summaryCompleted">0</strong></div>
+          <div class="stat"><span class="muted">Takip (Gecmis/Bugun)</span><strong id="summaryDue">0</strong></div>
+          <div class="stat"><span class="muted">Yarina Takip</span><strong id="summaryTomorrow">0</strong></div>
+          <div class="stat"><span class="muted">Yorum Bekleyen</span><strong id="summaryReviews">0</strong></div>
+        </div>
       </div>
 
       <div class="card">
@@ -221,6 +235,13 @@
     const queueCopyListBtn = $('queueCopyListBtn');
     const queueMarkTop3Btn = $('queueMarkTop3Btn');
     const queueMarkTop5Btn = $('queueMarkTop5Btn');
+    const summaryNew = $('summaryNew');
+    const summaryProcessed = $('summaryProcessed');
+    const summaryCalled = $('summaryCalled');
+    const summaryCompleted = $('summaryCompleted');
+    const summaryDue = $('summaryDue');
+    const summaryTomorrow = $('summaryTomorrow');
+    const summaryReviews = $('summaryReviews');
     const logsOut = $('logsOut');
     let csrfToken = '';
     const pipelineLabels = {
@@ -631,10 +652,22 @@
       }
     }
 
+    async function loadDaySummary() {
+      const d = await api('admin_lead_day_summary');
+      summaryNew.textContent = String(d.new_today || 0);
+      summaryProcessed.textContent = String(d.processed_today || 0);
+      summaryCalled.textContent = String(d.called_today || 0);
+      summaryCompleted.textContent = String(d.completed_today || 0);
+      summaryDue.textContent = String(d.followup_due || 0);
+      summaryTomorrow.textContent = String(d.followup_tomorrow || 0);
+      summaryReviews.textContent = String(d.reviews_pending || 0);
+    }
+
     $('loginBtn').addEventListener('click', async () => {
       try {
         await api('admin_login', 'POST', { password: $('password').value });
         setAuthed(true);
+        await loadDaySummary();
         await loadReferrals();
         await loadLeads();
         await loadAppointments();
@@ -645,7 +678,8 @@
       }
     });
 
-    $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadLeads(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
+    $('refreshBtn').addEventListener('click', async () => { await loadDaySummary(); await loadReferrals(); await loadLeads(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
+    $('dailySummaryBtn').addEventListener('click', async () => { await loadDaySummary(); });
     $('loadRefBtn').addEventListener('click', loadReferrals);
     $('loadLeadsBtn').addEventListener('click', loadLeads);
     $('showUrgentLeadsBtn').addEventListener('click', async () => {
@@ -719,6 +753,7 @@
         const d = await api('admin_status');
         setAuthed(!!d.authed);
         if (d.authed) {
+          await loadDaySummary();
           await loadReferrals();
           await loadLeads();
           await loadAppointments();

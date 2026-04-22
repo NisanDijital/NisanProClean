@@ -2456,6 +2456,67 @@ function handleAdminLeadReport(string $storageDir): void
     ]);
 }
 
+function handleAdminLeadDaySummary(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Rapor sistemi su an aktif degil.']);
+    }
+
+    $now = gmdate('Y-m-d H:i:s');
+    $todayStart = gmdate('Y-m-d 00:00:00');
+    $todayEnd = gmdate('Y-m-d 23:59:59');
+    $tomorrowDate = (new DateTimeImmutable('+1 day'))->format('Y-m-d');
+
+    $sumCount = static function (PDO $pdo, string $table, string $where, array $params): int {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM ' . $table . ' WHERE ' . $where);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    };
+
+    $newToday =
+        $sumCount($pdo, 'appointments', 'created_at BETWEEN :start AND :end', ['start' => $todayStart, 'end' => $todayEnd]) +
+        $sumCount($pdo, 'subscriptions', 'created_at BETWEEN :start AND :end', ['start' => $todayStart, 'end' => $todayEnd]);
+
+    $processedToday =
+        $sumCount($pdo, 'appointments', 'last_contact_at BETWEEN :start AND :end', ['start' => $todayStart, 'end' => $todayEnd]) +
+        $sumCount($pdo, 'subscriptions', 'last_contact_at BETWEEN :start AND :end', ['start' => $todayStart, 'end' => $todayEnd]);
+
+    $calledToday =
+        $sumCount($pdo, 'appointments', 'pipeline_stage = "called" AND last_contact_at BETWEEN :start AND :end', ['start' => $todayStart, 'end' => $todayEnd]) +
+        $sumCount($pdo, 'subscriptions', 'pipeline_stage = "called" AND last_contact_at BETWEEN :start AND :end', ['start' => $todayStart, 'end' => $todayEnd]);
+
+    $completedToday =
+        $sumCount($pdo, 'appointments', 'pipeline_stage IN ("completed", "review_requested") AND updated_at BETWEEN :start AND :end', ['start' => $todayStart, 'end' => $todayEnd]) +
+        $sumCount($pdo, 'subscriptions', 'pipeline_stage IN ("completed", "review_requested") AND updated_at BETWEEN :start AND :end', ['start' => $todayStart, 'end' => $todayEnd]);
+
+    $followupDue =
+        $sumCount($pdo, 'appointments', 'follow_up_at IS NOT NULL AND follow_up_at <= :now', ['now' => $now]) +
+        $sumCount($pdo, 'subscriptions', 'follow_up_at IS NOT NULL AND follow_up_at <= :now', ['now' => $now]);
+
+    $followupTomorrow =
+        $sumCount($pdo, 'appointments', 'follow_up_at IS NOT NULL AND DATE(follow_up_at) = :tomorrow', ['tomorrow' => $tomorrowDate]) +
+        $sumCount($pdo, 'subscriptions', 'follow_up_at IS NOT NULL AND DATE(follow_up_at) = :tomorrow', ['tomorrow' => $tomorrowDate]);
+
+    $reviewsPending =
+        $sumCount($pdo, 'appointments', 'pipeline_stage = "completed" AND review_requested = 0', []) +
+        $sumCount($pdo, 'subscriptions', 'pipeline_stage = "completed" AND review_requested = 0', []);
+
+    logAdminAction($storageDir, 'admin_lead_day_summary', true, ['today' => gmdate('Y-m-d')]);
+    respond(200, [
+        'success' => true,
+        'today' => gmdate('Y-m-d'),
+        'new_today' => $newToday,
+        'processed_today' => $processedToday,
+        'called_today' => $calledToday,
+        'completed_today' => $completedToday,
+        'followup_due' => $followupDue,
+        'followup_tomorrow' => $followupTomorrow,
+        'reviews_pending' => $reviewsPending,
+    ]);
+}
+
 $storageDir = storageDir();
 $pdo = dbConnection();
 
@@ -2537,6 +2598,9 @@ switch ($action) {
         break;
     case 'admin_lead_report':
         handleAdminLeadReport($storageDir);
+        break;
+    case 'admin_lead_day_summary':
+        handleAdminLeadDaySummary($storageDir);
         break;
     default:
         respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
