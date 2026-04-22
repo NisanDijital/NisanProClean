@@ -126,6 +126,11 @@
             <strong>Bugun Oncelik Listesi</strong>
             <span class="muted tiny">Acil + takip zamani gelen kayitlar once gelir</span>
           </div>
+          <div class="row">
+            <button id="queueCopyListBtn" class="secondary">Bugun Listesini Kopyala</button>
+            <button id="queueMarkTop3Btn" class="secondary">Ilk 3'u Arandi Isaretle</button>
+            <button id="queueMarkTop5Btn" class="secondary">Ilk 5'i Arandi Isaretle</button>
+          </div>
           <div id="leadQueueOut" class="muted tiny">Henuz yuklenmedi.</div>
         </div>
         <div class="table-wrap">
@@ -213,6 +218,9 @@
     const leadDueStat = $('leadDueStat');
     const leadReviewStat = $('leadReviewStat');
     const leadQueueOut = $('leadQueueOut');
+    const queueCopyListBtn = $('queueCopyListBtn');
+    const queueMarkTop3Btn = $('queueMarkTop3Btn');
+    const queueMarkTop5Btn = $('queueMarkTop5Btn');
     const logsOut = $('logsOut');
     let csrfToken = '';
     const pipelineLabels = {
@@ -223,6 +231,7 @@
       completed: 'Tamamlandi',
       review_requested: 'Yorum istendi'
     };
+    let currentQueueLeads = [];
 
     async function ensureCsrfToken() {
       if (csrfToken) return csrfToken;
@@ -310,7 +319,9 @@
         return bPriority - aPriority;
       });
       const top = sorted.slice(0, 6);
+      currentQueueLeads = top;
       if (!top.length) {
+        currentQueueLeads = [];
         leadQueueOut.textContent = 'Lead yok.';
         return;
       }
@@ -363,6 +374,40 @@
           }
         });
       });
+    }
+
+    function queueSummaryText(leads) {
+      if (!leads.length) return 'Bugun oncelik listesinde lead yok.';
+      const lines = ['Bugun Oncelik Listesi'];
+      for (const lead of leads) {
+        lines.push(
+          `- ${lead.customer_name || '-'} | ${formatLeadType(lead.lead_type)} #${lead.id} | kaynak: ${lead.lead_source || 'direct'} | oncelik: ${lead.priority_label || 'normal'}`
+        );
+      }
+      return lines.join('\n');
+    }
+
+    async function markTopQueueAsCalled(limit) {
+      const targets = currentQueueLeads.slice(0, limit);
+      if (!targets.length) {
+        panelMsg.textContent = 'Isaretlenecek oncelik kaydi yok.';
+        return;
+      }
+      let updated = 0;
+      for (const lead of targets) {
+        try {
+          await api('admin_lead_update', 'POST', {
+            lead_type: lead.lead_type,
+            id: Number(lead.id),
+            pipeline_stage: 'called'
+          });
+          updated += 1;
+        } catch (_) {
+          // keep going for remaining leads
+        }
+      }
+      panelMsg.textContent = `${updated} kayit arandi olarak isaretlendi.`;
+      await loadLeads();
     }
 
     async function copyText(value) {
@@ -624,6 +669,16 @@
       $('leadDueOnly').checked = false;
       await loadLeads();
     });
+    queueCopyListBtn.addEventListener('click', async () => {
+      try {
+        await copyText(queueSummaryText(currentQueueLeads));
+        panelMsg.textContent = 'Bugun oncelik listesi kopyalandi.';
+      } catch (e) {
+        panelMsg.textContent = e.message || 'Liste kopyalanamadi.';
+      }
+    });
+    queueMarkTop3Btn.addEventListener('click', async () => { await markTopQueueAsCalled(3); });
+    queueMarkTop5Btn.addEventListener('click', async () => { await markTopQueueAsCalled(5); });
     $('loadAppointmentsBtn').addEventListener('click', loadAppointments);
     $('loadSubscriptionsBtn').addEventListener('click', loadSubscriptions);
     $('loadLeadReportBtn').addEventListener('click', loadLeadReport);
