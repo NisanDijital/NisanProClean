@@ -70,6 +70,11 @@
 
       <div class="card">
         <h3>Gunluk Kapanis Ozeti</h3>
+        <div class="row" style="margin-bottom:10px;">
+          <input id="dailySummaryWaPhone" placeholder="Rapor WhatsApp No (90...)" />
+          <button id="dailySummaryWaBtn" class="secondary">WhatsApp'a Gonder</button>
+          <span class="muted tiny">Mesaj taslagi acilir, gonderme islemini sen onaylarsin.</span>
+        </div>
         <div class="stats">
           <div class="stat"><span class="muted">Bugun Yeni Lead</span><strong id="summaryNew">0</strong></div>
           <div class="stat"><span class="muted">Bugun Islenen</span><strong id="summaryProcessed">0</strong></div>
@@ -242,6 +247,7 @@
     const summaryDue = $('summaryDue');
     const summaryTomorrow = $('summaryTomorrow');
     const summaryReviews = $('summaryReviews');
+    const dailySummaryWaPhoneInput = $('dailySummaryWaPhone');
     const logsOut = $('logsOut');
     let csrfToken = '';
     const pipelineLabels = {
@@ -311,6 +317,24 @@
       const digits = normalizePhoneForWhatsApp(phone);
       if (!digits) return '#';
       return `https://wa.me/${digits}?text=${encodeURIComponent(message || '')}`;
+    }
+
+    function buildDaySummaryMessage() {
+      const dateLabel = new Date().toLocaleDateString('tr-TR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+      return [
+        `NisanProClean Gunluk Kapanis Ozeti (${dateLabel})`,
+        `- Bugun Yeni Lead: ${summaryNew.textContent || '0'}`,
+        `- Bugun Islenen: ${summaryProcessed.textContent || '0'}`,
+        `- Bugun Aranan: ${summaryCalled.textContent || '0'}`,
+        `- Bugun Tamamlanan: ${summaryCompleted.textContent || '0'}`,
+        `- Takip (Gecmis/Bugun): ${summaryDue.textContent || '0'}`,
+        `- Yarina Takip: ${summaryTomorrow.textContent || '0'}`,
+        `- Yorum Bekleyen: ${summaryReviews.textContent || '0'}`
+      ].join('\n');
     }
 
     function renderLeadStats(records) {
@@ -680,6 +704,20 @@
 
     $('refreshBtn').addEventListener('click', async () => { await loadDaySummary(); await loadReferrals(); await loadLeads(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
     $('dailySummaryBtn').addEventListener('click', async () => { await loadDaySummary(); });
+    $('dailySummaryWaBtn').addEventListener('click', () => {
+      const rawPhone = String(dailySummaryWaPhoneInput.value || '').trim();
+      const digits = normalizePhoneForWhatsApp(rawPhone);
+      if (!digits) {
+        panelMsg.textContent = 'Rapor icin WhatsApp numarasi gir (90...).';
+        dailySummaryWaPhoneInput.focus();
+        return;
+      }
+      localStorage.setItem('daily_summary_wa_phone', digits);
+      const message = buildDaySummaryMessage();
+      const url = buildWhatsAppUrl(digits, message);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      panelMsg.textContent = 'WhatsApp mesaj taslagi acildi.';
+    });
     $('loadRefBtn').addEventListener('click', loadReferrals);
     $('loadLeadsBtn').addEventListener('click', loadLeads);
     $('showUrgentLeadsBtn').addEventListener('click', async () => {
@@ -749,6 +787,10 @@
     });
 
     (async function init() {
+      const savedDailySummaryPhone = localStorage.getItem('daily_summary_wa_phone') || '';
+      if (savedDailySummaryPhone) {
+        dailySummaryWaPhoneInput.value = savedDailySummaryPhone;
+      }
       try {
         const d = await api('admin_status');
         setAuthed(!!d.authed);
