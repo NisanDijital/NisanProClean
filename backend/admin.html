@@ -31,6 +31,10 @@
     .check { display:flex; gap:6px; align-items:center; }
     textarea { min-height:74px; min-width:220px; resize:vertical; }
     .tiny { font-size: 12px; }
+    .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin: 10px 0 14px; }
+    .stat { border:1px solid var(--line); border-radius:8px; padding:10px; background:#0d1524; }
+    .stat strong { display:block; font-size: 22px; margin-top:4px; }
+    .link-btn { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
     pre { margin:0; max-height:260px; overflow:auto; background:#0b1220; border:1px solid var(--line); border-radius:6px; padding:10px; }
   </style>
 </head>
@@ -101,6 +105,15 @@
           <input id="leadSourceFilter" placeholder="Kaynak (whatsapp, instagram...)" />
           <label class="check muted"><input id="leadDueOnly" type="checkbox" /> Takip zamani gelenler</label>
           <button id="loadLeadsBtn">Leadleri Getir</button>
+          <button id="showUrgentLeadsBtn" class="secondary">Acil Leadler</button>
+          <button id="showDueLeadsBtn" class="secondary">Bugun Takip</button>
+          <button id="clearLeadFiltersBtn" class="secondary">Filtreyi Temizle</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="muted">Toplam Lead</span><strong id="leadTotalStat">0</strong></div>
+          <div class="stat"><span class="muted">Acil</span><strong id="leadUrgentStat">0</strong></div>
+          <div class="stat"><span class="muted">Takip Zamani Gelen</span><strong id="leadDueStat">0</strong></div>
+          <div class="stat"><span class="muted">Yorum Bekleyen</span><strong id="leadReviewStat">0</strong></div>
         </div>
         <div class="table-wrap">
           <table>
@@ -182,6 +195,10 @@
     const subBody = $('subBody');
     const leadAppBody = $('leadAppBody');
     const leadSubBody = $('leadSubBody');
+    const leadTotalStat = $('leadTotalStat');
+    const leadUrgentStat = $('leadUrgentStat');
+    const leadDueStat = $('leadDueStat');
+    const leadReviewStat = $('leadReviewStat');
     const logsOut = $('logsOut');
     let csrfToken = '';
     const pipelineLabels = {
@@ -242,6 +259,27 @@
       return type === 'subscription' ? 'Uyelik' : 'Randevu';
     }
 
+    function normalizePhoneForWhatsApp(value) {
+      return String(value || '').replace(/\D+/g, '');
+    }
+
+    function buildWhatsAppUrl(phone, message) {
+      const digits = normalizePhoneForWhatsApp(phone);
+      if (!digits) return '#';
+      return `https://wa.me/${digits}?text=${encodeURIComponent(message || '')}`;
+    }
+
+    function renderLeadStats(records) {
+      const now = new Date();
+      const dueCount = records.filter((lead) => lead.follow_up_at && new Date(String(lead.follow_up_at).replace(' ', 'T')) <= now).length;
+      const urgentCount = records.filter((lead) => String(lead.priority_label) === 'acil').length;
+      const reviewCount = records.filter((lead) => Number(lead.review_requested) === 1 || String(lead.pipeline_stage) === 'review_requested').length;
+      leadTotalStat.textContent = String(records.length);
+      leadUrgentStat.textContent = String(urgentCount);
+      leadDueStat.textContent = String(dueCount);
+      leadReviewStat.textContent = String(reviewCount);
+    }
+
     async function copyText(value) {
       if (!value) return;
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -264,8 +302,10 @@
       if ($('leadDueOnly').checked) q.set('due_only', '1');
       const d = await api(`admin_leads&${q.toString()}`);
       leadBody.innerHTML = '';
+      renderLeadStats(d.records || []);
       for (const lead of d.records) {
         const tr = document.createElement('tr');
+        const waUrl = buildWhatsAppUrl(lead.phone, lead.suggested_message || '');
         tr.innerHTML = `
           <td><strong>${formatLeadType(lead.lead_type)}</strong><br><span class="muted tiny">#${lead.id}</span></td>
           <td>
@@ -293,6 +333,7 @@
           <td>
             <textarea data-lead-message="${lead.lead_type}:${lead.id}" readonly>${escapeHtml(lead.suggested_message || '')}</textarea>
             <button class="secondary" data-lead-copy="${lead.lead_type}:${lead.id}">Mesaji Kopyala</button>
+            <a class="secondary link-btn" data-lead-wa="${lead.lead_type}:${lead.id}" href="${escapeHtml(waUrl)}" target="_blank" rel="noopener noreferrer">WhatsApp Ac</a>
           </td>
           <td>
             <textarea data-lead-note="${lead.lead_type}:${lead.id}" placeholder="Takip notu...">${escapeHtml(lead.admin_note || '')}</textarea>
@@ -339,6 +380,7 @@
       });
 
       if (!leadBody.children.length) {
+        renderLeadStats([]);
         leadBody.innerHTML = '<tr><td colspan="8" class="muted">Lead bulunamadi.</td></tr>';
       }
     }
@@ -475,6 +517,27 @@
     $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadLeads(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
     $('loadRefBtn').addEventListener('click', loadReferrals);
     $('loadLeadsBtn').addEventListener('click', loadLeads);
+    $('showUrgentLeadsBtn').addEventListener('click', async () => {
+      $('leadStageFilter').value = '';
+      $('leadDueOnly').checked = false;
+      await loadLeads();
+      const urgentRows = Array.from(leadBody.querySelectorAll('tr')).filter((row) => row.innerHTML.includes('prio-acil'));
+      Array.from(leadBody.querySelectorAll('tr')).forEach((row) => {
+        row.style.display = urgentRows.includes(row) ? '' : 'none';
+      });
+      leadTotalStat.textContent = String(urgentRows.length);
+    });
+    $('showDueLeadsBtn').addEventListener('click', async () => {
+      $('leadDueOnly').checked = true;
+      await loadLeads();
+    });
+    $('clearLeadFiltersBtn').addEventListener('click', async () => {
+      $('leadTypeFilter').value = '';
+      $('leadStageFilter').value = '';
+      $('leadSourceFilter').value = '';
+      $('leadDueOnly').checked = false;
+      await loadLeads();
+    });
     $('loadAppointmentsBtn').addEventListener('click', loadAppointments);
     $('loadSubscriptionsBtn').addEventListener('click', loadSubscriptions);
     $('loadLeadReportBtn').addEventListener('click', loadLeadReport);
