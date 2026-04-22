@@ -67,14 +67,15 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [ ] Yorum toplama akislarini kur
 - [ ] Yorumlari sayfa ici guven katmanina ve structured data tarafina bagla
 - [x] Admin panelde lead kaynak raporu ekle
-- [ ] Lead pipeline status yapisini netlestir
-- [ ] `new`, `contacted`, `appointment`, `won`, `lost`
+- [x] Lead pipeline status yapisini netlestir (`Yeni lead > Arandi > Teklif verildi > Randevu > Tamamlandi > Yorum istendi`)
+- [x] Standart mesaj setini olustur (`docs/mesaj-sablonlari.md`)
 - [ ] WhatsApp ve Instagram mesajlarini tek yerde toplayan AI ajan mimarisini kur
 - [ ] Webhook guvenligi ve loglamayi ekle
 - [ ] AI ajan icin insan devri fallback akisini tanimla
 - [ ] Twilio ile sesli cagri PoC baslat
 - [x] UTM ve source bazli lead attribution raporu ekle
 - [ ] Remarketing ve donusum optimizasyon testleri yap
+- [x] AI ekip rol dagilimi ve isletim modeli dokumante et (`docs/ai-ekip-isletim-sistemi.md`)
 
 ## Oncelik Sirasi
 
