@@ -239,14 +239,21 @@ function initializeDbSchema(PDO $pdo): void
             utm_source VARCHAR(80) NOT NULL DEFAULT "",
             utm_medium VARCHAR(80) NOT NULL DEFAULT "",
             utm_campaign VARCHAR(120) NOT NULL DEFAULT "",
+            pipeline_stage VARCHAR(32) NOT NULL DEFAULT "appointment",
             appointment_date DATE NOT NULL,
             appointment_time TIME NOT NULL,
             status VARCHAR(20) NOT NULL DEFAULT "pending",
             note TEXT NULL,
+            admin_note TEXT NULL,
+            follow_up_at DATETIME NULL,
+            last_contact_at DATETIME NULL,
+            review_requested TINYINT(1) NOT NULL DEFAULT 0,
+            before_after_ready TINYINT(1) NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             INDEX idx_appointments_dt (appointment_date, appointment_time),
-            INDEX idx_appointments_status (status)
+            INDEX idx_appointments_status (status),
+            INDEX idx_appointments_pipeline (pipeline_stage)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
 
@@ -284,12 +291,19 @@ function initializeDbSchema(PDO $pdo): void
             utm_source VARCHAR(80) NOT NULL DEFAULT "",
             utm_medium VARCHAR(80) NOT NULL DEFAULT "",
             utm_campaign VARCHAR(120) NOT NULL DEFAULT "",
+            pipeline_stage VARCHAR(32) NOT NULL DEFAULT "new",
             status VARCHAR(20) NOT NULL DEFAULT "new",
+            admin_note TEXT NULL,
+            follow_up_at DATETIME NULL,
+            last_contact_at DATETIME NULL,
+            review_requested TINYINT(1) NOT NULL DEFAULT 0,
+            before_after_ready TINYINT(1) NOT NULL DEFAULT 0,
             payload_json TEXT NULL,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             INDEX idx_subscriptions_status (status),
-            INDEX idx_subscriptions_phone (phone)
+            INDEX idx_subscriptions_phone (phone),
+            INDEX idx_subscriptions_pipeline (pipeline_stage)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
 
@@ -298,11 +312,25 @@ function initializeDbSchema(PDO $pdo): void
     $safeExec('ALTER TABLE appointments ADD COLUMN utm_source VARCHAR(80) NOT NULL DEFAULT ""');
     $safeExec('ALTER TABLE appointments ADD COLUMN utm_medium VARCHAR(80) NOT NULL DEFAULT ""');
     $safeExec('ALTER TABLE appointments ADD COLUMN utm_campaign VARCHAR(120) NOT NULL DEFAULT ""');
+    $safeExec('ALTER TABLE appointments ADD COLUMN pipeline_stage VARCHAR(32) NOT NULL DEFAULT "appointment"');
+    $safeExec('ALTER TABLE appointments ADD COLUMN admin_note TEXT NULL');
+    $safeExec('ALTER TABLE appointments ADD COLUMN follow_up_at DATETIME NULL');
+    $safeExec('ALTER TABLE appointments ADD COLUMN last_contact_at DATETIME NULL');
+    $safeExec('ALTER TABLE appointments ADD COLUMN review_requested TINYINT(1) NOT NULL DEFAULT 0');
+    $safeExec('ALTER TABLE appointments ADD COLUMN before_after_ready TINYINT(1) NOT NULL DEFAULT 0');
+    $safeExec('ALTER TABLE appointments ADD INDEX idx_appointments_pipeline (pipeline_stage)');
 
     $safeExec('ALTER TABLE subscriptions ADD COLUMN lead_source VARCHAR(64) NOT NULL DEFAULT "direct"');
     $safeExec('ALTER TABLE subscriptions ADD COLUMN utm_source VARCHAR(80) NOT NULL DEFAULT ""');
     $safeExec('ALTER TABLE subscriptions ADD COLUMN utm_medium VARCHAR(80) NOT NULL DEFAULT ""');
     $safeExec('ALTER TABLE subscriptions ADD COLUMN utm_campaign VARCHAR(120) NOT NULL DEFAULT ""');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN pipeline_stage VARCHAR(32) NOT NULL DEFAULT "new"');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN admin_note TEXT NULL');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN follow_up_at DATETIME NULL');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN last_contact_at DATETIME NULL');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN review_requested TINYINT(1) NOT NULL DEFAULT 0');
+    $safeExec('ALTER TABLE subscriptions ADD COLUMN before_after_ready TINYINT(1) NOT NULL DEFAULT 0');
+    $safeExec('ALTER TABLE subscriptions ADD INDEX idx_subscriptions_pipeline (pipeline_stage)');
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS referral_otps (
@@ -945,6 +973,44 @@ function leadAttributionFromPayload(array $payload): array
         'utm_medium' => cleanAttribution((string) ($payload['utm_medium'] ?? ($_GET['utm_medium'] ?? '')), 80),
         'utm_campaign' => cleanAttribution((string) ($payload['utm_campaign'] ?? ($_GET['utm_campaign'] ?? '')), 120),
     ];
+}
+
+function leadPipelineStages(): array
+{
+    return ['new', 'called', 'quoted', 'appointment', 'completed', 'review_requested'];
+}
+
+function normalizePipelineStage(string $value, string $default = 'new'): string
+{
+    $stage = strtolower(trim($value));
+    return in_array($stage, leadPipelineStages(), true) ? $stage : $default;
+}
+
+function parseNullableDatetimeInput($value): ?string
+{
+    if (!is_string($value)) {
+        return null;
+    }
+
+    $trimmed = trim($value);
+    if ($trimmed === '') {
+        return null;
+    }
+
+    $formats = ['Y-m-d\TH:i', 'Y-m-d H:i', DateTimeInterface::ATOM];
+    foreach ($formats as $format) {
+        $dt = DateTimeImmutable::createFromFormat($format, $trimmed);
+        if ($dt instanceof DateTimeImmutable) {
+            return $dt->format('Y-m-d H:i:s');
+        }
+    }
+
+    return null;
+}
+
+function boolInt($value): int
+{
+    return in_array($value, [1, '1', true, 'true', 'on', 'yes'], true) ? 1 : 0;
 }
 
 function isAdminAuthed(): bool
@@ -1786,9 +1852,9 @@ function handleAppointmentBook(string $storageDir): void
 
     $stmt = $pdo->prepare(
         'INSERT INTO appointments
-         (customer_name, phone, customer_address, service_type, lead_source, utm_source, utm_medium, utm_campaign, appointment_date, appointment_time, status, note, created_at, updated_at)
+         (customer_name, phone, customer_address, service_type, lead_source, utm_source, utm_medium, utm_campaign, pipeline_stage, appointment_date, appointment_time, status, note, created_at, updated_at)
          VALUES
-         (:customer_name, :phone, :customer_address, :service_type, :lead_source, :utm_source, :utm_medium, :utm_campaign, :appointment_date, :appointment_time, "pending", :note, :created_at, :updated_at)'
+         (:customer_name, :phone, :customer_address, :service_type, :lead_source, :utm_source, :utm_medium, :utm_campaign, "appointment", :appointment_date, :appointment_time, "pending", :note, :created_at, :updated_at)'
     );
     $now = gmdate('Y-m-d H:i:s');
     $stmt->execute([
@@ -1863,9 +1929,9 @@ function handleSubscriptionCreate(string $storageDir): void
 
     $stmt = $pdo->prepare(
         'INSERT INTO subscriptions
-         (customer_name, phone, customer_address, plan_name, plan_price, lead_source, utm_source, utm_medium, utm_campaign, status, payload_json, created_at, updated_at)
+         (customer_name, phone, customer_address, plan_name, plan_price, lead_source, utm_source, utm_medium, utm_campaign, pipeline_stage, status, payload_json, created_at, updated_at)
          VALUES
-         (:customer_name, :phone, :customer_address, :plan_name, :plan_price, :lead_source, :utm_source, :utm_medium, :utm_campaign, "new", :payload_json, :created_at, :updated_at)'
+         (:customer_name, :phone, :customer_address, :plan_name, :plan_price, :lead_source, :utm_source, :utm_medium, :utm_campaign, "new", "new", :payload_json, :created_at, :updated_at)'
     );
     $now = gmdate('Y-m-d H:i:s');
     $stmt->execute([
@@ -1918,7 +1984,7 @@ function handleAdminSubscriptions(string $storageDir): void
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
 
-    $sql = 'SELECT id, customer_name, phone, customer_address, plan_name, plan_price, lead_source, utm_source, utm_medium, utm_campaign, status, created_at
+    $sql = 'SELECT id, customer_name, phone, customer_address, plan_name, plan_price, lead_source, utm_source, utm_medium, utm_campaign, pipeline_stage, status, admin_note, follow_up_at, last_contact_at, review_requested, before_after_ready, created_at
             FROM subscriptions' . $where . '
             ORDER BY id DESC
             LIMIT :limit OFFSET :offset';
@@ -1957,10 +2023,23 @@ function handleAdminSubscriptionStatus(string $storageDir): void
         respond(422, ['success' => false, 'error' => 'Parametre gecersiz.']);
     }
 
-    $stmt = $pdo->prepare('UPDATE subscriptions SET status = :status, updated_at = :updated_at WHERE id = :id');
-    $stmt->execute(['status' => $status, 'updated_at' => gmdate('Y-m-d H:i:s'), 'id' => $id]);
+    $nextStage = $status === 'contacted'
+        ? 'called'
+        : ($status === 'confirmed' ? 'appointment' : 'new');
+    $stmt = $pdo->prepare('UPDATE subscriptions SET status = :status, pipeline_stage = :pipeline_stage, last_contact_at = :last_contact_at, updated_at = :updated_at WHERE id = :id');
+    $stmt->execute([
+        'status' => $status,
+        'pipeline_stage' => $nextStage,
+        'last_contact_at' => $status === 'new' ? null : gmdate('Y-m-d H:i:s'),
+        'updated_at' => gmdate('Y-m-d H:i:s'),
+        'id' => $id,
+    ]);
     if ($stmt->rowCount() === 0) {
-        respond(404, ['success' => false, 'error' => 'Basvuru bulunamadi.']);
+        $existsStmt = $pdo->prepare('SELECT id FROM subscriptions WHERE id = :id LIMIT 1');
+        $existsStmt->execute(['id' => $id]);
+        if (!$existsStmt->fetch()) {
+            respond(404, ['success' => false, 'error' => 'Basvuru bulunamadi.']);
+        }
     }
 
     logAdminAction($storageDir, 'admin_subscription_status', true, ['id' => $id, 'status' => $status]);
@@ -1991,7 +2070,7 @@ function handleAdminAppointments(string $storageDir): void
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
 
-    $sql = 'SELECT id, customer_name, phone, customer_address, service_type, lead_source, utm_source, utm_medium, utm_campaign, appointment_date, appointment_time, status, note, created_at
+    $sql = 'SELECT id, customer_name, phone, customer_address, service_type, lead_source, utm_source, utm_medium, utm_campaign, pipeline_stage, appointment_date, appointment_time, status, note, admin_note, follow_up_at, last_contact_at, review_requested, before_after_ready, created_at
             FROM appointments' . $where . '
             ORDER BY appointment_date DESC, appointment_time DESC
             LIMIT :limit OFFSET :offset';
@@ -2030,13 +2109,197 @@ function handleAdminAppointmentStatus(string $storageDir): void
         respond(422, ['success' => false, 'error' => 'Parametre gecersiz.']);
     }
 
-    $stmt = $pdo->prepare('UPDATE appointments SET status = :status, updated_at = :updated_at WHERE id = :id');
-    $stmt->execute(['status' => $status, 'updated_at' => gmdate('Y-m-d H:i:s'), 'id' => $id]);
+    $nextStage = $status === 'done'
+        ? 'completed'
+        : ($status === 'confirmed' ? 'appointment' : 'new');
+    $stmt = $pdo->prepare('UPDATE appointments SET status = :status, pipeline_stage = :pipeline_stage, last_contact_at = :last_contact_at, updated_at = :updated_at WHERE id = :id');
+    $stmt->execute([
+        'status' => $status,
+        'pipeline_stage' => $nextStage,
+        'last_contact_at' => $status === 'pending' ? null : gmdate('Y-m-d H:i:s'),
+        'updated_at' => gmdate('Y-m-d H:i:s'),
+        'id' => $id,
+    ]);
     if ($stmt->rowCount() === 0) {
-        respond(404, ['success' => false, 'error' => 'Randevu bulunamadi.']);
+        $existsStmt = $pdo->prepare('SELECT id FROM appointments WHERE id = :id LIMIT 1');
+        $existsStmt->execute(['id' => $id]);
+        if (!$existsStmt->fetch()) {
+            respond(404, ['success' => false, 'error' => 'Randevu bulunamadi.']);
+        }
     }
 
     logAdminAction($storageDir, 'admin_appointment_status', true, ['id' => $id, 'status' => $status]);
+    respond(200, ['success' => true]);
+}
+
+function fetchAdminLeadRows(PDO $pdo): array
+{
+    $appointmentRows = $pdo->query(
+        'SELECT
+            "appointment" AS lead_type,
+            id,
+            customer_name,
+            phone,
+            customer_address,
+            service_type AS lead_title,
+            lead_source,
+            pipeline_stage,
+            status,
+            admin_note,
+            follow_up_at,
+            last_contact_at,
+            review_requested,
+            before_after_ready,
+            created_at,
+            appointment_date,
+            appointment_time
+        FROM appointments
+        ORDER BY created_at DESC
+        LIMIT 250'
+    )->fetchAll();
+
+    $subscriptionRows = $pdo->query(
+        'SELECT
+            "subscription" AS lead_type,
+            id,
+            customer_name,
+            phone,
+            customer_address,
+            CONCAT(plan_name, " / ", plan_price, " TL") AS lead_title,
+            lead_source,
+            pipeline_stage,
+            status,
+            admin_note,
+            follow_up_at,
+            last_contact_at,
+            review_requested,
+            before_after_ready,
+            created_at,
+            NULL AS appointment_date,
+            NULL AS appointment_time
+        FROM subscriptions
+        ORDER BY created_at DESC
+        LIMIT 250'
+    )->fetchAll();
+
+    $rows = array_merge(is_array($appointmentRows) ? $appointmentRows : [], is_array($subscriptionRows) ? $subscriptionRows : []);
+    usort($rows, static function (array $left, array $right): int {
+        return strcmp((string) ($right['created_at'] ?? ''), (string) ($left['created_at'] ?? ''));
+    });
+
+    return $rows;
+}
+
+function handleAdminLeads(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Lead sistemi su an aktif degil.']);
+    }
+
+    $leadType = queryString('lead_type', '');
+    $pipelineStage = normalizePipelineStage(queryString('pipeline_stage', ''), '');
+    $source = cleanAttribution(queryString('source', ''), 64);
+    $dueOnly = queryInt('due_only', 0) === 1;
+    $page = max(1, queryInt('page', 1));
+    $pageSize = max(5, min(100, queryInt('page_size', 50)));
+    $rows = fetchAdminLeadRows($pdo);
+
+    $filtered = array_values(array_filter($rows, static function (array $row) use ($leadType, $pipelineStage, $source, $dueOnly): bool {
+        if ($leadType !== '' && (string) ($row['lead_type'] ?? '') !== $leadType) {
+            return false;
+        }
+        if ($pipelineStage !== '' && (string) ($row['pipeline_stage'] ?? '') !== $pipelineStage) {
+            return false;
+        }
+        if ($source !== '' && (string) ($row['lead_source'] ?? '') !== $source) {
+            return false;
+        }
+        if ($dueOnly) {
+            $followUpAt = (string) ($row['follow_up_at'] ?? '');
+            if ($followUpAt === '' || $followUpAt > gmdate('Y-m-d H:i:s')) {
+                return false;
+            }
+        }
+        return true;
+    }));
+
+    $total = count($filtered);
+    $offset = ($page - 1) * $pageSize;
+    $records = array_slice($filtered, $offset, $pageSize);
+
+    logAdminAction($storageDir, 'admin_leads', true, ['total' => $total, 'page' => $page, 'filters' => ['lead_type' => $leadType, 'pipeline_stage' => $pipelineStage, 'source' => $source, 'due_only' => $dueOnly]]);
+    respond(200, ['success' => true, 'total' => $total, 'page' => $page, 'page_size' => $pageSize, 'records' => $records]);
+}
+
+function handleAdminLeadUpdate(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
+    }
+
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Lead sistemi su an aktif degil.']);
+    }
+
+    $payload = readJsonPayload();
+    $leadType = trim((string) ($payload['lead_type'] ?? ''));
+    $id = (int) ($payload['id'] ?? 0);
+    $pipelineStage = normalizePipelineStage((string) ($payload['pipeline_stage'] ?? ''), 'new');
+    $followUpAt = parseNullableDatetimeInput($payload['follow_up_at'] ?? null);
+    $adminNote = trim((string) ($payload['admin_note'] ?? ''));
+    $reviewRequested = boolInt($payload['review_requested'] ?? 0);
+    $beforeAfterReady = boolInt($payload['before_after_ready'] ?? 0);
+
+    if (!in_array($leadType, ['appointment', 'subscription'], true) || $id <= 0) {
+        respond(422, ['success' => false, 'error' => 'Lead bilgisi gecersiz.']);
+    }
+    if (stringLength($adminNote) > 1000) {
+        respond(422, ['success' => false, 'error' => 'Admin notu cok uzun.']);
+    }
+
+    if ($reviewRequested === 1 && $pipelineStage === 'completed') {
+        $pipelineStage = 'review_requested';
+    }
+    if ($pipelineStage === 'review_requested') {
+        $reviewRequested = 1;
+    }
+
+    $table = $leadType === 'appointment' ? 'appointments' : 'subscriptions';
+    $stmt = $pdo->prepare(
+        'UPDATE ' . $table . '
+         SET pipeline_stage = :pipeline_stage,
+             follow_up_at = :follow_up_at,
+             admin_note = :admin_note,
+             review_requested = :review_requested,
+             before_after_ready = :before_after_ready,
+             last_contact_at = :last_contact_at,
+             updated_at = :updated_at
+         WHERE id = :id'
+    );
+    $stmt->execute([
+        'pipeline_stage' => $pipelineStage,
+        'follow_up_at' => $followUpAt,
+        'admin_note' => $adminNote,
+        'review_requested' => $reviewRequested,
+        'before_after_ready' => $beforeAfterReady,
+        'last_contact_at' => gmdate('Y-m-d H:i:s'),
+        'updated_at' => gmdate('Y-m-d H:i:s'),
+        'id' => $id,
+    ]);
+
+    if ($stmt->rowCount() === 0) {
+        $existsStmt = $pdo->prepare('SELECT id FROM ' . $table . ' WHERE id = :id LIMIT 1');
+        $existsStmt->execute(['id' => $id]);
+        if (!$existsStmt->fetch()) {
+            respond(404, ['success' => false, 'error' => 'Lead bulunamadi.']);
+        }
+    }
+
+    logAdminAction($storageDir, 'admin_lead_update', true, ['lead_type' => $leadType, 'id' => $id, 'pipeline_stage' => $pipelineStage]);
     respond(200, ['success' => true]);
 }
 
@@ -2150,6 +2413,12 @@ switch ($action) {
         break;
     case 'admin_subscription_status':
         handleAdminSubscriptionStatus($storageDir);
+        break;
+    case 'admin_leads':
+        handleAdminLeads($storageDir);
+        break;
+    case 'admin_lead_update':
+        handleAdminLeadUpdate($storageDir);
         break;
     case 'admin_lead_report':
         handleAdminLeadReport($storageDir);

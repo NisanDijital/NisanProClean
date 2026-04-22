@@ -24,13 +24,17 @@
     .confirmed { background:#203a5a; color:#8fc7ff; }
     .done { background:#1f4b34; color:#8bf7c1; }
     .cancelled { background:#4e2330; color:#ff98b0; }
+    .table-wrap { overflow:auto; }
+    .check { display:flex; gap:6px; align-items:center; }
+    textarea { min-height:74px; min-width:220px; resize:vertical; }
+    .tiny { font-size: 12px; }
     pre { margin:0; max-height:260px; overflow:auto; background:#0b1220; border:1px solid var(--line); border-radius:6px; padding:10px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>NisanProClean Admin</h1>
-    <p class="muted">Referans + Randevu + Log + Backup</p>
+    <p class="muted">Lead + Randevu + Uyelik + Log + Backup</p>
 
     <div id="loginCard" class="card">
       <h3>Admin Giris</h3>
@@ -71,6 +75,35 @@
           <input id="targetPhone" placeholder="Telefon (05...)" />
           <input id="targetPoints" type="number" placeholder="Puan" />
           <button id="updateBtn">Guncelle</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Lead Takip Merkezi</h3>
+        <div class="row">
+          <select id="leadTypeFilter">
+            <option value="">Tum lead tipleri</option>
+            <option value="appointment">Randevu</option>
+            <option value="subscription">Uyelik</option>
+          </select>
+          <select id="leadStageFilter">
+            <option value="">Tum asamalar</option>
+            <option value="new">Yeni lead</option>
+            <option value="called">Arandi</option>
+            <option value="quoted">Teklif verildi</option>
+            <option value="appointment">Randevu</option>
+            <option value="completed">Tamamlandi</option>
+            <option value="review_requested">Yorum istendi</option>
+          </select>
+          <input id="leadSourceFilter" placeholder="Kaynak (whatsapp, instagram...)" />
+          <label class="check muted"><input id="leadDueOnly" type="checkbox" /> Takip zamani gelenler</label>
+          <button id="loadLeadsBtn">Leadleri Getir</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tip</th><th>Musteri</th><th>Akis</th><th>Takip</th><th>Checklist</th><th>Not</th><th>Islem</th></tr></thead>
+            <tbody id="leadBody"></tbody>
+          </table>
         </div>
       </div>
 
@@ -141,12 +174,21 @@
     const loginMsg = $('loginMsg');
     const panelMsg = $('panelMsg');
     const refBody = $('refBody');
+    const leadBody = $('leadBody');
     const appBody = $('appBody');
     const subBody = $('subBody');
     const leadAppBody = $('leadAppBody');
     const leadSubBody = $('leadSubBody');
     const logsOut = $('logsOut');
     let csrfToken = '';
+    const pipelineLabels = {
+      new: 'Yeni lead',
+      called: 'Arandi',
+      quoted: 'Teklif verildi',
+      appointment: 'Randevu',
+      completed: 'Tamamlandi',
+      review_requested: 'Yorum istendi'
+    };
 
     async function ensureCsrfToken() {
       if (csrfToken) return csrfToken;
@@ -176,6 +218,95 @@
     function setAuthed(authed) {
       loginCard.classList.toggle('hidden', authed);
       panel.classList.toggle('hidden', !authed);
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function toDatetimeLocalValue(value) {
+      if (!value) return '';
+      return String(value).replace(' ', 'T').slice(0, 16);
+    }
+
+    function formatLeadType(type) {
+      return type === 'subscription' ? 'Uyelik' : 'Randevu';
+    }
+
+    async function loadLeads() {
+      const q = new URLSearchParams({ page: '1', page_size: '80' });
+      if ($('leadTypeFilter').value) q.set('lead_type', $('leadTypeFilter').value);
+      if ($('leadStageFilter').value) q.set('pipeline_stage', $('leadStageFilter').value);
+      if ($('leadSourceFilter').value.trim()) q.set('source', $('leadSourceFilter').value.trim());
+      if ($('leadDueOnly').checked) q.set('due_only', '1');
+      const d = await api(`admin_leads&${q.toString()}`);
+      leadBody.innerHTML = '';
+      for (const lead of d.records) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${formatLeadType(lead.lead_type)}</strong><br><span class="muted tiny">#${lead.id}</span></td>
+          <td>
+            ${escapeHtml(lead.customer_name)}<br>
+            <span class="muted">${escapeHtml(lead.phone)}</span><br>
+            <span class="muted">${escapeHtml(lead.lead_source || 'direct')}</span><br>
+            <span class="muted">${escapeHtml(lead.lead_title || '-')}</span>
+            ${lead.appointment_date ? `<br><span class="muted">${escapeHtml(lead.appointment_date)} ${escapeHtml(String(lead.appointment_time || '').slice(0,5))}</span>` : ''}
+          </td>
+          <td>
+            <span class="muted">Durum: ${escapeHtml(lead.status || '-')}</span><br>
+            <select data-lead-stage="${lead.lead_type}:${lead.id}">
+              ${Object.entries(pipelineLabels).map(([value, label]) => `<option value="${value}" ${lead.pipeline_stage===value?'selected':''}>${label}</option>`).join('')}
+            </select>
+          </td>
+          <td>
+            <input type="datetime-local" data-lead-followup="${lead.lead_type}:${lead.id}" value="${escapeHtml(toDatetimeLocalValue(lead.follow_up_at))}" />
+            <div class="muted tiny">Son temas: ${escapeHtml(lead.last_contact_at || '-')}</div>
+          </td>
+          <td>
+            <label class="check tiny"><input type="checkbox" data-lead-review="${lead.lead_type}:${lead.id}" ${Number(lead.review_requested) ? 'checked' : ''} /> Yorum</label>
+            <label class="check tiny"><input type="checkbox" data-lead-beforeafter="${lead.lead_type}:${lead.id}" ${Number(lead.before_after_ready) ? 'checked' : ''} /> Before/After</label>
+          </td>
+          <td>
+            <textarea data-lead-note="${lead.lead_type}:${lead.id}" placeholder="Takip notu...">${escapeHtml(lead.admin_note || '')}</textarea>
+          </td>
+          <td>
+            <button data-lead-save="${lead.lead_type}:${lead.id}">Kaydet</button>
+          </td>`;
+        leadBody.appendChild(tr);
+      }
+
+      document.querySelectorAll('button[data-lead-save]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const key = btn.getAttribute('data-lead-save');
+          const [leadType, idText] = String(key).split(':');
+          const id = Number(idText);
+          try {
+            await api('admin_lead_update', 'POST', {
+              lead_type: leadType,
+              id,
+              pipeline_stage: leadBody.querySelector(`[data-lead-stage="${key}"]`).value,
+              follow_up_at: leadBody.querySelector(`[data-lead-followup="${key}"]`).value,
+              review_requested: leadBody.querySelector(`[data-lead-review="${key}"]`).checked ? 1 : 0,
+              before_after_ready: leadBody.querySelector(`[data-lead-beforeafter="${key}"]`).checked ? 1 : 0,
+              admin_note: leadBody.querySelector(`[data-lead-note="${key}"]`).value
+            });
+            panelMsg.textContent = `${formatLeadType(leadType)} #${id} guncellendi.`;
+            await loadLeads();
+          } catch (e) {
+            panelMsg.textContent = e.message;
+          }
+        });
+      });
+
+      if (!leadBody.children.length) {
+        leadBody.innerHTML = '<tr><td colspan="7" class="muted">Lead bulunamadi.</td></tr>';
+      }
     }
 
     async function loadReferrals() {
@@ -298,6 +429,7 @@
         await api('admin_login', 'POST', { password: $('password').value });
         setAuthed(true);
         await loadReferrals();
+        await loadLeads();
         await loadAppointments();
         await loadSubscriptions();
         await loadLeadReport();
@@ -306,8 +438,9 @@
       }
     });
 
-    $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
+    $('refreshBtn').addEventListener('click', async () => { await loadReferrals(); await loadLeads(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
     $('loadRefBtn').addEventListener('click', loadReferrals);
+    $('loadLeadsBtn').addEventListener('click', loadLeads);
     $('loadAppointmentsBtn').addEventListener('click', loadAppointments);
     $('loadSubscriptionsBtn').addEventListener('click', loadSubscriptions);
     $('loadLeadReportBtn').addEventListener('click', loadLeadReport);
@@ -349,6 +482,7 @@
         setAuthed(!!d.authed);
         if (d.authed) {
           await loadReferrals();
+          await loadLeads();
           await loadAppointments();
           await loadSubscriptions();
           await loadLeadReport();

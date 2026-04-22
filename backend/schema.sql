@@ -17,14 +17,21 @@ CREATE TABLE IF NOT EXISTS appointments (
     utm_source VARCHAR(80) NOT NULL DEFAULT '',
     utm_medium VARCHAR(80) NOT NULL DEFAULT '',
     utm_campaign VARCHAR(120) NOT NULL DEFAULT '',
+    pipeline_stage VARCHAR(32) NOT NULL DEFAULT 'appointment',
     appointment_date DATE NOT NULL,
     appointment_time TIME NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     note TEXT NULL,
+    admin_note TEXT NULL,
+    follow_up_at DATETIME NULL,
+    last_contact_at DATETIME NULL,
+    review_requested TINYINT(1) NOT NULL DEFAULT 0,
+    before_after_ready TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     INDEX idx_appointments_dt (appointment_date, appointment_time),
-    INDEX idx_appointments_status (status)
+    INDEX idx_appointments_status (status),
+    INDEX idx_appointments_pipeline (pipeline_stage)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS admin_logs (
@@ -56,12 +63,19 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     utm_source VARCHAR(80) NOT NULL DEFAULT '',
     utm_medium VARCHAR(80) NOT NULL DEFAULT '',
     utm_campaign VARCHAR(120) NOT NULL DEFAULT '',
+    pipeline_stage VARCHAR(32) NOT NULL DEFAULT 'new',
     status VARCHAR(20) NOT NULL DEFAULT 'new',
+    admin_note TEXT NULL,
+    follow_up_at DATETIME NULL,
+    last_contact_at DATETIME NULL,
+    review_requested TINYINT(1) NOT NULL DEFAULT 0,
+    before_after_ready TINYINT(1) NOT NULL DEFAULT 0,
     payload_json TEXT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     INDEX idx_subscriptions_status (status),
-    INDEX idx_subscriptions_phone (phone)
+    INDEX idx_subscriptions_phone (phone),
+    INDEX idx_subscriptions_pipeline (pipeline_stage)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS referral_otps (
