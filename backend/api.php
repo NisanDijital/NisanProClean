@@ -2344,19 +2344,43 @@ function handleAdminLeadUpdate(string $storageDir): void
     $payload = readJsonPayload();
     $leadType = trim((string) ($payload['lead_type'] ?? ''));
     $id = (int) ($payload['id'] ?? 0);
-    $pipelineStage = normalizePipelineStage((string) ($payload['pipeline_stage'] ?? ''), 'new');
-    $followUpAt = parseNullableDatetimeInput($payload['follow_up_at'] ?? null);
-    $adminNote = trim((string) ($payload['admin_note'] ?? ''));
-    $reviewRequested = boolInt($payload['review_requested'] ?? 0);
-    $beforeAfterReady = boolInt($payload['before_after_ready'] ?? 0);
 
     if (!in_array($leadType, ['appointment', 'subscription'], true) || $id <= 0) {
         respond(422, ['success' => false, 'error' => 'Lead bilgisi gecersiz.']);
     }
+
+    $table = $leadType === 'appointment' ? 'appointments' : 'subscriptions';
+    $currentStmt = $pdo->prepare(
+        'SELECT pipeline_stage, follow_up_at, admin_note, review_requested, before_after_ready
+         FROM ' . $table . '
+         WHERE id = :id
+         LIMIT 1'
+    );
+    $currentStmt->execute(['id' => $id]);
+    $current = $currentStmt->fetch();
+    if (!is_array($current)) {
+        respond(404, ['success' => false, 'error' => 'Lead bulunamadi.']);
+    }
+
+    $pipelineStage = array_key_exists('pipeline_stage', $payload)
+        ? normalizePipelineStage((string) $payload['pipeline_stage'], (string) ($current['pipeline_stage'] ?? 'new'))
+        : (string) ($current['pipeline_stage'] ?? 'new');
+    $followUpAt = array_key_exists('follow_up_at', $payload)
+        ? parseNullableDatetimeInput($payload['follow_up_at'] ?? null)
+        : ((string) ($current['follow_up_at'] ?? '') !== '' ? (string) $current['follow_up_at'] : null);
+    $adminNote = array_key_exists('admin_note', $payload)
+        ? trim((string) $payload['admin_note'])
+        : (string) ($current['admin_note'] ?? '');
+    $reviewRequested = array_key_exists('review_requested', $payload)
+        ? boolInt($payload['review_requested'])
+        : boolInt($current['review_requested'] ?? 0);
+    $beforeAfterReady = array_key_exists('before_after_ready', $payload)
+        ? boolInt($payload['before_after_ready'])
+        : boolInt($current['before_after_ready'] ?? 0);
+
     if (stringLength($adminNote) > 1000) {
         respond(422, ['success' => false, 'error' => 'Admin notu cok uzun.']);
     }
-
     if ($reviewRequested === 1 && $pipelineStage === 'completed') {
         $pipelineStage = 'review_requested';
     }
@@ -2364,7 +2388,6 @@ function handleAdminLeadUpdate(string $storageDir): void
         $reviewRequested = 1;
     }
 
-    $table = $leadType === 'appointment' ? 'appointments' : 'subscriptions';
     $stmt = $pdo->prepare(
         'UPDATE ' . $table . '
          SET pipeline_stage = :pipeline_stage,
@@ -2388,11 +2411,7 @@ function handleAdminLeadUpdate(string $storageDir): void
     ]);
 
     if ($stmt->rowCount() === 0) {
-        $existsStmt = $pdo->prepare('SELECT id FROM ' . $table . ' WHERE id = :id LIMIT 1');
-        $existsStmt->execute(['id' => $id]);
-        if (!$existsStmt->fetch()) {
-            respond(404, ['success' => false, 'error' => 'Lead bulunamadi.']);
-        }
+        // lead exists but update may be idempotent
     }
 
     logAdminAction($storageDir, 'admin_lead_update', true, ['lead_type' => $leadType, 'id' => $id, 'pipeline_stage' => $pipelineStage]);

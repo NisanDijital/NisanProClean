@@ -35,6 +35,12 @@
     .stat { border:1px solid var(--line); border-radius:8px; padding:10px; background:#0d1524; }
     .stat strong { display:block; font-size: 22px; margin-top:4px; }
     .link-btn { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+    .queue { border:1px solid var(--line); border-radius:8px; padding:10px; background:#0d1524; margin-bottom:12px; }
+    .queue-item { border-bottom:1px solid var(--line); padding:8px 0; }
+    .queue-item:last-child { border-bottom:none; }
+    .queue-head { display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .queue-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+    .queue-actions a, .queue-actions button { font-size:12px; padding:6px 8px; }
     pre { margin:0; max-height:260px; overflow:auto; background:#0b1220; border:1px solid var(--line); border-radius:6px; padding:10px; }
   </style>
 </head>
@@ -114,6 +120,13 @@
           <div class="stat"><span class="muted">Acil</span><strong id="leadUrgentStat">0</strong></div>
           <div class="stat"><span class="muted">Takip Zamani Gelen</span><strong id="leadDueStat">0</strong></div>
           <div class="stat"><span class="muted">Yorum Bekleyen</span><strong id="leadReviewStat">0</strong></div>
+        </div>
+        <div class="queue">
+          <div class="row" style="justify-content:space-between;">
+            <strong>Bugun Oncelik Listesi</strong>
+            <span class="muted tiny">Acil + takip zamani gelen kayitlar once gelir</span>
+          </div>
+          <div id="leadQueueOut" class="muted tiny">Henuz yuklenmedi.</div>
         </div>
         <div class="table-wrap">
           <table>
@@ -199,6 +212,7 @@
     const leadUrgentStat = $('leadUrgentStat');
     const leadDueStat = $('leadDueStat');
     const leadReviewStat = $('leadReviewStat');
+    const leadQueueOut = $('leadQueueOut');
     const logsOut = $('logsOut');
     let csrfToken = '';
     const pipelineLabels = {
@@ -280,6 +294,77 @@
       leadReviewStat.textContent = String(reviewCount);
     }
 
+    function isDueLead(lead) {
+      if (!lead.follow_up_at) return false;
+      const dueDate = new Date(String(lead.follow_up_at).replace(' ', 'T'));
+      return !Number.isNaN(dueDate.valueOf()) && dueDate <= new Date();
+    }
+
+    function renderLeadQueue(records) {
+      const sorted = [...records].sort((a, b) => {
+        const aDue = isDueLead(a) ? 1 : 0;
+        const bDue = isDueLead(b) ? 1 : 0;
+        if (aDue !== bDue) return bDue - aDue;
+        const aPriority = Number(a.priority_score || 0);
+        const bPriority = Number(b.priority_score || 0);
+        return bPriority - aPriority;
+      });
+      const top = sorted.slice(0, 6);
+      if (!top.length) {
+        leadQueueOut.textContent = 'Lead yok.';
+        return;
+      }
+      leadQueueOut.innerHTML = top.map((lead) => {
+        const key = `${lead.lead_type}:${lead.id}`;
+        const waUrl = buildWhatsAppUrl(lead.phone, lead.suggested_message || '');
+        return `
+          <div class="queue-item">
+            <div class="queue-head">
+              <div>
+                <strong>${escapeHtml(lead.customer_name || '-')}</strong>
+                <span class="muted tiny">(${escapeHtml(formatLeadType(lead.lead_type))} #${escapeHtml(String(lead.id))})</span>
+              </div>
+              <span class="pill prio-${escapeHtml(lead.priority_label || 'normal')}">${escapeHtml(lead.priority_label || 'normal')}</span>
+            </div>
+            <div class="muted tiny">${escapeHtml(lead.lead_title || '-')} | kaynak: ${escapeHtml(lead.lead_source || 'direct')}</div>
+            <div class="queue-actions">
+              <a class="secondary link-btn" href="${escapeHtml(waUrl)}" target="_blank" rel="noopener noreferrer">WhatsApp Ac</a>
+              <button class="secondary" data-queue-copy="${key}">Mesaji Kopyala</button>
+              <button class="secondary" data-queue-called="${key}">Arandi Olarak Isaretle</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      leadQueueOut.querySelectorAll('button[data-queue-copy]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const key = btn.getAttribute('data-queue-copy');
+          const lead = records.find((item) => `${item.lead_type}:${item.id}` === key);
+          if (!lead) return;
+          await copyText(lead.suggested_message || '');
+          panelMsg.textContent = 'Oncelik listesindeki mesaj kopyalandi.';
+        });
+      });
+
+      leadQueueOut.querySelectorAll('button[data-queue-called]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const key = btn.getAttribute('data-queue-called');
+          const [leadType, idText] = String(key).split(':');
+          const id = Number(idText);
+          try {
+            await api('admin_lead_update', 'POST', {
+              lead_type: leadType,
+              id,
+              pipeline_stage: 'called'
+            });
+            panelMsg.textContent = `${formatLeadType(leadType)} #${id} arandi olarak isaretlendi.`;
+            await loadLeads();
+          } catch (e) {
+            panelMsg.textContent = e.message;
+          }
+        });
+      });
+    }
+
     async function copyText(value) {
       if (!value) return;
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -303,6 +388,7 @@
       const d = await api(`admin_leads&${q.toString()}`);
       leadBody.innerHTML = '';
       renderLeadStats(d.records || []);
+      renderLeadQueue(d.records || []);
       for (const lead of d.records) {
         const tr = document.createElement('tr');
         const waUrl = buildWhatsAppUrl(lead.phone, lead.suggested_message || '');
