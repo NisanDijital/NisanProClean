@@ -1013,6 +1013,96 @@ function boolInt($value): int
     return in_array($value, [1, '1', true, 'true', 'on', 'yes'], true) ? 1 : 0;
 }
 
+function leadPriorityMeta(array $row): array
+{
+    $score = 0;
+    $pipelineStage = (string) ($row['pipeline_stage'] ?? 'new');
+    $leadSource = strtolower((string) ($row['lead_source'] ?? 'direct'));
+    $status = (string) ($row['status'] ?? '');
+    $followUpAt = (string) ($row['follow_up_at'] ?? '');
+    $appointmentDate = (string) ($row['appointment_date'] ?? '');
+
+    if ($pipelineStage === 'new') {
+        $score += 30;
+    } elseif ($pipelineStage === 'quoted') {
+        $score += 24;
+    } elseif ($pipelineStage === 'called') {
+        $score += 18;
+    } elseif ($pipelineStage === 'appointment') {
+        $score += 14;
+    } elseif ($pipelineStage === 'completed') {
+        $score += 10;
+    }
+
+    if (in_array($leadSource, ['whatsapp', 'instagram'], true)) {
+        $score += 10;
+    }
+
+    if ($followUpAt !== '') {
+        $now = gmdate('Y-m-d H:i:s');
+        if ($followUpAt <= $now) {
+            $score += 35;
+        } else {
+            $tomorrow = (new DateTimeImmutable('+1 day'))->format('Y-m-d H:i:s');
+            if ($followUpAt <= $tomorrow) {
+                $score += 15;
+            }
+        }
+    }
+
+    if ($appointmentDate !== '' && in_array($status, ['pending', 'confirmed'], true)) {
+        $today = gmdate('Y-m-d');
+        $tomorrow = (new DateTimeImmutable('+1 day'))->format('Y-m-d');
+        if ($appointmentDate === $today) {
+            $score += 25;
+        } elseif ($appointmentDate === $tomorrow) {
+            $score += 15;
+        }
+    }
+
+    $label = 'normal';
+    if ($score >= 60) {
+        $label = 'acil';
+    } elseif ($score >= 35) {
+        $label = 'sicak';
+    }
+
+    return ['score' => $score, 'label' => $label];
+}
+
+function leadSuggestedMessage(array $row): string
+{
+    $name = trim((string) ($row['customer_name'] ?? ''));
+    $firstName = $name !== '' ? explode(' ', $name)[0] : 'Merhaba';
+    $title = trim((string) ($row['lead_title'] ?? 'talebiniz'));
+    $pipelineStage = (string) ($row['pipeline_stage'] ?? 'new');
+    $appointmentDate = (string) ($row['appointment_date'] ?? '');
+    $appointmentTime = substr((string) ($row['appointment_time'] ?? ''), 0, 5);
+    $reviewRequested = boolInt($row['review_requested'] ?? 0) === 1;
+
+    if ($reviewRequested || $pipelineStage === 'review_requested') {
+        return $firstName . ", bugunku hizmetimiz sonrasi memnuniyetinizi merak ediyoruz. Memnun kaldiysaniz kisa bir Google yorumu birakmaniz bize cok destek olur.";
+    }
+
+    if ($pipelineStage === 'appointment' && $appointmentDate !== '') {
+        return $firstName . ", randevunuz " . $appointmentDate . ' ' . $appointmentTime . " icin kayitli gorunuyor. Saat ve adres uygunsa bu mesaja kisaca donmeniz yeterli.";
+    }
+
+    if ($pipelineStage === 'quoted') {
+        return $firstName . ", " . $title . " icin fiyat bilginiz hazir. Uygun gorurseniz size en yakin randevu saatini hemen ayiralim.";
+    }
+
+    if ($pipelineStage === 'called') {
+        return $firstName . ", az onceki gorusmemize istinaden size en uygun slotu ayarlayabilirim. Uygunsaniz bugun icin planlama yapalim.";
+    }
+
+    if ($pipelineStage === 'completed') {
+        return $firstName . ", hizmet tamamlandi gorunuyor. Kisa bir memnuniyet geri bildirimi paylasirsaniz sonraki takipleri buna gore duzenleyebilirim.";
+    }
+
+    return $firstName . ", NisanProClean'e biraktiginiz " . $title . " talebinizi aldim. Uygunluk ve net fiyat icin isterseniz hemen planlama yapabiliriz.";
+}
+
 function isAdminAuthed(): bool
 {
     return isset($_SESSION[ADMIN_SESSION_KEY]) && $_SESSION[ADMIN_SESSION_KEY] === true;
@@ -2227,7 +2317,13 @@ function handleAdminLeads(string $storageDir): void
 
     $total = count($filtered);
     $offset = ($page - 1) * $pageSize;
-    $records = array_slice($filtered, $offset, $pageSize);
+    $records = array_map(static function (array $row): array {
+        $priority = leadPriorityMeta($row);
+        $row['priority_score'] = $priority['score'];
+        $row['priority_label'] = $priority['label'];
+        $row['suggested_message'] = leadSuggestedMessage($row);
+        return $row;
+    }, array_slice($filtered, $offset, $pageSize));
 
     logAdminAction($storageDir, 'admin_leads', true, ['total' => $total, 'page' => $page, 'filters' => ['lead_type' => $leadType, 'pipeline_stage' => $pipelineStage, 'source' => $source, 'due_only' => $dueOnly]]);
     respond(200, ['success' => true, 'total' => $total, 'page' => $page, 'page_size' => $pageSize, 'records' => $records]);

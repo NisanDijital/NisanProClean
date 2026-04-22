@@ -24,6 +24,9 @@
     .confirmed { background:#203a5a; color:#8fc7ff; }
     .done { background:#1f4b34; color:#8bf7c1; }
     .cancelled { background:#4e2330; color:#ff98b0; }
+    .prio-acil { background:#53222f; color:#ffafbe; }
+    .prio-sicak { background:#4a3a12; color:#ffd36a; }
+    .prio-normal { background:#1e3546; color:#a9d7ff; }
     .table-wrap { overflow:auto; }
     .check { display:flex; gap:6px; align-items:center; }
     textarea { min-height:74px; min-width:220px; resize:vertical; }
@@ -101,7 +104,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Tip</th><th>Musteri</th><th>Akis</th><th>Takip</th><th>Checklist</th><th>Not</th><th>Islem</th></tr></thead>
+            <thead><tr><th>Tip</th><th>Musteri</th><th>Akis</th><th>Takip</th><th>Checklist</th><th>Mesaj</th><th>Not</th><th>Islem</th></tr></thead>
             <tbody id="leadBody"></tbody>
           </table>
         </div>
@@ -239,6 +242,20 @@
       return type === 'subscription' ? 'Uyelik' : 'Randevu';
     }
 
+    async function copyText(value) {
+      if (!value) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(value);
+        return;
+      }
+      const tmp = document.createElement('textarea');
+      tmp.value = value;
+      document.body.appendChild(tmp);
+      tmp.select();
+      document.execCommand('copy');
+      tmp.remove();
+    }
+
     async function loadLeads() {
       const q = new URLSearchParams({ page: '1', page_size: '80' });
       if ($('leadTypeFilter').value) q.set('lead_type', $('leadTypeFilter').value);
@@ -259,6 +276,7 @@
             ${lead.appointment_date ? `<br><span class="muted">${escapeHtml(lead.appointment_date)} ${escapeHtml(String(lead.appointment_time || '').slice(0,5))}</span>` : ''}
           </td>
           <td>
+            <span class="pill prio-${escapeHtml(lead.priority_label || 'normal')}">${escapeHtml(lead.priority_label || 'normal')}</span><br>
             <span class="muted">Durum: ${escapeHtml(lead.status || '-')}</span><br>
             <select data-lead-stage="${lead.lead_type}:${lead.id}">
               ${Object.entries(pipelineLabels).map(([value, label]) => `<option value="${value}" ${lead.pipeline_stage===value?'selected':''}>${label}</option>`).join('')}
@@ -271,6 +289,10 @@
           <td>
             <label class="check tiny"><input type="checkbox" data-lead-review="${lead.lead_type}:${lead.id}" ${Number(lead.review_requested) ? 'checked' : ''} /> Yorum</label>
             <label class="check tiny"><input type="checkbox" data-lead-beforeafter="${lead.lead_type}:${lead.id}" ${Number(lead.before_after_ready) ? 'checked' : ''} /> Before/After</label>
+          </td>
+          <td>
+            <textarea data-lead-message="${lead.lead_type}:${lead.id}" readonly>${escapeHtml(lead.suggested_message || '')}</textarea>
+            <button class="secondary" data-lead-copy="${lead.lead_type}:${lead.id}">Mesaji Kopyala</button>
           </td>
           <td>
             <textarea data-lead-note="${lead.lead_type}:${lead.id}" placeholder="Takip notu...">${escapeHtml(lead.admin_note || '')}</textarea>
@@ -304,8 +326,20 @@
         });
       });
 
+      document.querySelectorAll('button[data-lead-copy]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const key = btn.getAttribute('data-lead-copy');
+          try {
+            await copyText(leadBody.querySelector(`[data-lead-message="${key}"]`).value);
+            panelMsg.textContent = 'Mesaj panoya kopyalandi.';
+          } catch (e) {
+            panelMsg.textContent = e.message || 'Mesaj kopyalanamadi.';
+          }
+        });
+      });
+
       if (!leadBody.children.length) {
-        leadBody.innerHTML = '<tr><td colspan="7" class="muted">Lead bulunamadi.</td></tr>';
+        leadBody.innerHTML = '<tr><td colspan="8" class="muted">Lead bulunamadi.</td></tr>';
       }
     }
 
