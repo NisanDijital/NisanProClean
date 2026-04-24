@@ -8,6 +8,7 @@
     "sitemap:generate": "node ./scripts/generate-sitemap.mjs",
     "schema:check:live": "node ./scripts/schema-live-check.mjs",
     "nap:check": "node ./scripts/nap-consistency-check.mjs",
+    "index:health": "node ./scripts/index-health-check.mjs",
     "traffic:gap": "node ./scripts/traffic-gap-report.mjs",
     "prebuild": "npm run -s sitemap:generate",
     "build": "vite build",
