@@ -5,6 +5,15 @@ RewriteCond %{HTTPS} !=on [OR]
 RewriteCond %{HTTP_HOST} ^www\.nisankoltukyikama\.com$ [NC]
 RewriteRule ^ https://nisankoltukyikama.com%{REQUEST_URI} [L,R=301]
 
+# Redirect common legacy paths discovered by crawlers
+RedirectMatch 301 ^/index\.html$ /
+RedirectMatch 301 ^/public_html/(.*)$ /$1
+RedirectMatch 301 ^/nisanproclean/?$ /
+RedirectMatch 301 ^/nisanproclean/(.*)$ /
+
+# Serve a custom 404 page instead of a blank host error
+ErrorDocument 404 /404.html
+
 # Ensure charset header for text responses
 AddDefaultCharset UTF-8
 

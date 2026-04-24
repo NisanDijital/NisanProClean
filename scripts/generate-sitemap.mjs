@@ -7,7 +7,7 @@ const SITEMAP_PATH = path.join(PUBLIC_DIR, "sitemap.xml");
 
 const today = new Date().toISOString().slice(0, 10);
 
-const legalPages = new Set(["kvkk.html", "gizlilik.html", "cerez-politikasi.html", "kullanim-sartlari.html"]);
+const legalPages = new Set(["kvkk.html", "gizlilik.html", "cerez-politikasi.html", "kullanim-sartlari.html", "404.html"]);
 
 const urlPriority = (urlPath) => {
   if (urlPath === "/") return "1.0";
