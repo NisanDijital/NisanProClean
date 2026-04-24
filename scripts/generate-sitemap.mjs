@@ -42,6 +42,7 @@ const collectPublicUrls = async () => {
     if (!entry.isFile()) continue;
     if (!entry.name.endsWith(".html")) continue;
     if (entry.name === "index.html") continue;
+    if (legalPages.has(entry.name)) continue;
     urls.add(`/${entry.name}`);
   }
 
