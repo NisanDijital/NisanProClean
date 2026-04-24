@@ -5,11 +5,6 @@ RewriteCond %{HTTPS} !=on [OR]
 RewriteCond %{HTTP_HOST} ^www\.nisankoltukyikama\.com$ [NC]
 RewriteRule ^ https://nisankoltukyikama.com%{REQUEST_URI} [L,R=301]
 
-# Clean old/deployment artifact URLs that Google may have discovered earlier
-RewriteRule ^index\.html$ / [L,R=301]
-RewriteRule ^public_html/(.*)$ /$1 [L,R=301]
-RewriteRule ^nisanproclean/?(.*)$ / [L,R=301]
-
 # Ensure charset header for text responses
 AddDefaultCharset UTF-8
 
