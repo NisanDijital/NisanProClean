@@ -79,6 +79,7 @@ const Footer: React.FC = () => {
             <h4 className="text-white font-bold mb-6">Kurumsal</h4>
             <ul className="flex flex-col gap-3 text-gray-400 text-sm">
               <li><a href="#features" className="hover:text-primary transition-colors">Hakkimizda</a></li>
+              <li><a href="/blog/" className="hover:text-primary transition-colors">Blog Rehberi</a></li>
               <li><a href="#testimonials" className="hover:text-primary transition-colors">Yorumlar</a></li>
               <li><a href="#referans" className="hover:text-primary transition-colors">Referans Programi</a></li>
               <li><a href="#contact" className="hover:text-primary transition-colors">Iletisim</a></li>
