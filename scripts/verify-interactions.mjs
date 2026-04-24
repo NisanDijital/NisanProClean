@@ -9,10 +9,10 @@ try {
   await page.goto(URL, { waitUntil: "networkidle" });
 
   await page.locator("#testimonials").scrollIntoViewIfNeeded();
-  const reviewButton = page.getByRole("button", { name: "Yorum Yap & 150 TL Kazan!" });
+  const reviewButton = page.getByRole("button", { name: "Hizmet Gorusunu Paylas" });
   await reviewButton.click();
   const modalVisibleByText = await page
-    .locator("text=Degerlendir & Kazan")
+    .locator("text=Hizmeti Degerlendir")
     .first()
     .isVisible()
     .catch(() => false);
