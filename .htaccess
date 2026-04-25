@@ -22,4 +22,10 @@ AddDefaultCharset UTF-8
   Header always set X-Powered-By "NisanProClean"
   Header always set X-UA-Compatible "IE=edge"
   Header always set X-Site-Name "nisankoltukyikama.com"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set Content-Language "tr"
 </IfModule>
