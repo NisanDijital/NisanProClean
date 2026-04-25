@@ -23,28 +23,41 @@ const urlFreq = (urlPath) => (legalPages.has(urlPath.replace(/^\//, "")) ? "mont
 
 const asUrl = (urlPath) => `${SITE_URL}${urlPath}`;
 
+const slashPath = (p) => p.replace(/\\/g, "/");
+
 const collectPublicUrls = async () => {
-  const entries = await fs.readdir(PUBLIC_DIR, { withFileTypes: true });
   const urls = new Set(["/"]);
 
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      const indexPath = path.join(PUBLIC_DIR, entry.name, "index.html");
-      try {
-        await fs.access(indexPath);
-        urls.add(`/${entry.name}/`);
-      } catch {
-        // ignore folders without index.html
-      }
-      continue;
-    }
+  const walk = async (dirAbs, rel = "") => {
+    const entries = await fs.readdir(dirAbs, { withFileTypes: true });
+    for (const entry of entries) {
+      const abs = path.join(dirAbs, entry.name);
+      const nextRel = rel ? path.join(rel, entry.name) : entry.name;
 
-    if (!entry.isFile()) continue;
-    if (!entry.name.endsWith(".html")) continue;
-    if (entry.name === "index.html") continue;
-    if (legalPages.has(entry.name)) continue;
-    urls.add(`/${entry.name}`);
-  }
+      if (entry.isDirectory()) {
+        await walk(abs, nextRel);
+        continue;
+      }
+
+      if (!entry.isFile()) continue;
+      if (!entry.name.endsWith(".html")) continue;
+
+      const relNorm = slashPath(nextRel);
+      if (relNorm === "index.html") continue;
+      if (legalPages.has(relNorm.split("/").pop() || "")) continue;
+
+      if (entry.name === "index.html") {
+        const folder = slashPath(path.dirname(nextRel));
+        if (folder && folder !== ".") {
+          urls.add(`/${folder}/`);
+        }
+      } else {
+        urls.add(`/${relNorm}`);
+      }
+    }
+  };
+
+  await walk(PUBLIC_DIR);
 
   return Array.from(urls).sort((a, b) => a.localeCompare(b, "tr"));
 };
