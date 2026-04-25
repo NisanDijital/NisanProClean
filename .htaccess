@@ -9,8 +9,10 @@ RewriteRule ^ https://nisankoltukyikama.com%{REQUEST_URI} [L,R=301]
 RedirectMatch 301 ^/public_html/index\.html$ /
 RedirectMatch 301 ^/index\.html$ /
 RedirectMatch 301 ^/public_html/(.*)$ /$1
+RedirectMatch 301 ^/(public_html/)+(.+)$ /$2
 RedirectMatch 301 ^/nisanproclean/?$ /
 RedirectMatch 301 ^/nisanproclean/(.*)$ /
+RedirectMatch 301 ^/home/?$ /
 
 # Serve a custom 404 page instead of a blank host error
 ErrorDocument 404 /404.html
