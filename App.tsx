@@ -2,9 +2,6 @@ import React, { Suspense, lazy, useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import CookieConsent from "./components/CookieConsent";
-import Marquee from "./components/Marquee";
-import Features from "./components/Features";
-import SplitSection from "./components/SplitSection";
 import LazyRender from "./components/LazyRender";
 import {
   hasTrackingConsent,
@@ -25,6 +22,9 @@ const FAQ = lazy(() => import("./components/FAQ"));
 const Blog = lazy(() => import("./components/Blog"));
 const CTA = lazy(() => import("./components/CTA"));
 const SEOContent = lazy(() => import("./components/SEOContent"));
+const Marquee = lazy(() => import("./components/Marquee"));
+const Features = lazy(() => import("./components/Features"));
+const SplitSection = lazy(() => import("./components/SplitSection"));
 const Footer = lazy(() => import("./components/Footer"));
 const ScrollToTop = lazy(() => import("./components/ScrollToTop"));
 const FloatingWhatsApp = lazy(() => import("./components/FloatingWhatsApp"));
@@ -39,6 +39,16 @@ const DeferredSectionsFallback: React.FC = () => (
       <div className="h-64 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
       <div className="h-[28rem] rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
       <div className="h-72 rounded-2xl bg-white/[0.04] border border-white/10 animate-pulse" />
+    </div>
+  </section>
+);
+
+const MidSectionsFallback: React.FC = () => (
+  <section className="py-12 px-4" aria-hidden="true">
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="h-16 rounded-xl bg-white/[0.04] border border-white/10 animate-pulse" />
+      <div className="h-24 rounded-xl bg-white/[0.04] border border-white/10 animate-pulse" />
+      <div className="h-96 rounded-xl bg-white/[0.04] border border-white/10 animate-pulse" />
     </div>
   </section>
 );
@@ -92,90 +102,94 @@ const App: React.FC = () => {
       <Navbar />
       <main>
         <Hero />
-        <Marquee />
-        <Features />
+        <LazyRender minHeight={1200}>
+          <Suspense fallback={<MidSectionsFallback />}>
+            <Marquee />
+            <Features />
 
-        <section id="services" className="py-20 px-4 scroll-mt-24">
-          <div className="max-w-7xl mx-auto flex flex-col gap-24">
-            <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-gray-100">
-              Hizmet bolgesi: Afyon Merkez
-            </div>
-            <SplitSection
-              image={IMAGES.livingRoom}
-              imageAlt="Modern salon koltugu"
-              category="Yerinde Yikama"
-              title="Evinizdeki Ferahlik"
-              description="L koltuk, berjer ve cekyat gibi yuzeyleri yerinden oynatmadan profesyonel ekipmanla temizliyoruz."
-              theme="primary"
-              reverse={false}
-            >
-              <ul className="flex flex-col gap-3 text-gray-300 mt-2">
-                <li className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
-                  <span>Leke ve koku giderme</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
-                  <span>Hizli kuruma teknolojisi</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
-                  <span>Anti alerjik koruma</span>
-                </li>
-              </ul>
-              <a
-                href={CONTACT_INFO.phoneLink}
-                data-analytics-source="services_call_cta"
-                title="Hizmet icin telefonla hemen ara"
-                className="mt-4 flex items-center gap-2 text-white font-bold hover:gap-4 transition-all"
-              >
-                <span>Hemen arayin: {CONTACT_INFO.phone}</span>
-                <span className="material-symbols-outlined text-primary">call</span>
-              </a>
-              <a
-                href="/koltuk-yikama/"
-                title="Koltuk yikama detay sayfasina git"
-                className="mt-2 inline-flex items-center gap-2 text-primary font-semibold hover:text-cyan-300 transition-colors"
-              >
-                <span>Detayli hizmet sayfasi</span>
-                <span className="material-symbols-outlined text-sm">arrow_outward</span>
-              </a>
-            </SplitSection>
+            <section id="services" className="py-20 px-4 scroll-mt-24">
+              <div className="max-w-7xl mx-auto flex flex-col gap-24">
+                <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-gray-100">
+                  Hizmet bolgesi: Afyon Merkez
+                </div>
+                <SplitSection
+                  image={IMAGES.livingRoom}
+                  imageAlt="Modern salon koltugu"
+                  category="Yerinde Yikama"
+                  title="Evinizdeki Ferahlik"
+                  description="L koltuk, berjer ve cekyat gibi yuzeyleri yerinden oynatmadan profesyonel ekipmanla temizliyoruz."
+                  theme="primary"
+                  reverse={false}
+                >
+                  <ul className="flex flex-col gap-3 text-gray-300 mt-2">
+                    <li className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
+                      <span>Leke ve koku giderme</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
+                      <span>Hizli kuruma teknolojisi</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-primary text-sm">check_circle</span>
+                      <span>Anti alerjik koruma</span>
+                    </li>
+                  </ul>
+                  <a
+                    href={CONTACT_INFO.phoneLink}
+                    data-analytics-source="services_call_cta"
+                    title="Hizmet icin telefonla hemen ara"
+                    className="mt-4 flex items-center gap-2 text-white font-bold hover:gap-4 transition-all"
+                  >
+                    <span>Hemen arayin: {CONTACT_INFO.phone}</span>
+                    <span className="material-symbols-outlined text-primary">call</span>
+                  </a>
+                  <a
+                    href="/koltuk-yikama/"
+                    title="Koltuk yikama detay sayfasina git"
+                    className="mt-2 inline-flex items-center gap-2 text-primary font-semibold hover:text-cyan-300 transition-colors"
+                  >
+                    <span>Detayli hizmet sayfasi</span>
+                    <span className="material-symbols-outlined text-sm">arrow_outward</span>
+                  </a>
+                </SplitSection>
 
-            <SplitSection
-              image={IMAGES.office}
-              imageAlt="Kurumsal ofis alani"
-              category="Kurumsal"
-              title="Ofis ve Otel Temizligi"
-              description="Bekleme alani koltuklari ve kurumsal dosemeler icin toplu ve planli temizlik cozumleri sunuyoruz."
-              theme="secondary"
-              reverse
-            >
-              <ul className="flex flex-col gap-3 text-gray-300 mt-2 lg:items-end">
-                <li className="flex items-center gap-3">
-                  <span>Mesai disinda uygulama</span>
-                  <span className="material-symbols-outlined text-secondary text-sm">check_circle</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span>Toplu alimda ozel fiyat</span>
-                  <span className="material-symbols-outlined text-secondary text-sm">check_circle</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span>Duzenli bakim anlasmasi</span>
-                  <span className="material-symbols-outlined text-secondary text-sm">check_circle</span>
-                </li>
-              </ul>
-              <a
-                href="/arac-koltugu-yikama/"
-                title="Kurumsal ve arac koltugu yikama detaylarina git"
-                className="mt-4 inline-flex items-center gap-2 text-secondary font-semibold hover:text-cyan-300 transition-colors lg:self-end"
-              >
-                <span>Kurumsal ve arac hizmet detaylari</span>
-                <span className="material-symbols-outlined text-sm">arrow_outward</span>
-              </a>
-            </SplitSection>
-          </div>
-        </section>
+                <SplitSection
+                  image={IMAGES.office}
+                  imageAlt="Kurumsal ofis alani"
+                  category="Kurumsal"
+                  title="Ofis ve Otel Temizligi"
+                  description="Bekleme alani koltuklari ve kurumsal dosemeler icin toplu ve planli temizlik cozumleri sunuyoruz."
+                  theme="secondary"
+                  reverse
+                >
+                  <ul className="flex flex-col gap-3 text-gray-300 mt-2 lg:items-end">
+                    <li className="flex items-center gap-3">
+                      <span>Mesai disinda uygulama</span>
+                      <span className="material-symbols-outlined text-secondary text-sm">check_circle</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span>Toplu alimda ozel fiyat</span>
+                      <span className="material-symbols-outlined text-secondary text-sm">check_circle</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <span>Duzenli bakim anlasmasi</span>
+                      <span className="material-symbols-outlined text-secondary text-sm">check_circle</span>
+                    </li>
+                  </ul>
+                  <a
+                    href="/arac-koltugu-yikama/"
+                    title="Kurumsal ve arac koltugu yikama detaylarina git"
+                    className="mt-4 inline-flex items-center gap-2 text-secondary font-semibold hover:text-cyan-300 transition-colors lg:self-end"
+                  >
+                    <span>Kurumsal ve arac hizmet detaylari</span>
+                    <span className="material-symbols-outlined text-sm">arrow_outward</span>
+                  </a>
+                </SplitSection>
+              </div>
+            </section>
+          </Suspense>
+        </LazyRender>
 
         <LazyRender minHeight={1800}>
           <Suspense fallback={<DeferredSectionsFallback />}>
