@@ -21,6 +21,7 @@ const Navbar: React.FC = () => {
             <a 
               key={link.name} 
               href={link.href} 
+              title={`${link.name} bolumune git`}
               className="text-sm font-medium text-gray-300 hover:text-primary transition-colors"
             >
               {link.name}
@@ -32,6 +33,7 @@ const Navbar: React.FC = () => {
           <a 
             href={CONTACT_INFO.phoneLink} 
             data-analytics-source="navbar_call"
+            title="NisanProClean telefon ile ara"
             className="hidden lg:flex items-center gap-2 text-white font-bold hover:text-primary transition-colors text-sm"
           >
             <span className="material-symbols-outlined text-primary text-[20px]">call</span>
@@ -41,6 +43,7 @@ const Navbar: React.FC = () => {
           <div className="flex flex-col items-center">
             <a 
               href="#contact"
+              title="Fiyat teklifi bolumune git"
               className="relative overflow-hidden bg-primary hover:bg-cyan-600 text-white text-sm font-bold px-5 py-2.5 rounded-full transition-all duration-300 transform hover:scale-105 shadow-[0_0_20px_rgba(6,182,212,0.4)] block text-center group"
             >
               <span className="relative z-10">Fiyat Teklifi Al</span>
@@ -50,7 +53,8 @@ const Navbar: React.FC = () => {
               href={CONTACT_INFO.whatsappLink}
               data-analytics-source="navbar_whatsapp"
               target="_blank"
-              rel="noopener noreferrer"
+              rel="nofollow noopener noreferrer"
+              title="WhatsApp ile hizli randevu al"
               className="flex items-center gap-1 mt-1 text-[10px] text-green-400 hover:text-green-300 transition-colors font-medium"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="size-3">

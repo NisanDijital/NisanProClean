@@ -9,7 +9,8 @@ const FloatingWhatsApp: React.FC = () => {
       href={`${CONTACT_INFO.whatsappLink}?text=${message}`}
       data-analytics-source="floating_whatsapp"
       target="_blank"
-      rel="noopener noreferrer"
+      rel="nofollow noopener noreferrer"
+      title="WhatsApp ile fotograf gonder ve fiyat al"
       className="fixed bottom-6 right-6 z-50 flex items-center justify-center size-14 bg-[#25D366] text-white rounded-full shadow-[0_0_20px_rgba(37,211,102,0.4)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.6)] transition-all duration-300 group"
       aria-label="WhatsApp ile İletişime Geçin"
     >

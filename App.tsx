@@ -102,6 +102,7 @@ const App: React.FC = () => {
                 <a
                   href={CONTACT_INFO.phoneLink}
                   data-analytics-source="services_call_cta"
+                  title="Hizmet icin telefonla hemen ara"
                   className="mt-4 flex items-center gap-2 text-white font-bold hover:gap-4 transition-all"
                 >
                   <span>Hemen arayin: {CONTACT_INFO.phone}</span>
@@ -109,6 +110,7 @@ const App: React.FC = () => {
                 </a>
                 <a
                   href="/koltuk-yikama/"
+                  title="Koltuk yikama detay sayfasina git"
                   className="mt-2 inline-flex items-center gap-2 text-primary font-semibold hover:text-cyan-300 transition-colors"
                 >
                   <span>Detayli hizmet sayfasi</span>
@@ -141,6 +143,7 @@ const App: React.FC = () => {
                 </ul>
                 <a
                   href="/arac-koltugu-yikama/"
+                  title="Kurumsal ve arac koltugu yikama detaylarina git"
                   className="mt-4 inline-flex items-center gap-2 text-secondary font-semibold hover:text-cyan-300 transition-colors lg:self-end"
                 >
                   <span>Kurumsal ve arac hizmet detaylari</span>

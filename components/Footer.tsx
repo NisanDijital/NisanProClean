@@ -38,6 +38,7 @@ const Footer: React.FC = () => {
             <a
               href={CONTACT_INFO.phoneLink}
               data-analytics-source="footer_call"
+              title="NisanProClean telefon ile ara"
               className="inline-flex items-center gap-2 text-primary font-bold hover:text-cyan-300 transition-colors"
             >
               <span className="material-symbols-outlined text-sm">phone</span>
@@ -48,7 +49,8 @@ const Footer: React.FC = () => {
               <a
                 href={CONTACT_INFO.instagram}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="nofollow noopener noreferrer"
+                title="NisanProClean Instagram sayfasini ac"
                 className="size-10 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-gray-400 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-600 hover:text-white hover:border-transparent transition-all duration-300"
                 aria-label="Instagram"
               >
@@ -78,22 +80,22 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="text-white font-bold mb-6">Kurumsal</h4>
             <ul className="flex flex-col gap-3 text-gray-400 text-sm">
-              <li><a href="#features" className="hover:text-primary transition-colors">Hakkimizda</a></li>
-              <li><a href="/blog/" className="hover:text-primary transition-colors">Blog Rehberi</a></li>
-              <li><a href="#testimonials" className="hover:text-primary transition-colors">Yorumlar</a></li>
-              <li><a href="#referans" className="hover:text-primary transition-colors">Referans Programi</a></li>
-              <li><a href="#contact" className="hover:text-primary transition-colors">Iletisim</a></li>
+              <li><a href="#features" title="Hakkimizda bolumune git" className="hover:text-primary transition-colors">Hakkimizda</a></li>
+              <li><a href="/blog/" title="Blog rehber sayfasini ac" className="hover:text-primary transition-colors">Blog Rehberi</a></li>
+              <li><a href="#testimonials" title="Musteri yorumlari bolumune git" className="hover:text-primary transition-colors">Yorumlar</a></li>
+              <li><a href="#referans" title="Referans programi bolumune git" className="hover:text-primary transition-colors">Referans Programi</a></li>
+              <li><a href="#contact" title="Iletisim bolumune git" className="hover:text-primary transition-colors">Iletisim</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-white font-bold mb-6">Hizmetlerimiz</h4>
             <ul className="flex flex-col gap-3 text-gray-400 text-sm">
-              <li><a href="/koltuk-yikama/" className="hover:text-primary transition-colors">Koltuk Yikama</a></li>
-              <li><a href="/yatak-yikama/" className="hover:text-primary transition-colors">Yatak Yikama</a></li>
-              <li><a href="/arac-koltugu-yikama/" className="hover:text-primary transition-colors">Arac Koltuk Yikama</a></li>
-              <li><a href="/sandalye-yikama/" className="hover:text-primary transition-colors">Sandalye Yikama</a></li>
-              <li><a href="/fiyatlar/" className="hover:text-primary transition-colors">Fiyatlar</a></li>
+              <li><a href="/koltuk-yikama/" title="Koltuk yikama hizmet detay sayfasi" className="hover:text-primary transition-colors">Koltuk Yikama</a></li>
+              <li><a href="/yatak-yikama/" title="Yatak yikama hizmet detay sayfasi" className="hover:text-primary transition-colors">Yatak Yikama</a></li>
+              <li><a href="/arac-koltugu-yikama/" title="Arac koltugu yikama hizmet detay sayfasi" className="hover:text-primary transition-colors">Arac Koltuk Yikama</a></li>
+              <li><a href="/sandalye-yikama/" title="Sandalye yikama hizmet detay sayfasi" className="hover:text-primary transition-colors">Sandalye Yikama</a></li>
+              <li><a href="/fiyatlar/" title="Fiyat rehberi sayfasini ac" className="hover:text-primary transition-colors">Fiyatlar</a></li>
             </ul>
           </div>
 
@@ -129,10 +131,10 @@ const Footer: React.FC = () => {
             </div>
           </div>
           <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-            <a href="/kvkk.html" className="text-gray-600 hover:text-white transition-colors text-xs">KVKK Aydinlatma Metni</a>
-            <a href="/gizlilik.html" className="text-gray-600 hover:text-white transition-colors text-xs">Gizlilik Politikasi</a>
-            <a href="/cerez-politikasi.html" className="text-gray-600 hover:text-white transition-colors text-xs">Cerez Politikasi</a>
-            <a href="/kullanim-sartlari.html" className="text-gray-600 hover:text-white transition-colors text-xs">Kullanim Sartlari</a>
+            <a href="/kvkk.html" title="KVKK aydinlatma metnini ac" className="text-gray-600 hover:text-white transition-colors text-xs">KVKK Aydinlatma Metni</a>
+            <a href="/gizlilik.html" title="Gizlilik politikasini ac" className="text-gray-600 hover:text-white transition-colors text-xs">Gizlilik Politikasi</a>
+            <a href="/cerez-politikasi.html" title="Cerez politikasini ac" className="text-gray-600 hover:text-white transition-colors text-xs">Cerez Politikasi</a>
+            <a href="/kullanim-sartlari.html" title="Kullanim sartlarini ac" className="text-gray-600 hover:text-white transition-colors text-xs">Kullanim Sartlari</a>
           </div>
         </div>
       </div>

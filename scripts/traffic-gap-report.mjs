@@ -4,6 +4,7 @@ import path from "node:path";
 const SITE_DOMAIN = process.env.GSC_SITE_DOMAIN || "nisankoltukyikama.com";
 const SITE_URL = `https://${SITE_DOMAIN}`;
 const DAYS = Number.parseInt(process.env.TRAFFIC_REPORT_DAYS || "7", 10);
+const CLARITY_DAYS = Math.min(3, Math.max(1, DAYS));
 const CLARITY_TOKEN = process.env.CLARITY_EXPORT_TOKEN || "";
 
 const GSC_CLIENT_ID = process.env.GSC_CLIENT_ID || "";
@@ -96,10 +97,7 @@ async function fetchGsc(accessToken) {
 
 async function fetchClarity() {
   if (!CLARITY_TOKEN) return;
-  const uri = `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=${Math.max(
-    1,
-    DAYS
-  )}&dimension1=URL`;
+  const uri = `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=${CLARITY_DAYS}&dimension1=URL`;
   const resp = await fetch(uri, {
     headers: {
       Authorization: `Bearer ${CLARITY_TOKEN}`,
@@ -127,6 +125,10 @@ try {
   await fetchClarity();
 } catch (err) {
   result.notes.push(`Clarity fetch failed: ${err.message}`);
+}
+
+if (DAYS > 3) {
+  result.notes.push(`Clarity API en fazla 3 gun destekliyor; raporda Clarity icin ${CLARITY_DAYS} gun kullanildi.`);
 }
 
 try {

@@ -33,7 +33,7 @@ const CookieConsent: React.FC = () => {
         <p className="text-gray-300 text-xs leading-relaxed">
           Site performansini olcmek ve deneyimi iyilestirmek icin analitik cerezler kullanmak istiyoruz.
           Detaylar icin{" "}
-          <a href="/cerez-politikasi.html" className="text-primary hover:underline">
+          <a href="/cerez-politikasi.html" title="Cerez politikasi sayfasini ac" className="text-primary hover:underline">
             Cerez Politikasi
           </a>
           .
