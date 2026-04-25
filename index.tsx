@@ -22,9 +22,3 @@ root.render(
     <App />
   </React.StrictMode>
 );
-
-window.requestAnimationFrame(() => {
-  document.body.classList.add("app-ready");
-  const shell = document.getElementById("app-shell");
-  if (shell) shell.remove();
-});
