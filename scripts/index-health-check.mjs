@@ -135,3 +135,6 @@ await fs.writeFile(outMd, `${md.join("\n")}\n`, "utf8");
 console.log(`Index report JSON: ${outJson}`);
 console.log(`Index report MD: ${outMd}`);
 console.log(`OVERALL_OK=${summary.overallOk}`);
+if (!summary.overallOk) {
+  process.exitCode = 1;
+}

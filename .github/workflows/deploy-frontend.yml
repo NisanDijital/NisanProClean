@@ -87,3 +87,13 @@ jobs:
           GSC_CLIENT_SECRET: ${{ secrets.GSC_CLIENT_SECRET }}
           GSC_REFRESH_TOKEN: ${{ secrets.GSC_REFRESH_TOKEN }}
         run: node ./scripts/gsc-submit-sitemap-api.mjs
+
+      - name: Post-deploy index health check
+        run: npm run -s index:health
+
+      - name: Upload index health reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: index-health-report
+          path: reports/index-health/
