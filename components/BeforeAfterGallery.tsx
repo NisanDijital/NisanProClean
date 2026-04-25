@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { GALLERY_ITEMS } from "../constants";
+import { GALLERY_ITEMS } from "../contentConstants";
 import OptimizedImage from "./OptimizedImage";
 
 const ImageSlider: React.FC<{ beforeImage: string; afterImage: string; title: string }> = ({

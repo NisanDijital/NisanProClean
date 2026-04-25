@@ -1,5 +1,5 @@
 import React from "react";
-import { FAQ_ITEMS } from "../constants";
+import { FAQ_ITEMS } from "../contentConstants";
 
 const FAQ: React.FC = () => {
   return (

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BLOG_CATEGORIES, BLOG_POSTS } from "../constants";
+import { BLOG_CATEGORIES, BLOG_POSTS } from "../contentConstants";
 import OptimizedImage from "./OptimizedImage";
 
 const Blog: React.FC = () => {
