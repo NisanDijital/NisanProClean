@@ -22,8 +22,6 @@ const Hero: React.FC = () => {
     <header className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-background-dark/30 via-background-dark/80 to-background-dark z-10" />
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/20 rounded-full blur-[120px] animate-pulse-slow hidden md:block" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-secondary/20 rounded-full blur-[100px] animate-float hidden md:block" />
         <OptimizedImage
           src={IMAGES.heroBg}
           srcSet={heroSrcSet}
@@ -92,7 +90,7 @@ const Hero: React.FC = () => {
       </div>
 
       <div className="absolute hidden lg:flex flex-col gap-3 bottom-32 right-20">
-        <div className="flex items-center gap-4 bg-gradient-to-r from-red-900/80 to-background-dark p-4 rounded-2xl animate-float border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.3)] backdrop-blur-md">
+        <div className="flex items-center gap-4 bg-background-dark/85 p-4 rounded-2xl border border-red-500/40">
           <div className="size-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
             <span className="material-symbols-outlined">gavel</span>
           </div>
@@ -103,8 +101,7 @@ const Hero: React.FC = () => {
         </div>
 
         <div
-          className="flex items-center gap-4 bg-gradient-to-r from-green-900/80 to-background-dark p-4 rounded-2xl animate-float border border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.2)] backdrop-blur-md"
-          style={{ animationDelay: "1s" }}
+          className="flex items-center gap-4 bg-background-dark/85 p-4 rounded-2xl border border-green-500/40"
         >
           <div className="size-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
             <span className="material-symbols-outlined">shield</span>
