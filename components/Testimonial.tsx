@@ -5,21 +5,21 @@ import { CONTACT_INFO } from '../constants';
 const REVIEWS = [
   {
     id: 1,
-    text: "Ä°ki Ã§ocuklu bir evimiz var ve koltuklarÄ±mÄ±zÄ±n durumu gerÃ§ekten iÃ§ler acÄ±sÄ±ydÄ±. NisanProClean ekibi geldi, kumaÅŸÄ± detaylÄ±ca analiz edip iÅŸleme baÅŸladÄ±lar. SonuÃ§ inanÄ±lmaz! Koltuklar ilk gÃ¼nkÃ¼ gibi oldu, Ã¼stelik 4 saatte kurudu.",
-    name: "AyÅŸe Y.",
+    text: "İki çocuklu bir evimiz var ve koltuklarımızın durumu gerçekten içler acısıydı. NisanProClean ekibi geldi, kumaşı detaylıca analiz edip işleme başladılar. Sonuç inanılmaz! Koltuklar ilk günkü gibi oldu, üstelik 4 saatte kurudu.",
+    name: "Ayşe Y.",
     title: "Uydukent, Afyon",
     avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop"
   },
   {
     id: 2,
-    text: "Daha Ã¶nce baÅŸka firmalara da yÄ±katmÄ±ÅŸtÄ±m ama hep bir kusma veya koku kalÄ±yordu. Bu sefer buharlÄ± yÄ±kama tercih ettim. Hem lekeler tamamen Ã§Ä±ktÄ± hem de ev mis gibi koktu. Kesinlikle tavsiye ederim.",
+    text: "Daha önce başka firmalara da yıkatmıştım ama hep bir kusma veya koku kalıyordu. Bu sefer buharlı yıkama tercih ettim. Hem lekeler tamamen çıktı hem de ev mis gibi koktu. Kesinlikle tavsiye ederim.",
     name: "Mehmet D.",
     title: "Erenler, Afyon",
     avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop"
   },
   {
     id: 3,
-    text: "Kedimizin koltuÄŸa bÄ±raktÄ±ÄŸÄ± o inatÃ§Ä± kokudan ne yaptÄ±ysak kurtulamamÄ±ÅŸtÄ±k. Ã–zel enzim bazlÄ± ÅŸampuanlarÄ± sayesinde kokudan eser kalmadÄ±. Ä°ÅŸlerini gerÃ§ekten profesyonel yapÄ±yorlar.",
+    text: "Kedimizin koltuğa bıraktığı o inatçı kokudan ne yaptıysak kurtulamamıştık. Özel enzim bazlı şampuanları sayesinde kokudan eser kalmadı. İşlerini gerçekten profesyonel yapıyorlar.",
     name: "Zeynep K.",
     title: "Afyon Merkez",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&auto=format&fit=crop"
@@ -35,8 +35,8 @@ const Testimonial: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const stars = 'â­'.repeat(rating);
-    const message = `*NisanProClean Hizmet Gorusum*\n\n${stars}\n*Isim:* ${name}\n*Bolge:* ${location}\n*Yorum:* ${reviewText}\n\nNot: Isterseniz once/sonra fotograflarinizi bu mesaja ekleyebilirsiniz.`;
+    const stars = "⭐".repeat(rating);
+    const message = `*NisanProClean Hizmet Görüşüm*\n\n${stars}\n*İsim:* ${name}\n*Bölge:* ${location}\n*Yorum:* ${reviewText}\n\nNot: İsterseniz önce/sonra fotoğraflarınızı bu mesaja ekleyebilirsiniz.`;
     
     // Format phone number (remove spaces)
     const phone = CONTACT_INFO.whatsapp.replace(/\s/g, '');
@@ -76,10 +76,10 @@ const Testimonial: React.FC = () => {
               <span className="material-symbols-outlined text-[16px] font-solid">star</span>
               <span className="material-symbols-outlined text-[16px] font-solid">star</span>
             </div>
-            <span className="text-white font-bold text-sm">50+ GerÃ§ek MÃ¼ÅŸteri Yorumu</span>
+            <span className="text-white font-bold text-sm">50+ Gerçek Müşteri Yorumu</span>
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">MÃ¼ÅŸterilerimiz Ne Diyor?</h2>
-          <p className="text-gray-400">Afyon'da kalitemizi deneyimleyen mÃ¼ÅŸterilerimizin gerÃ§ek yorumlarÄ±.</p>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">Müşterilerimiz Ne Diyor?</h2>
+          <p className="text-gray-400">Afyon'da kalitemizi deneyimleyen müşterilerimizin gerçek yorumları.</p>
         </div>
         
         <div className="grid md:grid-cols-3 gap-8 mb-16">
@@ -122,11 +122,11 @@ const Testimonial: React.FC = () => {
               className="relative bg-background-dark hover:bg-surface-dark text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all flex items-center gap-3"
             >
               <span className="material-symbols-outlined text-yellow-400 animate-pulse">redeem</span>
-              <span>Hizmet Gorusunu Paylas</span>
+              <span>Hizmet Görüşünü Paylaş</span>
             </button>
           </div>
           <p className="text-gray-400 text-sm mt-6 leading-relaxed">
-            Hizmetimiz sonrasinda deneyiminizi bizimle paylasabilirsiniz. Dilerseniz <strong className="text-white">once/sonra fotografinizi</strong> da mesaja ekleyebilirsiniz.
+            Hizmetimiz sonrasında deneyiminizi bizimle paylaşabilirsiniz. Dilerseniz <strong className="text-white">önce/sonra fotoğrafınızı</strong> da mesaja ekleyebilirsiniz.
           </p>
         </div>
       </div>
@@ -146,8 +146,8 @@ const Testimonial: React.FC = () => {
               <div className="size-12 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center mx-auto mb-3">
                 <span className="material-symbols-outlined">stars</span>
               </div>
-              <h3 className="text-2xl font-bold text-white">Hizmeti Degerlendir</h3>
-              <p className="text-gray-400 text-sm mt-1">Yorumunuzu dogrudan bize iletin.</p>
+              <h3 className="text-2xl font-bold text-white">Hizmeti Değerlendir</h3>
+              <p className="text-gray-400 text-sm mt-1">Yorumunuzu doğrudan bize iletin.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -169,25 +169,25 @@ const Testimonial: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Ä°sim Soyisim</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">İsim Soyisim</label>
                   <input 
                     required
                     type="text" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-[#111318] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    placeholder="Ã–rn: Ahmet Y."
+                    placeholder="Örn: Ahmet Y."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">BÃ¶lge / Mahalle</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Bölge / Mahalle</label>
                   <input 
                     required
                     type="text" 
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="w-full bg-[#111318] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    placeholder="Ã–rn: Erenler"
+                    placeholder="Örn: Erenler"
                   />
                 </div>
               </div>
@@ -200,14 +200,14 @@ const Testimonial: React.FC = () => {
                   onChange={(e) => setReviewText(e.target.value)}
                   rows={3}
                   className="w-full bg-[#111318] border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none"
-                  placeholder="Hizmetimizden ne kadar memnun kaldÄ±nÄ±z?"
+                  placeholder="Hizmetimizden ne kadar memnun kaldınız?"
                 ></textarea>
               </div>
 
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 flex items-start gap-3">
                 <span className="material-symbols-outlined text-primary shrink-0">add_a_photo</span>
                 <p className="text-xs text-gray-300 leading-relaxed">
-                  <strong className="text-white">FotoÄŸraf Ekleme:</strong> Yorumunuzu gÃ¶nderdikten sonra aÃ§Ä±lacak olan WhatsApp penceresinde, Ã¶ncesi/sonrasÄ± fotoÄŸraflarÄ±nÄ±zÄ± mesaja ekleyebilirsiniz.
+                  <strong className="text-white">Fotoğraf Ekleme:</strong> Yorumunuzu gönderdikten sonra açılacak olan WhatsApp penceresinde, öncesi/sonrası fotoğraflarınızı mesaja ekleyebilirsiniz.
                 </p>
               </div>
 
@@ -216,7 +216,7 @@ const Testimonial: React.FC = () => {
                 className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl mt-2 flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-900/20"
               >
                 <span className="material-symbols-outlined">send</span>
-                <span>WhatsApp ile Gonder</span>
+                <span>WhatsApp ile Gönder</span>
               </button>
             </form>
           </div>
