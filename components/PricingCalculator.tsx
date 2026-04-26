@@ -500,7 +500,7 @@ const PricingCalculator: React.FC = () => {
                               Bunu tek seferde ödemek yerine;
                             </p>
                             <p className="text-gray-400 text-[10px] leading-relaxed">
-                              Ayda sadece <strong className="text-yellow-500">249 TL</strong>'ye Gümüş Üye olup bu işlemi yılda 1 kez bedavaya getirebileceğinizi biliyor muydunuz? <a href="#fiyat-hesapla" onClick={(e) => { e.preventDefault(); document.getElementById('kasko-paketleri')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-yellow-500 hover:underline">Paketleri İncele</a>
+                              Ayda sadece <strong className="text-yellow-500">249 TL</strong>'ye Gümüş Üye olup bu işlemi yılda 1 kez bedavaya getirebileceğinizi biliyor muydunuz? <a href="#fiyat-hesapla" title="Kasko paketleri bolumune git" onClick={(e) => { e.preventDefault(); document.getElementById('kasko-paketleri')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-yellow-500 hover:underline">Paketleri İncele</a>
                             </p>
                           </div>
                         </div>

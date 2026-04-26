@@ -326,6 +326,7 @@ const Referral: React.FC = () => {
             <div className="md:w-1/3 flex justify-end w-full">
               <a
                 href="#contact"
+                title="Iletisim ve randevu bolumune git"
                 className="w-full md:w-auto px-8 py-4 bg-surface-dark border border-secondary/50 hover:bg-secondary/10 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]"
               >
                 <span>Kurumsal Teklif Al</span>
