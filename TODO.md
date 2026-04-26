@@ -77,6 +77,40 @@ CSP su an minimal (`upgrade-insecure-requests`). Ileride stricter CSP policy yaz
 - [ ] Remarketing ve donusum optimizasyon testleri yap
 - [x] AI ekip rol dagilimi ve isletim modeli dokumante et (`docs/ai-ekip-isletim-sistemi.md`)
 
+## Denetim Checklisti (2026-04-26)
+
+Bu bolum, son kapsamli analiz raporundan cikan aksiyonlari tek yerde takip etmek icin eklendi.
+
+### A) Kritik Teknik / Performans
+
+- [ ] TTFB 5s+ problemini kalici olarak kapat (hedef: < 1.0s)
+- [x] HTML ve asset cache politikasini sikilastir (`.htaccess` cache-control + expires)
+- [x] Kritik olmayan bolumleri lazy-load et (AI modulu, fiyat araci, alt bolumler)
+- [ ] Canli PSI desktop skorunu 70+ bandina sabitle
+- [ ] Canli PSI mobile skorunu 90+ bandinda stabil tut
+- [ ] Lighthouse olcumleri icin haftalik "median" takip raporu olustur
+
+### B) SEO Render / Icerik Gorunurlugu
+
+- [ ] SPA render riskine karsi prerender/SSR karari al ve uygula (Prerender.io veya Next.js gecis karari)
+- [x] Canonical, robots, sitemap, schema temel seti aktif tut
+- [ ] Heading hiyerarsisini kaynakta da guclendir (H1-H2-H3 kontrol listesi)
+- [ ] Blog sayfalari icin meta description ve title zenginlestirme turu yap
+
+### C) CRO / Guven Katmani
+
+- [ ] Hero alanina once-sonra kanit gorsellerini ekle
+- [ ] "50+ yorum" iddiasini gercek veriyle hizala (gosterilen kart + kaynak tutarliligi)
+- [ ] "Esya koruma sigortasi - Yakinda" metnini netlestir (aktifse kanitla, degilse kaldir)
+- [ ] Fiyat hesaplama -> randevu akisini tek akista kisalt (multi-step sadeleştirme)
+
+### D) Google Isletme Profili (birlikte acilacak)
+
+- [ ] Google Business Profile kaydini ac / sahiplik dogrulamasini tamamla
+- [ ] NAP bilgilerini birebir site ile hizala (ad, telefon, hizmet bolgesi)
+- [ ] Haftalik GBP icerik rutini baslat (post + gorsel + yorum talebi)
+- [ ] GBP linkini schema `sameAs` ve footer ile net bagla
+
 ## Oncelik Sirasi
 
 1. `robots.txt` + `sitemap.xml` + `canonical`
