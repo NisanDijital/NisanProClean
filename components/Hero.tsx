@@ -58,6 +58,7 @@ const Hero: React.FC = () => {
           <a
             href={CONTACT_INFO.phoneLink}
             data-analytics-source="hero_call"
+            title="NisanProClean telefon ile hemen ara"
             className="group relative overflow-hidden flex items-center justify-center gap-3 bg-white text-background-dark px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]"
           >
             <span className="relative z-10">{CONTACT_INFO.phone}</span>
@@ -69,7 +70,8 @@ const Hero: React.FC = () => {
           <a
             href={CONTACT_INFO.instagram}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="nofollow noopener noreferrer"
+            title="NisanProClean Instagram sayfasini ac"
             className="flex items-center justify-center gap-3 px-8 py-4 rounded-full font-bold text-lg text-white border border-white/20 hover:bg-white/5 transition-all duration-300 backdrop-blur-sm"
           >
             <span className="material-symbols-outlined">photo_camera</span>
@@ -107,13 +109,8 @@ const Hero: React.FC = () => {
             <span className="material-symbols-outlined">shield</span>
           </div>
           <div className="text-left">
-            <p className="text-white font-bold text-sm flex items-center gap-2">
-              Esya koruma sigortasi
-              <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                Yakinda
-              </span>
-            </p>
-            <p className="text-gray-300 text-xs">%100 guvenli hizmet</p>
+            <p className="text-white font-bold text-sm">Hassas yuzey guvencesi</p>
+            <p className="text-gray-300 text-xs">Kumas turune uygun, kontrollu ve guvenli uygulama</p>
           </div>
         </div>
       </div>
@@ -122,6 +119,7 @@ const Hero: React.FC = () => {
         href="#features"
         onClick={scrollToNextSection}
         data-analytics-source="hero_scroll_hint"
+        title="Bir sonraki bolume kaydir"
         className="absolute bottom-8 left-1/2 -translate-x-1/2 inline-flex flex-col items-center gap-1 text-white/50 hover:text-white transition-colors"
       >
         <span className="text-[10px] tracking-[0.24em] font-semibold uppercase animate-pulse">Asagi Kaydir</span>

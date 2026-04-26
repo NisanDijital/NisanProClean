@@ -101,7 +101,7 @@ Bu bolum, son kapsamli analiz raporundan cikan aksiyonlari tek yerde takip etmek
 
 - [ ] Hero alanina once-sonra kanit gorsellerini ekle
 - [ ] "50+ yorum" iddiasini gercek veriyle hizala (gosterilen kart + kaynak tutarliligi)
-- [ ] "Esya koruma sigortasi - Yakinda" metnini netlestir (aktifse kanitla, degilse kaldir)
+- [x] "Esya koruma sigortasi - Yakinda" metnini netlestir (2026-04-26: hero metni kaldirildi, yerine desteklenebilir guvence dili yazildi)
 - [ ] Fiyat hesaplama -> randevu akisini tek akista kisalt (multi-step sadeleştirme)
 
 ### D) Google Isletme Profili (birlikte acilacak)

@@ -60,7 +60,7 @@ const Footer: React.FC = () => {
               </a>
               <span
                 className="size-10 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-gray-600 cursor-not-allowed"
-                title="Yakinda aktif"
+                title="Facebook profili su an aktif degil"
               >
                 <svg fill="currentColor" viewBox="0 0 24 24" className="size-5">
                   <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
@@ -68,7 +68,7 @@ const Footer: React.FC = () => {
               </span>
               <span
                 className="size-10 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-gray-600 cursor-not-allowed"
-                title="Yakinda aktif"
+                title="X profili su an aktif degil"
               >
                 <svg fill="currentColor" viewBox="0 0 24 24" className="size-4">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231z" />
