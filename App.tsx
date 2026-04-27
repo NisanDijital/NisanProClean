@@ -57,21 +57,40 @@ const App: React.FC = () => {
   const [showDeferredUi, setShowDeferredUi] = useState(false);
 
   useEffect(() => {
+    let trackingTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    let trackingIdleId: number | undefined;
+    let cleanupConversion: (() => void) | undefined;
+
     const runTrackingInit = () => {
       if (!hasTrackingConsent()) return;
+      if (cleanupConversion) cleanupConversion();
       initializeAnalytics(import.meta.env.VITE_GA_MEASUREMENT_ID);
       initializeClarity(import.meta.env.VITE_CLARITY_PROJECT_ID, import.meta.env.VITE_CLARITY_ALLOWED_HOSTS);
       trackGaRealtimePing("app_init");
+      cleanupConversion = initializeConversionTracking();
     };
 
-    const handleConsent = () => runTrackingInit();
+    const scheduleTrackingInit = () => {
+      if ("requestIdleCallback" in window) {
+        trackingIdleId = (
+          window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout?: number }) => number }
+        ).requestIdleCallback(runTrackingInit, { timeout: 2200 });
+        return;
+      }
+      trackingTimeoutId = globalThis.setTimeout(runTrackingInit, 900);
+    };
 
-    runTrackingInit();
+    const handleConsent = () => scheduleTrackingInit();
+
+    scheduleTrackingInit();
     window.addEventListener("nisan:consent-updated", handleConsent as EventListener);
-    const cleanupConversion = initializeConversionTracking();
     return () => {
+      if (trackingTimeoutId) window.clearTimeout(trackingTimeoutId);
+      if (trackingIdleId && "cancelIdleCallback" in window) {
+        (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(trackingIdleId);
+      }
+      if (cleanupConversion) cleanupConversion();
       window.removeEventListener("nisan:consent-updated", handleConsent as EventListener);
-      cleanupConversion();
     };
   }, []);
 
