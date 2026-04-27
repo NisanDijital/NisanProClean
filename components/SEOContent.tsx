@@ -108,7 +108,7 @@ const SEOContent: React.FC = () => {
                 uygulanir.
               </li>
               <li>
-                Fiyatlandirma kumaş tipi, takim boyutu ve leke yogunluguna gore
+                Fiyatlandirma kumas tipi, takim boyutu ve leke yogunluguna gore
                 netlesir.
               </li>
               <li>

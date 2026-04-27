@@ -54,6 +54,75 @@ const Hero: React.FC = () => {
           dokusunu yeniliyoruz.
         </p>
 
+        <div className="grid w-full max-w-5xl gap-4 md:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-3xl border border-white/10 bg-background-dark/75 p-5 text-left backdrop-blur-md">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+                  Hizli Kanit
+                </p>
+                <p className="mt-1 text-sm text-gray-300">
+                  Once-sonra sonucu, fiyat ve randevu akisina hizlica ulasin.
+                </p>
+              </div>
+              <a
+                href="#gallery"
+                title="Oncesi ve sonrasi galeri bolumune git"
+                className="inline-flex items-center gap-2 rounded-full border border-primary/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:border-primary hover:bg-primary/10"
+              >
+                Galeriye Git
+                <span className="material-symbols-outlined text-base">arrow_downward</span>
+              </a>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+                  <span className="material-symbols-outlined text-primary text-base">image_search</span>
+                  Once
+                </div>
+                <p className="mt-3 text-lg font-bold text-white">Leke, koku ve yogun kullanim izi</p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-400">
+                  Acik renkli koltuk, yatak ve arac dosemelerinde sorunlu bolgeleri netlestiriyoruz.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-primary/30 bg-primary/10 p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                  <span className="material-symbols-outlined text-base">auto_awesome</span>
+                  Sonra
+                </div>
+                <p className="mt-3 text-lg font-bold text-white">Kontrollu nem ve hizli kuruma</p>
+                <p className="mt-2 text-sm leading-relaxed text-gray-200">
+                  Uygun yuzeyde 4-6 saat kuruma hedefiyle, kumas turune gore temizlik protokolu uyguluyoruz.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="rounded-3xl border border-white/10 bg-background-dark/75 p-5 text-left backdrop-blur-md">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+                Hizmet Sekli
+              </p>
+              <h2 className="mt-3 text-xl font-bold text-white">Afyon Merkez odakli yerinde temizlik</h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-300">
+                Telefon veya WhatsApp ile fotograf gonderin, uygun gun ve saat bloklarini birlikte netlestirelim.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-left">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300">
+                Kuruma Beklentisi
+              </p>
+              <p className="mt-3 text-3xl font-black text-white">4-6 saat</p>
+              <p className="mt-2 text-sm leading-relaxed text-gray-200">
+                Kumas turu ve ortam sicakligina gore degisir. Hizmet sonunda net kullanim bilgilendirmesi veriyoruz.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <a
             href={CONTACT_INFO.phoneLink}
@@ -87,7 +156,7 @@ const Hero: React.FC = () => {
             <span className="material-symbols-outlined text-[16px] font-solid">star</span>
             <span className="material-symbols-outlined text-[16px] font-solid">star</span>
           </div>
-          <span>Afyon'da 250+ mutlu musteri</span>
+          <span>Afyon genelinde yerinde hizmet, net fiyat ve hizli geri donus</span>
         </div>
       </div>
 
@@ -102,9 +171,7 @@ const Hero: React.FC = () => {
           </div>
         </div>
 
-        <div
-          className="flex items-center gap-4 bg-background-dark/85 p-4 rounded-2xl border border-green-500/40"
-        >
+        <div className="flex items-center gap-4 bg-background-dark/85 p-4 rounded-2xl border border-green-500/40">
           <div className="size-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
             <span className="material-symbols-outlined">shield</span>
           </div>

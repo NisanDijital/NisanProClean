@@ -1,208 +1,131 @@
-import React, { useState, useMemo } from 'react';
-import { trackFormSubmit, trackWhatsAppClick } from '../analytics';
-import { CONTACT_INFO } from '../constants';
-import { apiPost } from '../apiClient';
+import React, { useMemo, useState } from "react";
+import { trackWhatsAppClick } from "../analytics";
+import { CONTACT_INFO } from "../constants";
 
-// Örnek Fiyatlandırma (Bu fiyatları daha sonra kolayca değiştirebilirsiniz)
-const PRICING = {
-  koltuk: [
-    { id: 'maxiTakim', name: 'Maxi Takım', price: 3000 },
-    { id: 'megaKose', name: 'U / Büyük Köşe Takımı', price: 3000 },
-    { id: 'chesterTakim', name: 'Chester Koltuk Takımı', price: 2500 },
-    { id: 'minderliTakim', name: 'Minderli Koltuk Takımı', price: 2500 },
-    { id: 'duzTakim', name: 'Düz Koltuk Takımı', price: 2000 },
-    { id: 'takim3211', name: '3+2+1+1 Takım', price: 1800 },
-    { id: 'buyukLKoltuk', name: 'L Koltuk (Büyük)', price: 1250 },
-    { id: 'ucluKoltuk', name: 'Üçlü Koltuk', price: 750 },
-    { id: 'ikiliKoltuk', name: 'İkili Koltuk', price: 550 },
-    { id: 'tekliKoltuk', name: 'Tekli Koltuk / Berjer', price: 350 },
-    { id: 'sandalye', name: 'Ev Sandalyesi (Adet)', price: 200 },
-  ],
-  yatak: [
-    { id: 'ciftYatak', name: 'Çift Kişilik Yatak', price: 1750 },
-    { id: 'tekYatak', name: 'Tek Kişilik Yatak', price: 1000 },
-    { id: 'bazaBasligi', name: 'Baza Başlığı', price: 500 },
-  ],
-  arac: [
-    { id: 'aracKoltugu', name: 'Binek Araç Koltuğu', price: 2000 },
-    { id: 'suvArac', name: 'SUV / Ticari Araç Koltuğu', price: 2500 },
-  ]
-};
-
-const ADDONS = [
-  { id: 'buhar', name: 'Sıcak Buhar Dezenfeksiyonu', price: 300, desc: '140 derece buhar ile derinlemesine hijyen' },
-  { id: 'leke', name: 'Özel Leke Çıkarma', price: 500, desc: 'İnatçı lekeler için endüstriyel müdahale' },
-  { id: 'pet', name: 'Evcil Hayvan Koku Giderici', price: 250, desc: 'Enzim bazlı derinlemesine koku imhası' }
-];
-
-type SubscriptionPlan = {
+type PricedItem = {
+  id: string;
   name: string;
   price: number;
 };
 
-type SubscriptionForm = {
-  name: string;
-  phone: string;
-  address: string;
+const PRICING: Record<string, PricedItem[]> = {
+  koltuk: [
+    { id: "maxiTakim", name: "Maxi Takim", price: 3000 },
+    { id: "megaKose", name: "U / Buyuk Kose Takimi", price: 3000 },
+    { id: "chesterTakim", name: "Chester Koltuk Takimi", price: 2500 },
+    { id: "minderliTakim", name: "Minderli Koltuk Takimi", price: 2500 },
+    { id: "duzTakim", name: "Duz Koltuk Takimi", price: 2000 },
+    { id: "takim3211", name: "3+2+1+1 Takim", price: 1800 },
+    { id: "buyukLKoltuk", name: "L Koltuk (Buyuk)", price: 1250 },
+    { id: "ucluKoltuk", name: "Uclu Koltuk", price: 750 },
+    { id: "ikiliKoltuk", name: "Ikili Koltuk", price: 550 },
+    { id: "tekliKoltuk", name: "Tekli Koltuk / Berjer", price: 350 },
+    { id: "sandalye", name: "Ev Sandalyesi (Adet)", price: 200 },
+  ],
+  yatak: [
+    { id: "ciftYatak", name: "Cift Kisilik Yatak", price: 1750 },
+    { id: "tekYatak", name: "Tek Kisilik Yatak", price: 1000 },
+    { id: "bazaBasligi", name: "Baza Basligi", price: 500 },
+  ],
+  arac: [
+    { id: "aracKoltugu", name: "Binek Arac Koltugu", price: 2000 },
+    { id: "suvArac", name: "SUV / Ticari Arac Koltugu", price: 2500 },
+  ],
 };
+
+const ADDONS: PricedItem[] = [
+  { id: "buhar", name: "Sicak Buhar Dezenfeksiyonu", price: 300 },
+  { id: "leke", name: "Ozel Leke Cikarma", price: 500 },
+  { id: "pet", name: "Evcil Hayvan Koku Giderici", price: 250 },
+];
+
+const TIME_SLOTS = [
+  "09:00 - 12:00",
+  "13:00 - 16:00",
+  "17:00 - 20:00",
+];
+
+const currency = (value: number) => `${value.toLocaleString("tr-TR")} TL`;
 
 const PricingCalculator: React.FC = () => {
   const [items, setItems] = useState<Record<string, number>>({});
   const [addons, setAddons] = useState<Record<string, boolean>>({});
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('Öğleden Önce (09:00 - 13:00)');
-  const [isGuaranteeModalOpen, setIsGuaranteeModalOpen] = useState(false);
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState(TIME_SLOTS[0]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [subscriptionMessage, setSubscriptionMessage] = useState('');
-  const [subscriptionError, setSubscriptionError] = useState('');
-  const [subscriptionLoadingPlan, setSubscriptionLoadingPlan] = useState('');
-  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
-  const [activeSubscriptionPlan, setActiveSubscriptionPlan] = useState<SubscriptionPlan | null>(null);
-  const [subscriptionForm, setSubscriptionForm] = useState<SubscriptionForm>({
-    name: '',
-    phone: '',
-    address: '',
-  });
+  const [isGuaranteeModalOpen, setIsGuaranteeModalOpen] = useState(false);
 
   const updateItem = (id: string, delta: number) => {
-    setItems(prev => {
+    setItems((prev) => {
       const current = prev[id] || 0;
       const next = Math.max(0, current + delta);
       if (next === 0) {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
+        const clone = { ...prev };
+        delete clone[id];
+        return clone;
       }
       return { ...prev, [id]: next };
     });
   };
 
   const toggleAddon = (id: string) => {
-    setAddons(prev => ({ ...prev, [id]: !prev[id] }));
+    setAddons((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const { total, subTotal, discount, summary } = useMemo(() => {
-    let calcTotal = 0;
-    const calcSummary: { name: string; qty: number; price: number; total: number }[] = [];
+  const { total, summary } = useMemo(() => {
+    const nextSummary: { name: string; qty: number; total: number }[] = [];
+    let nextTotal = 0;
 
-    // Calculate Items
-    Object.entries(PRICING).forEach(([_, categoryItems]) => {
-      categoryItems.forEach(item => {
+    Object.values(PRICING).forEach((group) => {
+      group.forEach((item) => {
         const qty = items[item.id] || 0;
-        if (qty > 0) {
-          const itemTotal = qty * item.price;
-          calcTotal += itemTotal;
-          calcSummary.push({ name: item.name, qty, price: item.price, total: itemTotal });
-        }
+        if (!qty) return;
+        const lineTotal = qty * item.price;
+        nextTotal += lineTotal;
+        nextSummary.push({ name: item.name, qty, total: lineTotal });
       });
     });
 
-    // Calculate Addons (only if there are items selected)
-    const hasItems = calcSummary.length > 0;
-    if (hasItems) {
-      ADDONS.forEach(addon => {
-        if (addons[addon.id]) {
-          calcTotal += addon.price;
-          calcSummary.push({ name: addon.name, qty: 1, price: addon.price, total: addon.price });
-        }
-      });
-    }
+    ADDONS.forEach((addon) => {
+      if (!addons[addon.id]) return;
+      nextTotal += addon.price;
+      nextSummary.push({ name: addon.name, qty: 1, total: addon.price });
+    });
 
-    const calcDiscount = 0; // İndirim kaldırıldı
-    const finalTotal = calcTotal;
-
-    return { total: finalTotal, subTotal: calcTotal, discount: calcDiscount, summary: calcSummary };
-  }, [items, addons]);
+    return { total: nextTotal, summary: nextSummary };
+  }, [addons, items]);
 
   const handleWhatsAppOrder = () => {
-    if (summary.length === 0) return;
-    if (!acceptedTerms) return;
-    
-    let message = "Merhaba, web sitenizden fiyat hesaplaması yaptım ve randevu almak istiyorum.\n\n*Seçtiğim Hizmetler:*\n";
-    summary.forEach(item => {
-      message += `- ${item.qty}x ${item.name}\n`;
-    });
-    message += `\n*Ödenecek Tutar:* ${total} TL\n\n`;
+    if (!summary.length || !acceptedTerms) return;
 
-    if (date) {
-      const [year, month, day] = date.split('-');
-      message += `*Talep Edilen Randevu:*\nTarih: ${day}.${month}.${year}\nSaat: ${time}\n\n`;
-    } else {
-      message += `*Talep Edilen Randevu:*\nEn kısa sürede uygun bir vakit.\n\n`;
-    }
+    const lines = summary.map((item) => `- ${item.qty}x ${item.name}: ${currency(item.total)}`);
+    const dateLine = date
+      ? `Tarih: ${date.split("-").reverse().join(".")}\nSaat: ${time}`
+      : "Tarih: En kisa surede uygun zaman\nSaat: Fark etmez";
 
-    message += `Bu tarihte müsaitlik durumunuz nedir? Randevumu onaylar mısınız?`;
+    const message = [
+      "Merhaba, web sitenizden fiyat hesaplamasi yaptim ve randevu almak istiyorum.",
+      "",
+      "*Sectigim Hizmetler*",
+      ...lines,
+      "",
+      `*Toplam Tutar*`,
+      currency(total),
+      "",
+      "*Talep Edilen Randevu*",
+      dateLine,
+      "",
+      "Musaitlik durumunu paylasir misiniz?",
+    ].join("\n");
 
     const encodedMessage = encodeURIComponent(message);
-    trackWhatsAppClick('pricing_calculator', {
+    trackWhatsAppClick("pricing_calculator", {
       selected_items: summary.length,
       total,
       has_date: Boolean(date),
       time_slot: time,
     });
-    window.open(`https://wa.me/${CONTACT_INFO.phone.replace(/\s+/g, '')}?text=${encodedMessage}`, '_blank');
-  };
-
-  const openSubscriptionModal = (planName: string, planPrice: number) => {
-    setSubscriptionMessage('');
-    setSubscriptionError('');
-    setActiveSubscriptionPlan({ name: planName, price: planPrice });
-    setSubscriptionForm({ name: '', phone: '', address: '' });
-    setIsSubscriptionModalOpen(true);
-  };
-
-  const closeSubscriptionModal = () => {
-    if (subscriptionLoadingPlan) return;
-    setIsSubscriptionModalOpen(false);
-    setActiveSubscriptionPlan(null);
-  };
-
-  const handleSubscriptionCreate = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!activeSubscriptionPlan) return;
-
-    setSubscriptionMessage('');
-    setSubscriptionError('');
-
-    const name = subscriptionForm.name.trim();
-    const phone = subscriptionForm.phone.trim();
-    const address = subscriptionForm.address.trim();
-
-    if (name.length < 2) {
-      setSubscriptionError('Lutfen ad soyad bilgisini dogru girin.');
-      return;
-    }
-
-    const phoneDigits = phone.replace(/\D/g, '');
-    if (phoneDigits.length < 10) {
-      setSubscriptionError('Lutfen telefon numaranizi dogru girin.');
-      return;
-    }
-
-    setSubscriptionLoadingPlan(activeSubscriptionPlan.name);
-    try {
-      await apiPost('subscription_create', {
-        name,
-        phone,
-        address,
-        plan_name: activeSubscriptionPlan.name,
-        plan_price: activeSubscriptionPlan.price,
-        hp: '',
-      });
-      trackFormSubmit('pricing_subscription_modal', {
-        plan_name: activeSubscriptionPlan.name,
-        plan_price: activeSubscriptionPlan.price,
-      });
-      setSubscriptionMessage('Uyelik basvurunuz alindi. Ekibimiz sizi arayacak.');
-      setIsSubscriptionModalOpen(false);
-      setActiveSubscriptionPlan(null);
-      setSubscriptionForm({ name: '', phone: '', address: '' });
-    } catch (error) {
-      const text = error instanceof Error ? error.message : 'Uyelik basvurusu gonderilemedi.';
-      setSubscriptionError(text);
-    } finally {
-      setSubscriptionLoadingPlan('');
-    }
+    window.open(`${CONTACT_INFO.whatsappLink}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -211,39 +134,42 @@ const PricingCalculator: React.FC = () => {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-medium text-sm mb-4">
             <span className="material-symbols-outlined text-sm">calculate</span>
-            Şeffaf Fiyatlandırma
+            Seffaf Fiyatlandirma
           </div>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-            Kendi Fiyatınızı <span className="text-gradient-primary">Hesaplayın</span>
+            Kendi Fiyatinizi <span className="text-gradient-primary">Hesaplayin</span>
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Sürpriz maliyetler yok. İhtiyacınız olan hizmetleri seçin, anında tahmini fiyatı görün ve tek tıkla randevunuzu oluşturun.
+            Ihtiyaciniz olan hizmetleri secin, tahmini toplami gorun ve uygun saat blogunu secip WhatsApp uzerinden randevu isteyin.
           </p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left Side: Selectors */}
           <div className="lg:w-2/3 space-y-8">
-            
-            {/* Koltuklar */}
             <div className="glass-card p-6 md:p-8 rounded-2xl border border-white/5">
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">chair</span>
-                Koltuk & Sandalye
+                Koltuk ve Sandalye
               </h3>
               <div className="space-y-4">
-                {PRICING.koltuk.map(item => (
+                {PRICING.koltuk.map((item) => (
                   <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors">
                     <div>
                       <div className="text-white font-medium">{item.name}</div>
-                      <div className="text-primary text-sm">{item.price} TL</div>
+                      <div className="text-primary text-sm">{currency(item.price)}</div>
                     </div>
                     <div className="flex items-center gap-4 bg-background-dark rounded-lg p-1 border border-white/10">
-                      <button onClick={() => updateItem(item.id, -1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                      <button
+                        onClick={() => updateItem(item.id, -1)}
+                        className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                      >
                         <span className="material-symbols-outlined text-sm">remove</span>
                       </button>
                       <span className="text-white font-bold w-4 text-center">{items[item.id] || 0}</span>
-                      <button onClick={() => updateItem(item.id, 1)} className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                      <button
+                        onClick={() => updateItem(item.id, 1)}
+                        className="size-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                      >
                         <span className="material-symbols-outlined text-sm">add</span>
                       </button>
                     </div>
@@ -252,24 +178,27 @@ const PricingCalculator: React.FC = () => {
               </div>
             </div>
 
-            {/* Yatak & Araç */}
             <div className="grid md:grid-cols-2 gap-8">
               <div className="glass-card p-6 rounded-2xl border border-white/5">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                   <span className="material-symbols-outlined text-secondary">bed</span>
-                  Yatak Yıkama
+                  Yatak Yikama
                 </h3>
                 <div className="space-y-4">
-                  {PRICING.yatak.map(item => (
+                  {PRICING.yatak.map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors">
                       <div>
                         <div className="text-white font-medium text-sm">{item.name}</div>
-                        <div className="text-secondary text-xs">{item.price} TL</div>
+                        <div className="text-secondary text-xs">{currency(item.price)}</div>
                       </div>
                       <div className="flex items-center gap-2 bg-background-dark rounded-lg p-1 border border-white/10">
-                        <button onClick={() => updateItem(item.id, -1)} className="size-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md"><span className="material-symbols-outlined text-xs">remove</span></button>
+                        <button onClick={() => updateItem(item.id, -1)} className="size-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md">
+                          <span className="material-symbols-outlined text-xs">remove</span>
+                        </button>
                         <span className="text-white font-bold w-3 text-center text-sm">{items[item.id] || 0}</span>
-                        <button onClick={() => updateItem(item.id, 1)} className="size-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md"><span className="material-symbols-outlined text-xs">add</span></button>
+                        <button onClick={() => updateItem(item.id, 1)} className="size-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md">
+                          <span className="material-symbols-outlined text-xs">add</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -279,19 +208,23 @@ const PricingCalculator: React.FC = () => {
               <div className="glass-card p-6 rounded-2xl border border-white/5">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                   <span className="material-symbols-outlined text-secondary">directions_car</span>
-                  Araç Koltuk Temizliği
+                  Arac Koltuk Temizligi
                 </h3>
                 <div className="space-y-4">
-                  {PRICING.arac.map(item => (
+                  {PRICING.arac.map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-2 rounded-xl hover:bg-white/5 transition-colors">
                       <div>
                         <div className="text-white font-medium text-sm">{item.name}</div>
-                        <div className="text-secondary text-xs">{item.price} TL</div>
+                        <div className="text-secondary text-xs">{currency(item.price)}</div>
                       </div>
                       <div className="flex items-center gap-2 bg-background-dark rounded-lg p-1 border border-white/10">
-                        <button onClick={() => updateItem(item.id, -1)} className="size-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md"><span className="material-symbols-outlined text-xs">remove</span></button>
+                        <button onClick={() => updateItem(item.id, -1)} className="size-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md">
+                          <span className="material-symbols-outlined text-xs">remove</span>
+                        </button>
                         <span className="text-white font-bold w-3 text-center text-sm">{items[item.id] || 0}</span>
-                        <button onClick={() => updateItem(item.id, 1)} className="size-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md"><span className="material-symbols-outlined text-xs">add</span></button>
+                        <button onClick={() => updateItem(item.id, 1)} className="size-6 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-md">
+                          <span className="material-symbols-outlined text-xs">add</span>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -299,245 +232,74 @@ const PricingCalculator: React.FC = () => {
               </div>
             </div>
 
-            {/* Ekstra Hizmetler (Upsell) */}
             <div className="glass-card p-6 md:p-8 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
               <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">auto_awesome</span>
-                Ekstra Koruma & Hijyen
+                Ekstra Koruma ve Hijyen
               </h3>
-              <p className="text-gray-400 text-sm mb-6">Temizliğin ömrünü uzatan profesyonel dokunuşlar.</p>
-              
+              <p className="text-gray-400 text-sm mb-6">Temizligin omrunu uzatan ek dokunuslar.</p>
+
               <div className="grid md:grid-cols-2 gap-4">
-                {ADDONS.map(addon => (
-                  <div 
+                {ADDONS.map((addon) => (
+                  <div
                     key={addon.id}
                     onClick={() => toggleAddon(addon.id)}
-                    className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 flex items-start gap-3 ${addons[addon.id] ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(45,212,191,0.2)]' : 'bg-surface-dark border-white/10 hover:border-white/30'}`}
+                    className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 flex items-start gap-3 ${
+                      addons[addon.id]
+                        ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(45,212,191,0.2)]"
+                        : "bg-surface-dark border-white/10 hover:border-white/30"
+                    }`}
                   >
-                    <div className={`mt-1 size-5 rounded border flex items-center justify-center shrink-0 transition-colors ${addons[addon.id] ? 'bg-primary border-primary text-background-dark' : 'border-gray-500 text-transparent'}`}>
+                    <div
+                      className={`mt-1 size-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                        addons[addon.id] ? "bg-primary border-primary text-background-dark" : "border-gray-500 text-transparent"
+                      }`}
+                    >
                       <span className="material-symbols-outlined text-[14px] font-bold">check</span>
                     </div>
                     <div>
                       <div className="text-white font-bold text-sm">{addon.name}</div>
-                      <div className="text-gray-400 text-xs mt-1">{addon.desc}</div>
-                      <div className="text-primary text-sm font-bold mt-2">+{addon.price} TL</div>
+                      <div className="text-primary text-sm font-bold mt-2">+{currency(addon.price)}</div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* ProClean Care (Kasko) - 3 Tier System */}
-            <div id="kasko-paketleri" className="mt-12 scroll-mt-24">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">ProClean Care <span className="text-gradient-primary">Koltuk Kaskosu</span></h3>
-                <p className="text-gray-400 text-sm">Koltuklarınızı yılda 1 kez yıkatıp kaderine terk etmeyin. İhtiyacınıza uygun paketi seçin, 365 gün koruma altına alın.</p>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6 items-start">
-                {/* Silver */}
-                <div className="glass-card rounded-2xl border border-gray-400/20 bg-gradient-to-b from-gray-400/5 to-transparent p-6 relative">
-                  <div className="text-gray-400 mb-4 flex justify-between items-center">
-                    <span className="material-symbols-outlined text-3xl">shield</span>
-                    <span className="text-xs font-bold uppercase tracking-wider border border-gray-400/30 px-2 py-1 rounded-full">Gümüş</span>
-                  </div>
-                  <div className="mb-6">
-                    <div className="text-3xl font-black text-white">249<span className="text-sm text-gray-500 font-medium"> TL/ay</span></div>
-                    <div className="text-xs text-gray-400 mt-1">Temel Koruma Paketi</div>
-                  </div>
-                  <ul className="space-y-3 mb-8 text-sm text-gray-300">
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-gray-400 text-[18px]">check</span> Yılda 1 kez detaylı takım yıkama</li>
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-gray-400 text-[18px]">check</span> Ek hizmetlerde %20 indirim</li>
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-gray-400 text-[18px]">check</span> WhatsApp destek hattı</li>
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => openSubscriptionModal('Gümüş Kasko', 249)}
-                    disabled={subscriptionLoadingPlan === 'Gümüş Kasko'}
-                    className="block w-full text-center bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-xl transition-colors text-sm disabled:opacity-60"
-                  >
-                    {subscriptionLoadingPlan === 'Gümüş Kasko' ? 'Gönderiliyor...' : 'Gümüş Üye Ol'}
-                  </button>
-                </div>
-
-                {/* Gold */}
-                <div className="glass-card rounded-2xl border border-yellow-500/50 bg-gradient-to-b from-yellow-500/10 to-transparent p-6 relative transform md:-translate-y-4 shadow-[0_0_30px_rgba(234,179,8,0.15)]">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-yellow-400 to-orange-500 text-background-dark text-[10px] font-black uppercase tracking-widest py-1 px-3 rounded-full shadow-lg whitespace-nowrap">En Çok Tercih Edilen</div>
-                  <div className="text-yellow-400 mb-4 flex justify-between items-center mt-2">
-                    <span className="material-symbols-outlined text-3xl">workspace_premium</span>
-                    <span className="text-xs font-bold uppercase tracking-wider border border-yellow-500/30 px-2 py-1 rounded-full bg-yellow-500/10">Altın</span>
-                  </div>
-                  <div className="mb-6">
-                    <div className="text-3xl font-black text-white">399<span className="text-sm text-gray-500 font-medium"> TL/ay</span></div>
-                    <div className="text-xs text-yellow-500/80 mt-1">Standart Aile Paketi</div>
-                  </div>
-                  <ul className="space-y-3 mb-8 text-sm text-gray-300">
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Yılda 2 kez detaylı takım yıkama</li>
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Yılda 1 kez acil lokal müdahale</li>
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Ek hizmetlerde %30 indirim</li>
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-yellow-500 text-[18px]">check_circle</span> Öncelikli randevu hakkı</li>
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => openSubscriptionModal('Altın Kasko', 399)}
-                    disabled={subscriptionLoadingPlan === 'Altın Kasko'}
-                    className="block w-full text-center bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-background-dark font-bold py-3 rounded-xl transition-colors text-sm shadow-lg shadow-yellow-500/20 disabled:opacity-60"
-                  >
-                    {subscriptionLoadingPlan === 'Altın Kasko' ? 'Gönderiliyor...' : 'Altın Üye Ol'}
-                  </button>
-                </div>
-
-                {/* Platinum */}
-                <div className="glass-card rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-cyan-500/10 to-transparent p-6 relative">
-                  <div className="text-cyan-400 mb-4 flex justify-between items-center">
-                    <span className="material-symbols-outlined text-3xl">diamond</span>
-                    <span className="text-xs font-bold uppercase tracking-wider border border-cyan-500/30 px-2 py-1 rounded-full bg-cyan-500/10">Platin</span>
-                  </div>
-                  <div className="mb-6">
-                    <div className="text-3xl font-black text-white">599<span className="text-sm text-gray-500 font-medium"> TL/ay</span></div>
-                    <div className="text-xs text-cyan-400/80 mt-1">VIP & Evcil Hayvan Paketi</div>
-                  </div>
-                  <ul className="space-y-3 mb-8 text-sm text-gray-300">
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Yılda 2 takım + 1 yatak yıkama</li>
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Sınırsız acil lokal müdahale</li>
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Tüm ek hizmetlerde %50 indirim</li>
-                    <li className="flex items-start gap-2"><span className="material-symbols-outlined text-cyan-400 text-[18px]">check</span> Bayramlarda VIP randevu garantisi</li>
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => openSubscriptionModal('Platin VIP Kasko', 599)}
-                    disabled={subscriptionLoadingPlan === 'Platin VIP Kasko'}
-                    className="block w-full text-center bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 font-bold py-3 rounded-xl transition-colors text-sm disabled:opacity-60"
-                  >
-                    {subscriptionLoadingPlan === 'Platin VIP Kasko' ? 'Gönderiliyor...' : 'Platin Üye Ol'}
-                  </button>
-                </div>
-              </div>
-              {subscriptionMessage && (
-                <div className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                  {subscriptionMessage}
-                </div>
-              )}
-              {subscriptionError && (
-                <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                  {subscriptionError}
-                </div>
-              )}
-            </div>
-
           </div>
 
-          {/* Right Side: Receipt / Summary */}
           <div className="lg:w-1/3">
-            {/* Campaign Banner */}
-            <div className="bg-gradient-to-r from-primary/20 to-transparent border border-primary/30 rounded-2xl p-5 mb-6 flex items-start gap-4 shadow-[0_0_20px_rgba(45,212,191,0.1)]">
-              <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                <span className="material-symbols-outlined animate-pulse">local_offer</span>
-              </div>
-              <div>
-                <h4 className="text-white font-bold text-sm mb-1">Bahar Kampanyası</h4>
-                <p className="text-gray-400 text-xs leading-relaxed">Web sitemize özel online randevularda <strong className="text-primary">Öncelikli Hizmet!</strong></p>
-              </div>
-            </div>
-
             <div className="glass-card p-6 rounded-2xl border border-white/10 sticky top-28">
-              <h3 className="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">Sipariş Özeti</h3>
-              
+              <h3 className="text-xl font-bold text-white mb-6 border-b border-white/10 pb-4">Siparis Ozeti</h3>
+
               {summary.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 flex flex-col items-center gap-2">
                   <span className="material-symbols-outlined text-4xl opacity-50">shopping_cart</span>
-                  <p>Henüz bir hizmet seçmediniz.</p>
+                  <p>Henuz bir hizmet secmediniz.</p>
                 </div>
               ) : (
                 <>
-                  <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
+                  <div className="space-y-4 mb-6 max-h-[280px] overflow-y-auto pr-2">
                     {summary.map((item, idx) => (
                       <div key={idx} className="flex justify-between items-start text-sm">
                         <div className="text-gray-300">
                           <span className="text-white font-bold mr-2">{item.qty}x</span>
                           {item.name}
                         </div>
-                        <div className="text-white font-medium whitespace-nowrap ml-4">
-                          {item.total} TL
-                        </div>
+                        <div className="text-white font-medium whitespace-nowrap ml-4">{currency(item.total)}</div>
                       </div>
                     ))}
                   </div>
-                  
-                  <div className="border-t border-white/10 pt-4 mb-6 relative group">
-                    <div className="flex justify-between items-end border-t border-white/5 pt-3 mb-2">
-                      <div className="text-white font-bold text-sm">Ödenecek Tutar</div>
-                      <div className="text-3xl font-black text-primary drop-shadow-[0_0_10px_rgba(45,212,191,0.5)]">
-                        {total} TL
-                      </div>
-                    </div>
-                    
-                    {/* Return On Investment (Tasarruf) Banner */}
-                    {total > 0 && (
-                      <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mt-3 animate-fade-in relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                        <div className="flex gap-2 items-start relative z-10">
-                          <span className="material-symbols-outlined text-emerald-500 text-lg shrink-0">savings</span>
-                          <div>
-                            <p className="text-white text-xs font-bold leading-tight mb-1 flex items-center gap-1">
-                              Tebrikler! <strong className="text-emerald-400">{(45000 - total).toLocaleString('tr-TR')} TL</strong> Tasarruf Ettiniz
-                            </p>
-                            <p className="text-gray-400 text-[10px] leading-relaxed">
-                              Sıfır bir koltuk/yatak takımının ortalama maliyeti 45.000 TL'dir. NisanProClean ile eşyalarınızı ilk günkü yeniliğine kavuşturarak devasa bir bütçe tasarrufu sağladınız.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Upsell to Premium Packages Banner */}
-                    {total >= 1500 && (
-                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mt-3 animate-fade-in">
-                        <div className="flex gap-2 items-start">
-                          <span className="material-symbols-outlined text-yellow-500 text-lg shrink-0">lightbulb</span>
-                          <div>
-                            <p className="text-white text-xs font-bold leading-tight mb-1">
-                              Bunu tek seferde ödemek yerine;
-                            </p>
-                            <p className="text-gray-400 text-[10px] leading-relaxed">
-                              Ayda sadece <strong className="text-yellow-500">249 TL</strong>'ye Gümüş Üye olup bu işlemi yılda 1 kez bedavaya getirebileceğinizi biliyor muydunuz? <a href="#fiyat-hesapla" title="Kasko paketleri bolumune git" onClick={(e) => { e.preventDefault(); document.getElementById('kasko-paketleri')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-yellow-500 hover:underline">Paketleri İncele</a>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
-                    {/* PayTR & Credit Card */}
-                    <div className="mt-4 p-3 bg-white/5 border border-white/10 rounded-xl flex items-center gap-3">
-                      <div className="flex -space-x-2 shrink-0">
-                        <div className="size-8 rounded-full bg-[#1c1f27] border border-white/20 flex items-center justify-center z-20"><span className="text-[10px] font-bold text-white">VISA</span></div>
-                        <div className="size-8 rounded-full bg-[#1c1f27] border border-white/20 flex items-center justify-center z-10"><span className="text-[10px] font-bold text-white">MC</span></div>
-                      </div>
-                      <div>
-                        <p className="text-white text-xs font-bold">Tek Çekim & Nakit Ödeme</p>
-                        <p className="text-gray-400 text-[10px]">*Taksitlendirme işlemi sadece VIP (Altın/Platin) Paketlerde sunulmaktadır.</p>
-                      </div>
+                  <div className="border-t border-white/10 pt-4 mb-6">
+                    <div className="flex justify-between items-end">
+                      <div className="text-white font-bold text-sm">Toplam</div>
+                      <div className="text-3xl font-black text-primary">{currency(total)}</div>
                     </div>
-
-                    {/* 7 Day Guarantee */}
-                    <div 
-                      onClick={() => setIsGuaranteeModalOpen(true)}
-                      className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 cursor-pointer hover:bg-red-500/20 transition-colors group"
-                    >
-                      <span className="material-symbols-outlined text-red-400 text-lg group-hover:scale-110 transition-transform">verified_user</span>
-                      <div>
-                        <p className="text-red-400 text-xs font-bold flex items-center gap-1">
-                          7 Gün Memnuniyet Garantisi 
-                          <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                        </p>
-                        <p className="text-gray-400 text-[10px] leading-relaxed">Şartları okumak için tıklayın. Ücretsiz yeniden yıkama veya iade güvencesi.</p>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-gray-500 mt-4">*Fiyatlar tahmini olup, yerinde yapılacak net tespite göre küçük değişiklikler gösterebilir.</p>
+                    <p className="text-xs text-gray-500 mt-3">
+                      Fiyatlar tahmini olup yerinde yapilacak net tespite gore kucuk degisiklikler gosterebilir.
+                    </p>
                   </div>
 
-                  {/* Randevu Seçimi */}
                   <div className="bg-background-dark border border-white/10 rounded-xl p-4 mb-6">
                     <h4 className="text-white font-bold text-sm mb-3 flex items-center gap-2">
                       <span className="material-symbols-outlined text-primary text-sm">calendar_month</span>
@@ -545,57 +307,71 @@ const PricingCalculator: React.FC = () => {
                     </h4>
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">Tarih Seçin</label>
+                        <label className="block text-xs text-gray-400 mb-1">Tarih Secin</label>
                         <input
                           type="date"
-                          min={new Date().toISOString().split('T')[0]}
+                          min={new Date().toISOString().split("T")[0]}
                           value={date}
                           onChange={(e) => setDate(e.target.value)}
                           className="w-full bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary [color-scheme:dark]"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">Saat Aralığı</label>
-                        <select
-                          value={time}
-                          onChange={(e) => setTime(e.target.value)}
-                          className="w-full bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
-                        >
-                          <option>Öğleden Önce (09:00 - 13:00)</option>
-                          <option>Öğleden Sonra (13:00 - 17:00)</option>
-                          <option>Akşam (17:00 - 20:00)</option>
-                        </select>
+                        <label className="block text-xs text-gray-400 mb-1">Saat Blogu</label>
+                        <div className="grid gap-2">
+                          {TIME_SLOTS.map((slot) => (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setTime(slot)}
+                              className={`rounded-lg border px-3 py-2 text-sm text-left transition-colors ${
+                                time === slot
+                                  ? "border-primary bg-primary/10 text-white"
+                                  : "border-white/10 bg-surface-dark text-gray-300 hover:border-white/30"
+                              }`}
+                            >
+                              {slot}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-center gap-2 text-red-400 text-xs font-medium mb-3 animate-pulse">
-                    <span className="material-symbols-outlined text-[16px]">local_fire_department</span>
-                    Dikkat: Bu hafta için sadece 2 boş randevu kaldı!
-                  </div>
-
-                  {/* Terms Checkbox */}
                   <div className="mb-4 flex items-start gap-3">
-                    <input 
-                      type="checkbox" 
-                      id="terms" 
+                    <input
+                      type="checkbox"
+                      id="terms"
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
                       className="mt-1 w-4 h-4 rounded border-white/20 bg-background-dark text-primary focus:ring-primary focus:ring-offset-background-dark cursor-pointer"
                     />
                     <label htmlFor="terms" className="text-xs text-gray-400 leading-relaxed cursor-pointer select-none">
-                      <button type="button" onClick={(e) => { e.preventDefault(); setIsGuaranteeModalOpen(true); }} className="text-primary hover:underline font-medium">Hizmet ve Garanti Şartnamesi</button>'ni okudum, anladım ve kabul ediyorum.
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setIsGuaranteeModalOpen(true);
+                        }}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Hizmet ve Garanti Sartlarini
+                      </button>{" "}
+                      okudum, anladim ve kabul ediyorum.
                     </label>
                   </div>
 
-                  <button 
+                  <button
                     onClick={handleWhatsAppOrder}
                     disabled={!acceptedTerms}
-                    className={`relative overflow-hidden w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg group ${acceptedTerms ? 'bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-[0_0_20px_rgba(37,211,102,0.3)] hover:shadow-[0_0_30px_rgba(37,211,102,0.5)]' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}`}
+                    className={`relative overflow-hidden w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg ${
+                      acceptedTerms
+                        ? "bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-[0_0_20px_rgba(37,211,102,0.3)]"
+                        : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                    }`}
                   >
                     <span className="material-symbols-outlined relative z-10">chat</span>
                     <span className="relative z-10">WhatsApp'tan Randevu Al</span>
-                    {acceptedTerms && <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shine z-0"></div>}
                   </button>
                 </>
               )}
@@ -604,142 +380,49 @@ const PricingCalculator: React.FC = () => {
         </div>
       </div>
 
-      {isSubscriptionModalOpen && activeSubscriptionPlan && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="bg-surface-dark border border-white/10 rounded-2xl p-5 md:p-6 max-w-md w-full relative shadow-2xl">
-            <button
-              type="button"
-              onClick={closeSubscriptionModal}
-              className="absolute top-3 right-3 text-gray-400 hover:text-white bg-background-dark rounded-full p-1 transition-colors"
-            >
-              <span className="material-symbols-outlined text-base">close</span>
-            </button>
-
-            <div className="mb-4 pr-8">
-              <p className="text-xs text-gray-400 mb-1">Seçilen Paket</p>
-              <h3 className="text-white font-bold text-lg">{activeSubscriptionPlan.name}</h3>
-              <p className="text-primary text-sm">{activeSubscriptionPlan.price} TL/ay</p>
-            </div>
-
-            <form className="space-y-3" onSubmit={handleSubscriptionCreate}>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Ad Soyad</label>
-                <input
-                  type="text"
-                  value={subscriptionForm.name}
-                  onChange={(e) => setSubscriptionForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
-                  placeholder="Ad Soyad"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Telefon</label>
-                <input
-                  type="tel"
-                  value={subscriptionForm.phone}
-                  onChange={(e) => setSubscriptionForm((prev) => ({ ...prev, phone: e.target.value }))}
-                  className="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
-                  placeholder="05XX XXX XX XX"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Adres (Opsiyonel)</label>
-                <textarea
-                  value={subscriptionForm.address}
-                  onChange={(e) => setSubscriptionForm((prev) => ({ ...prev, address: e.target.value }))}
-                  className="w-full bg-background-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary min-h-[80px]"
-                  placeholder="Adresiniz"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={subscriptionLoadingPlan === activeSubscriptionPlan.name}
-                className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-60"
-              >
-                {subscriptionLoadingPlan === activeSubscriptionPlan.name ? 'Gönderiliyor...' : 'Üyelik Başvurusu Gönder'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Guarantee Modal */}
       {isGuaranteeModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-surface-dark border border-white/10 rounded-3xl p-6 md:p-8 max-w-2xl w-full relative max-h-[90vh] flex flex-col shadow-2xl">
-            <button 
+            <button
               onClick={() => setIsGuaranteeModalOpen(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white bg-background-dark rounded-full p-1 transition-colors"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
-            
+
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10 shrink-0">
               <div className="size-10 rounded-full bg-primary/20 text-primary flex items-center justify-center">
                 <span className="material-symbols-outlined">gavel</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">Hizmet ve Garanti Şartnamesi</h3>
-                <p className="text-gray-400 text-xs">NisanProClean Müşteri Sözleşmesi</p>
+                <h3 className="text-xl font-bold text-white">Hizmet ve Garanti Sartlari</h3>
+                <p className="text-gray-400 text-xs">NisanProClean musteri bilgilendirme metni</p>
               </div>
             </div>
 
             <div className="overflow-y-auto pr-2 custom-scrollbar text-sm text-gray-300 space-y-6">
               <section>
-                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-sm">cleaning_services</span>
-                  1. Hizmetin Kapsamı
-                </h4>
-                <p className="leading-relaxed">Firmamız, endüstriyel vakum ve buhar makineleri ile profesyonel solüsyonlar kullanarak yerinde temizlik hizmeti sunmaktadır. Leke çıkarma işlemi, kumaşın türüne ve lekenin yapısına bağlı olarak kumaşa zarar vermeyecek maksimum eforla gerçekleştirilir.</p>
+                <h4 className="text-white font-bold mb-2">1. Hizmetin Kapsami</h4>
+                <p className="leading-relaxed">
+                  Yerinde temizlik hizmeti, kumas turune uygun ekipman ve profesyonel urunlerle uygulanir. Leke cikarma sureci, yuzeye zarar vermeden alinabilecek en iyi sonuca gore planlanir.
+                </p>
               </section>
-
               <section>
-                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-sm">person</span>
-                  2. Müşterinin Sorumlulukları
-                </h4>
-                <ul className="list-disc pl-5 space-y-1 leading-relaxed">
-                  <li>İşlem yapılacak alanda standart elektrik ve su temini müşteri tarafından sağlanmalıdır.</li>
-                  <li>Temizlenecek eşyaların üzerindeki veya çevresindeki kırılabilir, değerli eşyalar işlem öncesi kaldırılmalıdır.</li>
-                  <li>Daha önce kimyasal (çamaşır suyu, asitli temizleyiciler, market ürünleri vb.) müdahale görmüş lekeler işlem öncesinde ekibimize mutlaka bildirilmelidir.</li>
-                </ul>
+                <h4 className="text-white font-bold mb-2">2. Musteri Bilgilendirmesi</h4>
+                <p className="leading-relaxed">
+                  Daha once kimyasal mudahale gormus, sabitlenmis veya yuzeye zarar vermis lekelerin tamamen cikmasi garanti edilemez. Ekibimiz islem oncesi bu konuda net bilgilendirme yapar.
+                </p>
               </section>
-
               <section>
-                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-sm">verified_user</span>
-                  3. 7 Gün Memnuniyet Garantisi ve İade Şartları
-                </h4>
-                <p className="leading-relaxed mb-2">Müşteri memnuniyetini sağlamak temel prensibimizdir. İşlem sonrası aşağıdaki şartlar geçerlidir:</p>
-                <ul className="list-disc pl-5 space-y-1 leading-relaxed">
-                  <li>Hizmet tamamlandıktan sonraki <strong>7 (yedi) takvim günü</strong> içerisinde kusma, lekenin geri çıkması veya bariz temizlik eksikliği tespit edilirse, firmamız <strong>1 (bir) defaya mahsus ücretsiz yeniden yıkama (rötuş)</strong> hizmeti sunmayı taahhüt eder. İkinci bir rötuş işlemi garanti kapsamında değildir.</li>
-                  <li><strong>Ön Tespit ve Detaylı Analiz:</strong> Şikayet durumunda ekibimiz yerinde tespit yapar. İşlem öncesi ve sonrası çekilen fotoğraflar detaylı olarak incelenerek lekenin bizden mi kaynaklandığı, yoksa işlem sonrası yeni bir dökülme (kahve, çocuk/evcil hayvan idrarı vb.) mi olduğu kesin olarak tespit edilir. Yeni oluşan lekeler garanti dışıdır.</li>
-                  <li>Yeniden yıkama işlemine rağmen, firmamızdan kaynaklı teknik bir hata nedeniyle sonuç alınamaması durumunda, hizmet bedelinin uygun görülen kısmı veya tamamı iade edilir.</li>
-                  <li><strong>Puan İptali:</strong> İade işlemi gerçekleştiğinde veya garantinin kötüye kullanıldığı tespit edildiğinde, müşterinin hesabına tanımlanan tüm indirim kodları, nakit iadeler ve kazanılan puanlar sistemden kalıcı olarak silinir.</li>
-                </ul>
-              </section>
-
-              <section>
-                <h4 className="text-white font-bold mb-2 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-red-400 text-sm">warning</span>
-                  4. Garanti Kapsamı Dışındaki Durumlar
-                </h4>
-                <ul className="list-disc pl-5 space-y-1 leading-relaxed text-gray-400">
-                  <li>6 aydan eski, kumaşın dokusuna işlemiş ve boya formunu almış kronik lekeler.</li>
-                  <li>Müşteri tarafından daha önce yanlış kimyasallarla silinmiş ve kumaşa "sabitlenmiş" veya kumaşı yakmış lekeler.</li>
-                  <li>Güneş yanığı, kumaş yıpranması, iplik atması, renk solması gibi fiziksel deformasyonlar kir/leke olarak değerlendirilemez ve garanti kapsamına girmez.</li>
-                  <li>İşlem sonrası kuruma süresi (ortalama 4-6 saat) boyunca eşyanın kullanılması sonucu oluşan yeni lekeler ve deformasyonlar.</li>
-                </ul>
+                <h4 className="text-white font-bold mb-2">3. Memnuniyet Destegi</h4>
+                <p className="leading-relaxed">
+                  Hizmet sonrasi bariz bir eksiklik oldugunu dusunuyorsaniz kisa sure icinde bize ulasabilirsiniz. Durum tekrar incelenir ve gerekiyorsa destek planlanir.
+                </p>
               </section>
             </div>
 
             <div className="mt-6 pt-4 border-t border-white/10 shrink-0">
-              <button 
+              <button
                 onClick={() => {
                   setAcceptedTerms(true);
                   setIsGuaranteeModalOpen(false);

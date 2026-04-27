@@ -39,7 +39,7 @@ export const FAQ_ITEMS = [
   {
     question: "Afyon'da yerinde koltuk hijyeni hangi bolgelerde var?",
     answer:
-      "Afyonkarahisar merkez ve tum mahallelerde hizmet veriyoruz. Sandikli, Bolvadin, Cay ve Emirda gibi cevre ilceler icin yogunluga gore planlama yapiliyor. Aramalarda koltuk yikama ve koltuk yÄ±kama yazimlari birlikte geldigi icin bu varyasyonlari bilgilendirme iceriklerinde kapsiyoruz.",
+      "Afyonkarahisar merkez ve tum mahallelerde hizmet veriyoruz. Sandikli, Bolvadin, Cay ve Emirda gibi cevre ilceler icin yogunluga gore planlama yapiliyor. Aramalarda koltuk yikama icin farkli yazim sekilleri birlikte geldigi icin bu varyasyonlari bilgilendirme iceriklerinde de kapsiyoruz.",
   },
   {
     question: "Yatak hijyeni mayt ve bakterileri temizler mi?",
@@ -83,9 +83,9 @@ export const BLOG_POSTS = [
     image: IMAGES.blog1,
     date: "12 Nisan 2026",
     excerpt:
-      "Afyon Merkez, Erenler, Uydukent ve Erkmen icin ayni gun yerinde koltuk yikama plani. Koltuk yÄ±kama aramalarini da kapsar.",
+      "Afyon Merkez, Erenler, Uydukent ve Erkmen icin ayni gun yerinde koltuk yikama plani. Farkli yazimlarla gelen aramalari da kapsar.",
     content:
-      "Afyon yerinde koltuk yikama hizmetinde en cok sorulan konu randevu hizi ve kuruma suresidir. NisanProClean ekibi Afyon Merkez, Erenler koltuk yikama, Uydukent koltuk yikama ve Erkmen koltuk temizligi taleplerini ayni hafta icinde planlar. Kullanici tarafinda koltuk yikama ve koltuk yÄ±kama yazimlari birlikte kullanildigi icin iceriklerimizi bu varyasyonlari dogal sekilde kapsayacak yapida kuruyoruz. Islemlerimizde dusuk nemli yikama ve yuksek vakum kullanildigi icin koltuklar ortalama 4-6 saatte kullanima doner. Bolgesel yogunluk durumunu anlik gormek ve fiyat almak icin <a href='#fiyat-hesapla' class='text-primary hover:underline'>fiyat hesaplama ekranina</a> gecin.",
+      "Afyon yerinde koltuk yikama hizmetinde en cok sorulan konu randevu hizi ve kuruma suresidir. NisanProClean ekibi Afyon Merkez, Erenler koltuk yikama, Uydukent koltuk yikama ve Erkmen koltuk temizligi taleplerini ayni hafta icinde planlar. Kullanici tarafinda koltuk yikama icin farkli yazim sekilleri birlikte kullanildigi icin iceriklerimizi bu varyasyonlari dogal sekilde kapsayacak yapida kuruyoruz. Islemlerimizde dusuk nemli yikama ve yuksek vakum kullanildigi icin koltuklar ortalama 4-6 saatte kullanima doner. Bolgesel yogunluk durumunu anlik gormek ve fiyat almak icin <a href='#fiyat-hesapla' class='text-primary hover:underline'>fiyat hesaplama ekranina</a> gecin.",
   },
   {
     id: 2,
@@ -94,9 +94,9 @@ export const BLOG_POSTS = [
     image: IMAGES.blog2,
     date: "10 Nisan 2026",
     excerpt:
-      "Her kumas ayni urunle temizlenmez. Yanlis urun, renk acilmasi ve doku sertlesmesi yapabilir. Fiyatlari ve fiyatlarÄ± niyetlerini dogru aciklamak gerekir.",
+      "Her kumas ayni urunle temizlenmez. Yanlis urun, renk acilmasi ve doku sertlesmesi yapabilir. Fiyat niyetini de net anlatmak gerekir.",
     content:
-      "Afyon koltuk yikama fiyatlari kadar onemli olan konu kumas tipine uygun yikama protokoludur. Kullanici aramalarinda fiyatlari ve fiyatlarÄ± gibi yazim varyasyonlari birlikte geldigi icin hizmet iceriklerinde fiyat mantigini net acikliyoruz. Kadife koltuklarda dusuk devir firca ve pH dengeli sampuan kullanilir. Keten kumasta asiri islatmadan kademeli leke cozme uygulanir. Nubuk ve tay tuyu gibi hassas yuzeylerde ise noktasal test, kontrollu buhar ve hizli cekim gerekir. Bu protokol sayesinde renk kaybi riskini azaltip derin temizlik sagliyoruz.",
+      "Afyon koltuk yikama fiyatlari kadar onemli olan konu kumas tipine uygun yikama protokoludur. Kullanici aramalarinda fiyat niyeti farkli sekillerde yazildigi icin hizmet iceriklerinde fiyat mantigini net acikliyoruz. Kadife koltuklarda dusuk devir firca ve pH dengeli sampuan kullanilir. Keten kumasta asiri islatmadan kademeli leke cozme uygulanir. Nubuk ve tay tuyu gibi hassas yuzeylerde ise noktasal test, kontrollu buhar ve hizli cekim gerekir. Bu protokol sayesinde renk kaybi riskini azaltip derin temizlik sagliyoruz.",
   },
   {
     id: 3,
