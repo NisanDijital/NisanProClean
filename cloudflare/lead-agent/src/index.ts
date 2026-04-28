@@ -101,6 +101,18 @@ const containsAppointmentIntent = (message: string) => {
   );
 };
 
+const containsStainAnalysisIntent = (message: string) => {
+  const normalized = normalizeForIntent(message);
+  return (
+    normalized.includes("leke") ||
+    normalized.includes("analiz") ||
+    normalized.includes("fotograf") ||
+    normalized.includes("resim") ||
+    normalized.includes("cikarmi") ||
+    normalized.includes("cikar mi")
+  );
+};
+
 const systemPrompt = [
   "Sen NisanProClean icin calisan bir randevu asistanisin.",
   "Her zaman Turkce cevap ver.",
@@ -140,9 +152,17 @@ const appointmentReply = [
   "Bilgileri yazdiginda kaydi hemen acip WhatsApp onayina yonlendirecegim.",
 ].join("\n");
 
+const stainAnalysisReply = [
+  "Evet, leke analizi yapabiliriz.",
+  "Sitedeki Yapay Zeka Leke Analizi bolumunden lekenin fotografini yukleyebilirsin.",
+  "Chat alani su an fotograf almiyor; fotografli degerlendirme icin leke analizi panelini kullan ya da WhatsApp'tan fotograf gonder.",
+  "",
+  "Daha net sonuc icin fotografi gunduz isiginda, lekeye yakin ve net cekmeni oneririm.",
+].join("\n");
+
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const defaultPrimaryModel = "@cf/qwen/qwen3-30b-a3b-fp8";
-const defaultFallbackModel = "@cf/zai-org/glm-4.7-flash";
+const defaultFallbackModel = "@cf/google/gemma-3-12b-it";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -187,6 +207,13 @@ export default {
 
       if (containsAppointmentIntent(userMessage)) {
         return new Response(JSON.stringify({ success: true, reply: appointmentReply }), {
+          status: 200,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      if (containsStainAnalysisIntent(userMessage)) {
+        return new Response(JSON.stringify({ success: true, reply: stainAnalysisReply }), {
           status: 200,
           headers: { ...cors(origin), "content-type": "application/json" },
         });
