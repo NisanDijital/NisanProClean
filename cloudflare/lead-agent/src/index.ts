@@ -1,6 +1,10 @@
 export interface Env {
   LEAD_LOGS: KVNamespace;
   ALLOWED_ORIGIN: string;
+  OPENROUTER_API_KEY?: string;
+  OPENROUTER_MODEL?: string;
+  GEMINI_API_KEY?: string;
+  GEMINI_MODEL?: string;
   AI_MODEL_PRIMARY?: string;
   AI_MODEL_FALLBACK?: string;
   AI?: Ai;
@@ -304,6 +308,119 @@ const stainAnalysisReply = [
 
 const defaultPrimaryModel = "@cf/qwen/qwen3-30b-a3b-fp8";
 const defaultFallbackModel = "@cf/google/gemma-3-12b-it";
+const defaultOpenRouterModel = "google/gemma-4-26b-a4b-it:free";
+const defaultGeminiModel = "gemini-2.5-flash";
+
+const messagesForModel = (history: ReturnType<typeof compactHistory>) => [
+  { role: "system" as const, content: systemPrompt },
+  ...history.map((item) => ({
+    role: item.role as "user" | "assistant",
+    content: item.text,
+  })),
+];
+
+const runOpenRouter = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.OPENROUTER_API_KEY) return "";
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://nisankoltukyikama.com",
+      "X-Title": "NisanProClean AI Asistan",
+    },
+    body: JSON.stringify({
+      model: env.OPENROUTER_MODEL || defaultOpenRouterModel,
+      messages: messagesForModel(history),
+      max_tokens: 280,
+      temperature: 0.25,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`openrouter_${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  return (data.choices?.[0]?.message?.content || "").trim();
+};
+
+const runGemini = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.GEMINI_API_KEY) return "";
+
+  const model = encodeURIComponent(env.GEMINI_MODEL || defaultGeminiModel);
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      contents: history.map((item) => ({
+        role: item.role === "assistant" ? "model" : "user",
+        parts: [{ text: item.text }],
+      })),
+      generationConfig: {
+        maxOutputTokens: 280,
+        temperature: 0.25,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`gemini_${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  return (data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "").trim();
+};
+
+const runWorkersAI = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.AI) return "";
+
+  const primaryModel = env.AI_MODEL_PRIMARY || defaultPrimaryModel;
+  const fallbackModel = env.AI_MODEL_FALLBACK || defaultFallbackModel;
+  const models = [primaryModel, fallbackModel].filter((model, index, arr) => arr.indexOf(model) === index);
+
+  for (const model of models) {
+    const result = await env.AI.run(model, {
+      messages: messagesForModel(history),
+      max_tokens: 280,
+      temperature: 0.25,
+    });
+    const reply = (result?.response || "").trim();
+    if (reply) return reply;
+  }
+
+  return "";
+};
+
+const runBestAvailableModel = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  const providers = [
+    () => runOpenRouter(env, history),
+    () => runGemini(env, history),
+    () => runWorkersAI(env, history),
+  ];
+
+  let lastError: unknown = null;
+  for (const runProvider of providers) {
+    try {
+      const reply = await runProvider();
+      if (reply) return reply;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("all_model_providers_failed");
+};
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -388,7 +505,7 @@ export default {
         });
       }
 
-      if (!env.AI) {
+      if (!env.OPENROUTER_API_KEY && !env.GEMINI_API_KEY && !env.AI) {
         return new Response(
           JSON.stringify({
             success: false,
@@ -403,37 +520,7 @@ export default {
       }
 
       try {
-        const primaryModel = env.AI_MODEL_PRIMARY || defaultPrimaryModel;
-        const fallbackModel = env.AI_MODEL_FALLBACK || defaultFallbackModel;
-        const models = [primaryModel, fallbackModel].filter((model, index, arr) => arr.indexOf(model) === index);
-
-        let result: { response?: string } | null = null;
-        let lastError: unknown = null;
-
-        for (const model of models) {
-          try {
-            result = await env.AI.run(model, {
-              messages: [
-                { role: "system", content: systemPrompt },
-                ...history.map((item) => ({
-                  role: item.role as "user" | "assistant",
-                  content: item.text,
-                })),
-              ],
-              max_tokens: 280,
-              temperature: 0.25,
-            });
-            if ((result?.response || "").trim().length > 0) break;
-          } catch (error) {
-            lastError = error;
-          }
-        }
-
-        if (!result || !(result.response || "").trim()) {
-          throw lastError || new Error("all_models_failed");
-        }
-
-        const reply = (result?.response || "").trim();
+        const reply = await runBestAvailableModel(env, history);
         return new Response(
           JSON.stringify({
             success: true,
