@@ -8,13 +8,7 @@ export interface Env {
 
 interface KVNamespace {
   get(key: string): Promise<string | null>;
-  put(
-    key: string,
-    value: string,
-    options?: {
-      expirationTtl?: number;
-    },
-  ): Promise<void>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
 type ScheduledEvent = {
@@ -45,10 +39,17 @@ type LeadPayload = {
 
 type ChatPayload = {
   message?: string;
-  history?: Array<{
-    role?: string;
-    text?: string;
-  }>;
+  history?: Array<{ role?: string; text?: string }>;
+};
+
+type ExtractedAppointment = {
+  name: string;
+  phone: string;
+  address: string;
+  service: string;
+  date: string;
+  slot: string;
+  isComplete: boolean;
 };
 
 const json = (data: unknown, status = 200) =>
@@ -66,7 +67,11 @@ const cors = (origin: string) => ({
   "access-control-allow-headers": "content-type",
 });
 
+const normalizeForIntent = (message: string) =>
+  message.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
 const normalizePhone = (value = "") => value.replace(/\D/g, "");
+const normalizeKeyPart = (value = "") => normalizeForIntent(value).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 const isValidLead = (lead: LeadPayload) => {
   const name = (lead.name || "").trim();
@@ -79,9 +84,6 @@ const isValidChatMessage = (payload: ChatPayload) => {
   const message = (payload.message || "").trim();
   return message.length >= 2 && message.length <= 1000;
 };
-
-const normalizeForIntent = (message: string) =>
-  message.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/\p{Diacritic}/gu, "");
 
 const containsPricingIntent = (message: string) => {
   const normalized = normalizeForIntent(message);
@@ -134,7 +136,7 @@ const compactHistory = (payload: ChatPayload, currentMessage: string) => {
   return cleaned;
 };
 
-const extractAppointment = (conversation: string) => {
+const extractAppointment = (conversation: string): ExtractedAppointment => {
   const normalized = normalizeForIntent(conversation);
   const digits = conversation.replace(/\D/g, "");
   const phoneMatch = digits.match(/(?:90)?(5\d{9})/);
@@ -142,7 +144,7 @@ const extractAppointment = (conversation: string) => {
 
   const phoneIndex = phoneMatch ? conversation.search(/0?\s*5\s*\d[\d\s().-]{8,}/) : -1;
   const beforePhone = phoneIndex > 0 ? conversation.slice(Math.max(0, phoneIndex - 60), phoneIndex).trim() : "";
-  const nameMatch = beforePhone.match(/([A-Za-zÇĞİÖŞÜçğıöşü]{2,}(?:\s+[A-Za-zÇĞİÖŞÜçğıöşü]{2,}){0,2})\s*$/);
+  const nameMatch = beforePhone.match(/([\p{L}]{2,}(?:\s+[\p{L}]{2,}){0,2})\s*$/u);
   const name = nameMatch ? nameMatch[1].trim() : "";
 
   const service = normalized.includes("arac")
@@ -174,22 +176,22 @@ const extractAppointment = (conversation: string) => {
     /\bbolvadin\b/i,
     /\bemirdag\b/i,
   ];
-  const addressMatch = addressPatterns.map((pattern) => conversation.match(pattern)?.[0]).find(Boolean) || "";
+  const address = addressPatterns.map((pattern) => conversation.match(pattern)?.[0]).find(Boolean) || "";
 
   return {
     name,
     phone,
-    address: addressMatch,
+    address,
     service,
     date,
     slot,
-    isComplete: Boolean(name && phone && addressMatch && service && date && slot),
+    isComplete: Boolean(name && phone && address && service && date && slot),
   };
 };
 
-const appointmentSummaryReply = (lead: ReturnType<typeof extractAppointment>, saved: boolean) =>
+const appointmentSummaryReply = (lead: ExtractedAppointment, saved: boolean, duplicate = false) =>
   [
-    saved ? "Tamam, randevu kaydini aldım." : "Bilgileri toparladim.",
+    duplicate ? "Bu randevu kaydi zaten alinmis." : saved ? "Tamam, randevu kaydini aldim." : "Bilgileri toparladim.",
     `Ad Soyad: ${lead.name}`,
     `Telefon: ${lead.phone}`,
     `Adres: ${lead.address}`,
@@ -197,15 +199,66 @@ const appointmentSummaryReply = (lead: ReturnType<typeof extractAppointment>, sa
     `Tarih: ${lead.date}`,
     `Saat: ${lead.slot}`,
     "",
-    saved
+    duplicate || saved
       ? "Musaitlik onayi icin WhatsApp uzerinden donus yapacagiz."
       : "Kayit sirasinda sorun olursa WhatsApp uzerinden devam edebiliriz.",
   ].join("\n");
+
+const dedupeKeyForLead = (lead: Pick<LeadPayload, "phone" | "service" | "date" | "slot">) =>
+  [
+    "dedupe",
+    normalizePhone(lead.phone || ""),
+    normalizeKeyPart(lead.service || ""),
+    normalizeKeyPart(lead.date || ""),
+    normalizeKeyPart(lead.slot || ""),
+  ].join(":");
+
+const todayKey = () => new Date().toISOString().slice(0, 10);
+
+const incrementDailyCounter = async (env: Env) => {
+  const dailyCounterKey = `counter:${todayKey()}`;
+  const current = Number((await env.LEAD_LOGS.get(dailyCounterKey)) || "0");
+  await env.LEAD_LOGS.put(dailyCounterKey, String(current + 1), {
+    expirationTtl: 60 * 60 * 24 * 370,
+  });
+};
+
+const saveLead = async (env: Env, payload: LeadPayload) => {
+  const dedupeKey = dedupeKeyForLead(payload);
+  const existingLeadId = await env.LEAD_LOGS.get(dedupeKey);
+  if (existingLeadId) {
+    return { id: existingLeadId, duplicate: true };
+  }
+
+  const leadId = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  await env.LEAD_LOGS.put(
+    `lead:${leadId}`,
+    JSON.stringify({
+      id: leadId,
+      createdAt,
+      name: (payload.name || "").trim(),
+      phone: normalizePhone(payload.phone || ""),
+      address: (payload.address || "").trim(),
+      service: (payload.service || "").trim(),
+      date: (payload.date || "").trim(),
+      slot: (payload.slot || "").trim(),
+      source: (payload.source || "web").trim(),
+    }),
+    { expirationTtl: 60 * 60 * 24 * 180 },
+  );
+  await env.LEAD_LOGS.put(dedupeKey, leadId, {
+    expirationTtl: 60 * 60 * 24 * 180,
+  });
+  await incrementDailyCounter(env);
+  return { id: leadId, duplicate: false };
+};
 
 const systemPrompt = [
   "Sen NisanProClean icin calisan bir randevu asistanisin.",
   "Her zaman Turkce cevap ver.",
   "Kisa, net ve yardimci cevap ver.",
+  "Musteri sinirli yazsa bile sakin kal, azarlama.",
   "Sadece koltuk, yatak, arac koltugu temizligi ve randevu konularinda cevap ver.",
   "Fiyat sorularinda asla rakam uydurma.",
   "Gerekirse ad, telefon, adres, tarih ve saat bilgilerini istemeyi hatirlat.",
@@ -249,7 +302,6 @@ const stainAnalysisReply = [
   "Daha net sonuc icin fotografi gunduz isiginda, lekeye yakin ve net cekmeni oneririm.",
 ].join("\n");
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
 const defaultPrimaryModel = "@cf/qwen/qwen3-30b-a3b-fp8";
 const defaultFallbackModel = "@cf/google/gemma-3-12b-it";
 
@@ -292,34 +344,24 @@ export default {
 
       if (appointmentLead.isComplete) {
         let saved = false;
+        let duplicate = false;
         try {
-          const leadId = crypto.randomUUID();
-          await env.LEAD_LOGS.put(
-            `lead:${leadId}`,
-            JSON.stringify({
-              id: leadId,
-              createdAt: new Date().toISOString(),
-              name: appointmentLead.name,
-              phone: appointmentLead.phone,
-              address: appointmentLead.address,
-              service: appointmentLead.service,
-              date: appointmentLead.date,
-              slot: appointmentLead.slot,
-              source: "ai_chat_agent",
-            }),
-            { expirationTtl: 60 * 60 * 24 * 180 },
-          );
-          const dailyCounterKey = `counter:${todayKey()}`;
-          const current = Number((await env.LEAD_LOGS.get(dailyCounterKey)) || "0");
-          await env.LEAD_LOGS.put(dailyCounterKey, String(current + 1), {
-            expirationTtl: 60 * 60 * 24 * 370,
+          const result = await saveLead(env, {
+            name: appointmentLead.name,
+            phone: appointmentLead.phone,
+            address: appointmentLead.address,
+            service: appointmentLead.service,
+            date: appointmentLead.date,
+            slot: appointmentLead.slot,
+            source: "ai_chat_agent",
           });
           saved = true;
+          duplicate = result.duplicate;
         } catch {
           saved = false;
         }
 
-        return new Response(JSON.stringify({ success: true, reply: appointmentSummaryReply(appointmentLead, saved) }), {
+        return new Response(JSON.stringify({ success: true, reply: appointmentSummaryReply(appointmentLead, saved, duplicate) }), {
           status: 200,
           headers: { ...cors(origin), "content-type": "application/json" },
         });
@@ -440,11 +482,7 @@ export default {
       );
     }
 
-    const leadId = crypto.randomUUID();
-    const createdAt = new Date().toISOString();
     const payload = {
-      id: leadId,
-      createdAt,
       name: (body.name || "").trim(),
       phone: normalizePhone(body.phone || ""),
       address: (body.address || "").trim(),
@@ -453,19 +491,10 @@ export default {
       slot: (body.slot || "").trim(),
       source: (body.source || "web").trim(),
     };
+    const result = await saveLead(env, payload);
 
-    await env.LEAD_LOGS.put(`lead:${leadId}`, JSON.stringify(payload), {
-      expirationTtl: 60 * 60 * 24 * 180,
-    });
-
-    const dailyCounterKey = `counter:${todayKey()}`;
-    const current = Number((await env.LEAD_LOGS.get(dailyCounterKey)) || "0");
-    await env.LEAD_LOGS.put(dailyCounterKey, String(current + 1), {
-      expirationTtl: 60 * 60 * 24 * 370,
-    });
-
-    return new Response(JSON.stringify({ success: true, id: leadId }), {
-      status: 201,
+    return new Response(JSON.stringify({ success: true, id: result.id, duplicate: result.duplicate }), {
+      status: result.duplicate ? 200 : 201,
       headers: { ...cors(origin), "content-type": "application/json" },
     });
   },
