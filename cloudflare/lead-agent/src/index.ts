@@ -1,6 +1,8 @@
 export interface Env {
   LEAD_LOGS: KVNamespace;
   ALLOWED_ORIGIN: string;
+  AI_MODEL?: string;
+  AI?: Ai;
 }
 
 interface KVNamespace {
@@ -19,6 +21,17 @@ type ScheduledEvent = {
   readonly scheduledTime: number;
 };
 
+interface Ai {
+  run(
+    model: string,
+    input: {
+      messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
+      max_tokens?: number;
+      temperature?: number;
+    },
+  ): Promise<{ response?: string }>;
+}
+
 type LeadPayload = {
   name?: string;
   phone?: string;
@@ -27,6 +40,10 @@ type LeadPayload = {
   date?: string;
   slot?: string;
   source?: string;
+};
+
+type ChatPayload = {
+  message?: string;
 };
 
 const json = (data: unknown, status = 200) =>
@@ -53,7 +70,21 @@ const isValidLead = (lead: LeadPayload) => {
   return name.length >= 2 && phone.length >= 10 && address.length >= 5;
 };
 
+const isValidChatMessage = (payload: ChatPayload) => {
+  const message = (payload.message || "").trim();
+  return message.length >= 2 && message.length <= 1000;
+};
+
+const systemPrompt = [
+  "Sen NisanProClean icin calisan bir randevu asistanisin.",
+  "Kisa, net, yardimci cevap ver.",
+  "Sadece koltuk, yatak, arac koltugu temizligi ve randevu konularinda cevap ver.",
+  "Fiyat sorularinda kesin rakam uydurma; fiyat hesaplama araci veya WhatsApp yonlendirmesi yap.",
+  "Istenirse ad, telefon, adres, tarih ve saat bilgilerini istemeyi hatirlat.",
+].join(" ");
+
 const todayKey = () => new Date().toISOString().slice(0, 10);
+const defaultModel = "@cf/meta/llama-3.2-3b-instruct";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -67,6 +98,76 @@ export default {
 
     if (pathname === "/health") {
       return new Response("ok", { status: 200 });
+    }
+
+    if (pathname === "/chat" && request.method === "POST") {
+      let body: ChatPayload;
+      try {
+        body = (await request.json()) as ChatPayload;
+      } catch {
+        return new Response(JSON.stringify({ success: false, error: "invalid_json" }), {
+          status: 400,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      if (!isValidChatMessage(body)) {
+        return new Response(JSON.stringify({ success: false, error: "invalid_message" }), {
+          status: 422,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      if (!env.AI) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "ai_binding_missing",
+            reply: "AI asistan su anda aktif degil. Lutfen biraz sonra tekrar deneyin.",
+          }),
+          {
+            status: 503,
+            headers: { ...cors(origin), "content-type": "application/json" },
+          },
+        );
+      }
+
+      try {
+        const result = await env.AI.run(env.AI_MODEL || defaultModel, {
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: (body.message || "").trim() },
+          ],
+          max_tokens: 300,
+          temperature: 0.4,
+        });
+
+        const reply = (result?.response || "").trim();
+        return new Response(
+          JSON.stringify({
+            success: true,
+            reply:
+              reply ||
+              "Sorunu anladim. Hizli randevu icin ad, telefon, adres, tarih ve saat bilgini paylasabilirsin.",
+          }),
+          {
+            status: 200,
+            headers: { ...cors(origin), "content-type": "application/json" },
+          },
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "ai_runtime_error",
+            reply: "Sistem su an yogun. Lutfen bir kac dakika sonra tekrar deneyin.",
+          }),
+          {
+            status: 503,
+            headers: { ...cors(origin), "content-type": "application/json" },
+          },
+        );
+      }
     }
 
     if (pathname !== "/lead" || request.method !== "POST") {

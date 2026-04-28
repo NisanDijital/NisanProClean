@@ -31,6 +31,7 @@ const FloatingWhatsApp = lazy(() => import("./components/FloatingWhatsApp"));
 const SocialProof = lazy(() => import("./components/SocialProof"));
 const ExitIntentPopup = lazy(() => import("./components/ExitIntentPopup"));
 const EmergencyStainAssistant = lazy(() => import("./components/EmergencyStainAssistant"));
+const AIAgentChat = lazy(() => import("./components/AIAgentChat"));
 
 const DeferredSectionsFallback: React.FC = () => (
   <section className="py-16 px-4" aria-hidden="true">
@@ -235,6 +236,7 @@ const App: React.FC = () => {
           <SocialProof />
           <ExitIntentPopup />
           <EmergencyStainAssistant />
+          <AIAgentChat />
         </Suspense>
       ) : null}
       <CookieConsent />

@@ -73,3 +73,25 @@ export async function sendLeadToAgent(payload: LeadAgentPayload): Promise<boolea
     return false;
   }
 }
+
+export async function askAIAgent(message: string): Promise<string> {
+  try {
+    const response = await fetch(`${LEAD_AGENT_URL}/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    const data = (await response.json()) as { reply?: string };
+    if (!response.ok) {
+      return data.reply || "Su an yanit veremiyorum. Lutfen tekrar deneyin.";
+    }
+
+    return data.reply || "Sorunu anladim. Randevu icin bilgilerini paylasabilirsin.";
+  } catch {
+    return "Baglanti hatasi var. Lutfen internet baglantini kontrol edip tekrar dene.";
+  }
+}
