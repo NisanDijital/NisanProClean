@@ -3,10 +3,12 @@ export interface Env {
   ALLOWED_ORIGIN: string;
   OPENROUTER_API_KEY?: string;
   OPENROUTER_MODEL?: string;
+  OPENROUTER_MODELS?: string;
   GEMINI_API_KEY?: string;
   GEMINI_MODEL?: string;
   AI_MODEL_PRIMARY?: string;
   AI_MODEL_FALLBACK?: string;
+  AI_MODELS?: string;
   AI?: Ai;
 }
 
@@ -76,6 +78,11 @@ const normalizeForIntent = (message: string) =>
 
 const normalizePhone = (value = "") => value.replace(/\D/g, "");
 const normalizeKeyPart = (value = "") => normalizeForIntent(value).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const parseModelList = (value?: string) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 const isValidLead = (lead: LeadPayload) => {
   const name = (lead.name || "").trim();
@@ -339,10 +346,22 @@ const stainAnalysisReply = [
   "Daha net sonuc icin fotografi gunduz isiginda, lekeye yakin ve net cekmeni oneririm.",
 ].join("\n");
 
-const defaultPrimaryModel = "@cf/qwen/qwen3-30b-a3b-fp8";
-const defaultFallbackModel = "@cf/google/gemma-3-12b-it";
-const defaultOpenRouterModel = "google/gemma-4-26b-a4b-it:free";
+const defaultPrimaryModel = "@cf/zai-org/glm-4.7-flash";
+const defaultFallbackModel = "@cf/qwen/qwen3-30b-a3b-fp8";
+const defaultOpenRouterModel = "openai/gpt-oss-120b:free";
 const defaultGeminiModel = "gemini-2.5-flash";
+const defaultOpenRouterModels = [
+  "openai/gpt-oss-120b:free",
+  "z-ai/glm-4.5-air:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "google/gemma-4-26b-a4b-it:free",
+];
+const defaultWorkersAIModels = [
+  "@cf/zai-org/glm-4.7-flash",
+  "@cf/qwen/qwen3-30b-a3b-fp8",
+  "@cf/meta/llama-4-scout-17b-16e-instruct",
+  "@cf/google/gemma-3-12b-it",
+];
 
 const messagesForModel = (history: ReturnType<typeof compactHistory>) => [
   { role: "system" as const, content: systemPrompt },
@@ -355,30 +374,47 @@ const messagesForModel = (history: ReturnType<typeof compactHistory>) => [
 const runOpenRouter = async (env: Env, history: ReturnType<typeof compactHistory>) => {
   if (!env.OPENROUTER_API_KEY) return "";
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://nisankoltukyikama.com",
-      "X-Title": "NisanProClean AI Asistan",
-    },
-    body: JSON.stringify({
-      model: env.OPENROUTER_MODEL || defaultOpenRouterModel,
-      messages: messagesForModel(history),
-      max_tokens: 280,
-      temperature: 0.25,
-    }),
-  });
+  const models = [
+    ...parseModelList(env.OPENROUTER_MODELS),
+    env.OPENROUTER_MODEL || defaultOpenRouterModel,
+    ...defaultOpenRouterModels,
+  ].filter((model, index, arr) => model && arr.indexOf(model) === index);
 
-  if (!response.ok) {
-    throw new Error(`openrouter_${response.status}`);
+  let lastError: unknown = null;
+  for (const model of models) {
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://nisankoltukyikama.com",
+          "X-Title": "NisanProClean AI Asistan",
+        },
+        body: JSON.stringify({
+          model,
+          messages: messagesForModel(history),
+          max_tokens: 280,
+          temperature: 0.25,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`openrouter_${response.status}_${model}`);
+      }
+
+      const data = (await response.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const reply = (data.choices?.[0]?.message?.content || "").trim();
+      if (reply) return reply;
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  return (data.choices?.[0]?.message?.content || "").trim();
+  if (lastError) throw lastError;
+  return "";
 };
 
 const runGemini = async (env: Env, history: ReturnType<typeof compactHistory>) => {
@@ -418,9 +454,12 @@ const runGemini = async (env: Env, history: ReturnType<typeof compactHistory>) =
 const runWorkersAI = async (env: Env, history: ReturnType<typeof compactHistory>) => {
   if (!env.AI) return "";
 
-  const primaryModel = env.AI_MODEL_PRIMARY || defaultPrimaryModel;
-  const fallbackModel = env.AI_MODEL_FALLBACK || defaultFallbackModel;
-  const models = [primaryModel, fallbackModel].filter((model, index, arr) => arr.indexOf(model) === index);
+  const models = [
+    ...parseModelList(env.AI_MODELS),
+    env.AI_MODEL_PRIMARY || defaultPrimaryModel,
+    env.AI_MODEL_FALLBACK || defaultFallbackModel,
+    ...defaultWorkersAIModels,
+  ].filter((model, index, arr) => model && arr.indexOf(model) === index);
 
   for (const model of models) {
     const result = await env.AI.run(model, {
