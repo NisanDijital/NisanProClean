@@ -75,24 +75,11 @@ const isValidChatMessage = (payload: ChatPayload) => {
   return message.length >= 2 && message.length <= 1000;
 };
 
-const systemPrompt = [
-  "Sen NisanProClean icin calisan bir randevu asistanisin.",
-  "Kisa, net, yardimci cevap ver.",
-  "Sadece koltuk, yatak, arac koltugu temizligi ve randevu konularinda cevap ver.",
-  "Fiyat sorularinda kesin rakam uydurma.",
-  "Istenirse ad, telefon, adres, tarih ve saat bilgilerini istemeyi hatirlat.",
-].join(" ");
+const normalizeForIntent = (message: string) =>
+  message.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/\p{Diacritic}/gu, "");
 
 const containsPricingIntent = (message: string) => {
-  const normalized = message
-    .toLowerCase()
-    .replaceAll("ı", "i")
-    .replaceAll("ş", "s")
-    .replaceAll("ğ", "g")
-    .replaceAll("ü", "u")
-    .replaceAll("ö", "o")
-    .replaceAll("ç", "c");
-
+  const normalized = normalizeForIntent(message);
   return (
     normalized.includes("fiyat") ||
     normalized.includes("ucret") ||
@@ -103,15 +90,7 @@ const containsPricingIntent = (message: string) => {
 };
 
 const containsAppointmentIntent = (message: string) => {
-  const normalized = message
-    .toLowerCase()
-    .replaceAll("ı", "i")
-    .replaceAll("ş", "s")
-    .replaceAll("ğ", "g")
-    .replaceAll("ü", "u")
-    .replaceAll("ö", "o")
-    .replaceAll("ç", "c");
-
+  const normalized = normalizeForIntent(message);
   return (
     normalized.includes("randevu") ||
     normalized.includes("musait") ||
@@ -120,6 +99,15 @@ const containsAppointmentIntent = (message: string) => {
     normalized.includes("slot")
   );
 };
+
+const systemPrompt = [
+  "Sen NisanProClean icin calisan bir randevu asistanisin.",
+  "Her zaman Turkce cevap ver.",
+  "Kisa, net ve yardimci cevap ver.",
+  "Sadece koltuk, yatak, arac koltugu temizligi ve randevu konularinda cevap ver.",
+  "Fiyat sorularinda asla rakam uydurma.",
+  "Gerekirse ad, telefon, adres, tarih ve saat bilgilerini istemeyi hatirlat.",
+].join(" ");
 
 const pricingReply = [
   "NisanProClean guncel temel fiyat kalemleri su sekilde:",
@@ -152,7 +140,7 @@ const appointmentReply = [
 ].join("\n");
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
-const defaultModel = "@cf/meta/llama-3.2-3b-instruct";
+const defaultModel = "@cf/google/gemma-3-12b-it";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -186,21 +174,8 @@ export default {
         });
       }
 
-      if (!env.AI) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "ai_binding_missing",
-            reply: "AI asistan su anda aktif degil. Lutfen biraz sonra tekrar deneyin.",
-          }),
-          {
-            status: 503,
-            headers: { ...cors(origin), "content-type": "application/json" },
-          },
-        );
-      }
-
       const userMessage = (body.message || "").trim();
+
       if (containsPricingIntent(userMessage)) {
         return new Response(JSON.stringify({ success: true, reply: pricingReply }), {
           status: 200,
@@ -215,14 +190,28 @@ export default {
         });
       }
 
+      if (!env.AI) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "ai_binding_missing",
+            reply: "AI asistan su anda aktif degil. Lutfen biraz sonra tekrar deneyin.",
+          }),
+          {
+            status: 503,
+            headers: { ...cors(origin), "content-type": "application/json" },
+          },
+        );
+      }
+
       try {
         const result = await env.AI.run(env.AI_MODEL || defaultModel, {
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },
           ],
-          max_tokens: 300,
-          temperature: 0.4,
+          max_tokens: 280,
+          temperature: 0.25,
         });
 
         const reply = (result?.response || "").trim();

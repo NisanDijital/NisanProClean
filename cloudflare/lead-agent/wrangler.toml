@@ -11,7 +11,7 @@ id = "81881348601d445eb69adf797e2cc48a"
 
 [vars]
 ALLOWED_ORIGIN = "https://nisankoltukyikama.com"
-AI_MODEL = "@cf/meta/llama-3.2-3b-instruct"
+AI_MODEL = "@cf/google/gemma-3-12b-it"
 
 [ai]
 binding = "AI"
