@@ -43,3 +43,33 @@ export async function apiPost(action: string, payload: ApiPayload) {
 
   return data;
 }
+
+type LeadAgentPayload = {
+  name: string;
+  phone: string;
+  address: string;
+  service: string;
+  date: string;
+  slot: string;
+  source?: string;
+};
+
+const LEAD_AGENT_URL =
+  import.meta.env.VITE_LEAD_AGENT_URL ||
+  "https://nisanproclean-lead-agent.nisankoltukyikamacom.workers.dev";
+
+export async function sendLeadToAgent(payload: LeadAgentPayload): Promise<boolean> {
+  try {
+    const response = await fetch(`${LEAD_AGENT_URL}/lead`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}

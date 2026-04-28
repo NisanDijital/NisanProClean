@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { trackWhatsAppClick } from "../analytics";
 import { CONTACT_INFO } from "../constants";
+import { sendLeadToAgent } from "../apiClient";
 
 type PricedItem = {
   id: string;
@@ -46,12 +47,17 @@ const TIME_SLOTS = [
 ];
 
 const currency = (value: number) => `${value.toLocaleString("tr-TR")} TL`;
+const normalizePhone = (value: string) => value.replace(/\D/g, "");
 
 const PricingCalculator: React.FC = () => {
   const [items, setItems] = useState<Record<string, number>>({});
   const [addons, setAddons] = useState<Record<string, boolean>>({});
   const [date, setDate] = useState("");
   const [time, setTime] = useState(TIME_SLOTS[0]);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [leadStatus, setLeadStatus] = useState<"idle" | "sending" | "saved" | "failed">("idle");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isGuaranteeModalOpen, setIsGuaranteeModalOpen] = useState(false);
 
@@ -95,8 +101,13 @@ const PricingCalculator: React.FC = () => {
     return { total: nextTotal, summary: nextSummary };
   }, [addons, items]);
 
-  const handleWhatsAppOrder = () => {
-    if (!summary.length || !acceptedTerms) return;
+  const canSubmitLead =
+    customerName.trim().length >= 2 &&
+    normalizePhone(customerPhone).length >= 10 &&
+    customerAddress.trim().length >= 5;
+
+  const handleWhatsAppOrder = async () => {
+    if (!summary.length || !acceptedTerms || !canSubmitLead) return;
 
     const lines = summary.map((item) => `- ${item.qty}x ${item.name}: ${currency(item.total)}`);
     const dateLine = date
@@ -112,6 +123,11 @@ const PricingCalculator: React.FC = () => {
       `*Toplam Tutar*`,
       currency(total),
       "",
+      "*Musteri Bilgileri*",
+      `Ad Soyad: ${customerName.trim()}`,
+      `Telefon: ${customerPhone.trim()}`,
+      `Adres: ${customerAddress.trim()}`,
+      "",
       "*Talep Edilen Randevu*",
       dateLine,
       "",
@@ -125,6 +141,19 @@ const PricingCalculator: React.FC = () => {
       has_date: Boolean(date),
       time_slot: time,
     });
+
+    setLeadStatus("sending");
+    const leadSaved = await sendLeadToAgent({
+      name: customerName.trim(),
+      phone: customerPhone.trim(),
+      address: customerAddress.trim(),
+      service: summary.map((item) => item.name).join(", "),
+      date: date || "esnek",
+      slot: time,
+      source: "web_pricing_calculator",
+    });
+    setLeadStatus(leadSaved ? "saved" : "failed");
+
     window.open(`${CONTACT_INFO.whatsappLink}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
   };
 
@@ -338,6 +367,42 @@ const PricingCalculator: React.FC = () => {
                     </div>
                   </div>
 
+                  <div className="bg-background-dark border border-white/10 rounded-xl p-4 mb-6">
+                    <h4 className="text-white font-bold text-sm mb-3">Musteri Bilgileri</h4>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder="Ad Soyad"
+                        className="w-full bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
+                      />
+                      <input
+                        type="tel"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="Telefon (05xx xxx xx xx)"
+                        className="w-full bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
+                      />
+                      <textarea
+                        value={customerAddress}
+                        onChange={(e) => setCustomerAddress(e.target.value)}
+                        placeholder="Adres"
+                        rows={2}
+                        className="w-full bg-surface-dark border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary resize-none"
+                      />
+                    </div>
+                    {!canSubmitLead && (
+                      <p className="text-xs text-amber-300 mt-2">Randevu gondermek icin ad, telefon ve adres girin.</p>
+                    )}
+                    {leadStatus === "saved" && (
+                      <p className="text-xs text-emerald-300 mt-2">Lead kaydi alindi. WhatsApp mesaji da aciliyor.</p>
+                    )}
+                    {leadStatus === "failed" && (
+                      <p className="text-xs text-amber-300 mt-2">Lead kaydi su an alinamadi, WhatsApp uzerinden devam edebilirsiniz.</p>
+                    )}
+                  </div>
+
                   <div className="mb-4 flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -363,15 +428,15 @@ const PricingCalculator: React.FC = () => {
 
                   <button
                     onClick={handleWhatsAppOrder}
-                    disabled={!acceptedTerms}
+                    disabled={!acceptedTerms || !canSubmitLead || leadStatus === "sending"}
                     className={`relative overflow-hidden w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 text-lg ${
-                      acceptedTerms
+                      acceptedTerms && canSubmitLead && leadStatus !== "sending"
                         ? "bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-[0_0_20px_rgba(37,211,102,0.3)]"
                         : "bg-gray-700 text-gray-400 cursor-not-allowed"
                     }`}
                   >
                     <span className="material-symbols-outlined relative z-10">chat</span>
-                    <span className="relative z-10">WhatsApp'tan Randevu Al</span>
+                    <span className="relative z-10">{leadStatus === "sending" ? "Kayit Aliniyor..." : "WhatsApp'tan Randevu Al"}</span>
                   </button>
                 </>
               )}

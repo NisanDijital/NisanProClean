@@ -3,6 +3,22 @@ export interface Env {
   ALLOWED_ORIGIN: string;
 }
 
+interface KVNamespace {
+  get(key: string): Promise<string | null>;
+  put(
+    key: string,
+    value: string,
+    options?: {
+      expirationTtl?: number;
+    },
+  ): Promise<void>;
+}
+
+type ScheduledEvent = {
+  readonly cron: string;
+  readonly scheduledTime: number;
+};
+
 type LeadPayload = {
   name?: string;
   phone?: string;
