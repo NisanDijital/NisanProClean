@@ -79,9 +79,77 @@ const systemPrompt = [
   "Sen NisanProClean icin calisan bir randevu asistanisin.",
   "Kisa, net, yardimci cevap ver.",
   "Sadece koltuk, yatak, arac koltugu temizligi ve randevu konularinda cevap ver.",
-  "Fiyat sorularinda kesin rakam uydurma; fiyat hesaplama araci veya WhatsApp yonlendirmesi yap.",
+  "Fiyat sorularinda kesin rakam uydurma.",
   "Istenirse ad, telefon, adres, tarih ve saat bilgilerini istemeyi hatirlat.",
 ].join(" ");
+
+const containsPricingIntent = (message: string) => {
+  const normalized = message
+    .toLowerCase()
+    .replaceAll("ı", "i")
+    .replaceAll("ş", "s")
+    .replaceAll("ğ", "g")
+    .replaceAll("ü", "u")
+    .replaceAll("ö", "o")
+    .replaceAll("ç", "c");
+
+  return (
+    normalized.includes("fiyat") ||
+    normalized.includes("ucret") ||
+    normalized.includes("ne kadar") ||
+    normalized.includes("kac tl") ||
+    normalized.includes("fiyatlar")
+  );
+};
+
+const containsAppointmentIntent = (message: string) => {
+  const normalized = message
+    .toLowerCase()
+    .replaceAll("ı", "i")
+    .replaceAll("ş", "s")
+    .replaceAll("ğ", "g")
+    .replaceAll("ü", "u")
+    .replaceAll("ö", "o")
+    .replaceAll("ç", "c");
+
+  return (
+    normalized.includes("randevu") ||
+    normalized.includes("musait") ||
+    normalized.includes("saat") ||
+    normalized.includes("tarih") ||
+    normalized.includes("slot")
+  );
+};
+
+const pricingReply = [
+  "NisanProClean guncel temel fiyat kalemleri su sekilde:",
+  "- Tekli koltuk / berjer: 350 TL",
+  "- Ikili koltuk: 550 TL",
+  "- Uclu koltuk: 750 TL",
+  "- L koltuk (buyuk): 1250 TL",
+  "- 3+2+1+1 takim: 1800 TL",
+  "- Duz koltuk takimi: 2000 TL",
+  "- Cift kisilik yatak: 1750 TL",
+  "- Tek kisilik yatak: 1000 TL",
+  "- Binek arac koltuk temizligi: 2000 TL",
+  "- SUV/ticari arac koltuk temizligi: 2500 TL",
+  "",
+  "Net toplam icin sitedeki Fiyat Hesapla alanindan secim yapabilirsin.",
+  "Istersen ad, telefon, adres, tarih ve saat bilgisini yaz; randevuyu hemen olusturalim.",
+].join("\n");
+
+const appointmentReply = [
+  "Randevu olusturalim.",
+  "Lutfen su bilgileri tek mesajda yaz:",
+  "- Ad Soyad",
+  "- Telefon",
+  "- Adres",
+  "- Hizmet (koltuk / yatak / arac koltugu)",
+  "- Tarih",
+  "- Saat blogu (09:00-12:00 / 13:00-16:00 / 17:00-20:00)",
+  "",
+  "Bilgileri yazdiginda kaydi hemen acip WhatsApp onayina yonlendirecegim.",
+].join("\n");
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const defaultModel = "@cf/meta/llama-3.2-3b-instruct";
@@ -132,11 +200,26 @@ export default {
         );
       }
 
+      const userMessage = (body.message || "").trim();
+      if (containsPricingIntent(userMessage)) {
+        return new Response(JSON.stringify({ success: true, reply: pricingReply }), {
+          status: 200,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      if (containsAppointmentIntent(userMessage)) {
+        return new Response(JSON.stringify({ success: true, reply: appointmentReply }), {
+          status: 200,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
       try {
         const result = await env.AI.run(env.AI_MODEL || defaultModel, {
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: (body.message || "").trim() },
+            { role: "user", content: userMessage },
           ],
           max_tokens: 300,
           temperature: 0.4,
