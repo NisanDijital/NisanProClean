@@ -100,6 +100,23 @@ const containsPricingIntent = (message: string) => {
   );
 };
 
+const containsNegotiationIntent = (message: string) => {
+  const normalized = normalizeForIntent(message);
+  return (
+    normalized.includes("pahali") ||
+    normalized.includes("indirim") ||
+    normalized.includes("pazarlik") ||
+    normalized.includes("son fiyat") ||
+    normalized.includes("son ne") ||
+    normalized.includes("dusur") ||
+    normalized.includes("olmaz mi") ||
+    normalized.includes("nakit") ||
+    normalized.includes("kampanya") ||
+    normalized.includes("butce") ||
+    normalized.includes("uygun olur")
+  );
+};
+
 const containsAppointmentIntent = (message: string) => {
   const normalized = normalizeForIntent(message);
   return (
@@ -265,6 +282,9 @@ const systemPrompt = [
   "Musteri sinirli yazsa bile sakin kal, azarlama.",
   "Sadece koltuk, yatak, arac koltugu temizligi ve randevu konularinda cevap ver.",
   "Fiyat sorularinda asla rakam uydurma.",
+  "Pazarlik ve indirim isteginde yetkisiz indirim sozu verme; once kapsam, leke, adet, adres ve slot bilgisi iste.",
+  "Fiyat itirazinda deger anlat, gereksiz kalemleri ayiklamayi teklif et, paket avantaji ihtimalini soyle ve randevu kapanisina yonlendir.",
+  "Satis odakli ol: musteriye bir sonraki net adimi yazdir, ama rahatsiz edici baski kurma.",
   "Gerekirse ad, telefon, adres, tarih ve saat bilgilerini istemeyi hatirlat.",
 ].join(" ");
 
@@ -283,6 +303,19 @@ const pricingReply = [
   "",
   "Net toplam icin sitedeki Fiyat Hesapla alanindan secim yapabilirsin.",
   "Istersen ad, telefon, adres, tarih ve saat bilgisini yaz; randevuyu hemen olusturalim.",
+].join("\n");
+
+const negotiationReply = [
+  "Haklisin, fiyat konusunda net ve mantikli ilerleyelim.",
+  "Biz fiyati gelisiguzel kirmiyoruz; isi netlestirip gereksiz kalemleri ayikliyoruz. Boylece hem dogru hizmeti alirsin hem de bosuna fazla odemezsin.",
+  "",
+  "Uygun paket cikarmam icin sunlari yaz:",
+  "- Kac parca koltuk var? Ornek: 3+2+1, L koltuk, tekli berjer",
+  "- Leke veya koku var mi? Evcil hayvan, sigara, kusma, yemek gibi",
+  "- Adres hangi bolge? Afyon Merkez, Erenler, Uydukent, Erkmen vb.",
+  "- Hangi gun ve saat blogu uygun? 09:00-12:00 / 13:00-16:00 / 17:00-20:00",
+  "",
+  "Koltuk + yatak, sandalye veya arac koltugu birlikte olursa paket avantaji konusabiliriz. Net bilgiyle en uygun secenegi cikarip randevuyu acalim.",
 ].join("\n");
 
 const appointmentReply = [
@@ -479,6 +512,13 @@ export default {
         }
 
         return new Response(JSON.stringify({ success: true, reply: appointmentSummaryReply(appointmentLead, saved, duplicate) }), {
+          status: 200,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      if (containsNegotiationIntent(userMessage)) {
+        return new Response(JSON.stringify({ success: true, reply: negotiationReply }), {
           status: 200,
           headers: { ...cors(origin), "content-type": "application/json" },
         });
