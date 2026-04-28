@@ -1,0 +1,13 @@
+name = "nisanproclean-lead-agent"
+main = "src/index.ts"
+compatibility_date = "2026-04-28"
+
+[observability]
+enabled = true
+
+[[kv_namespaces]]
+binding = "LEAD_LOGS"
+id = "81881348601d445eb69adf797e2cc48a"
+
+[vars]
+ALLOWED_ORIGIN = "https://nisankoltukyikama.com"
