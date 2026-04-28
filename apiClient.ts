@@ -74,7 +74,12 @@ export async function sendLeadToAgent(payload: LeadAgentPayload): Promise<boolea
   }
 }
 
-export async function askAIAgent(message: string): Promise<string> {
+type ChatHistoryItem = {
+  role: "user" | "assistant";
+  text: string;
+};
+
+export async function askAIAgent(message: string, history: ChatHistoryItem[] = []): Promise<string> {
   try {
     const response = await fetch(`${LEAD_AGENT_URL}/chat`, {
       method: "POST",
@@ -82,7 +87,7 @@ export async function askAIAgent(message: string): Promise<string> {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, history: history.slice(-12) }),
     });
 
     const data = (await response.json()) as { reply?: string };

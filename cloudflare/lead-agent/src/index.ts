@@ -45,6 +45,10 @@ type LeadPayload = {
 
 type ChatPayload = {
   message?: string;
+  history?: Array<{
+    role?: string;
+    text?: string;
+  }>;
 };
 
 const json = (data: unknown, status = 200) =>
@@ -112,6 +116,91 @@ const containsStainAnalysisIntent = (message: string) => {
     normalized.includes("cikar mi")
   );
 };
+
+const compactHistory = (payload: ChatPayload, currentMessage: string) => {
+  const history = Array.isArray(payload.history) ? payload.history : [];
+  const cleaned = history
+    .slice(-12)
+    .map((item) => ({
+      role: item.role === "assistant" ? "assistant" : "user",
+      text: String(item.text || "").trim().slice(0, 800),
+    }))
+    .filter((item) => item.text.length > 0);
+
+  if (!cleaned.some((item) => item.role === "user" && item.text === currentMessage)) {
+    cleaned.push({ role: "user", text: currentMessage });
+  }
+
+  return cleaned;
+};
+
+const extractAppointment = (conversation: string) => {
+  const normalized = normalizeForIntent(conversation);
+  const digits = conversation.replace(/\D/g, "");
+  const phoneMatch = digits.match(/(?:90)?(5\d{9})/);
+  const phone = phoneMatch ? `0${phoneMatch[1]}` : "";
+
+  const phoneIndex = phoneMatch ? conversation.search(/0?\s*5\s*\d[\d\s().-]{8,}/) : -1;
+  const beforePhone = phoneIndex > 0 ? conversation.slice(Math.max(0, phoneIndex - 60), phoneIndex).trim() : "";
+  const nameMatch = beforePhone.match(/([A-Za-zÇĞİÖŞÜçğıöşü]{2,}(?:\s+[A-Za-zÇĞİÖŞÜçğıöşü]{2,}){0,2})\s*$/);
+  const name = nameMatch ? nameMatch[1].trim() : "";
+
+  const service = normalized.includes("arac")
+    ? "Arac koltugu"
+    : normalized.includes("yatak")
+      ? "Yatak"
+      : normalized.includes("koltuk")
+        ? "Koltuk"
+        : "";
+
+  const slot = normalized.includes("09-12") || normalized.includes("09 12") || normalized.includes("9-12")
+    ? "09:00 - 12:00"
+    : normalized.includes("13-16") || normalized.includes("13 16") || normalized.includes("saat 16")
+      ? "13:00 - 16:00"
+      : normalized.includes("17-20") || normalized.includes("17 20")
+        ? "17:00 - 20:00"
+        : "";
+
+  const dateMatch = normalized.match(/\b(\d{1,2})\s*(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)\b/);
+  const date = dateMatch ? `${dateMatch[1]} ${dateMatch[2]}` : normalized.includes("yarin") ? "yarin" : "";
+
+  const addressPatterns = [
+    /\bafyon\s+merkez\b/i,
+    /\berenler\b/i,
+    /\buydukent\b/i,
+    /\berkmen\b/i,
+    /\bsahipata\b/i,
+    /\bsandikli\b/i,
+    /\bbolvadin\b/i,
+    /\bemirdag\b/i,
+  ];
+  const addressMatch = addressPatterns.map((pattern) => conversation.match(pattern)?.[0]).find(Boolean) || "";
+
+  return {
+    name,
+    phone,
+    address: addressMatch,
+    service,
+    date,
+    slot,
+    isComplete: Boolean(name && phone && addressMatch && service && date && slot),
+  };
+};
+
+const appointmentSummaryReply = (lead: ReturnType<typeof extractAppointment>, saved: boolean) =>
+  [
+    saved ? "Tamam, randevu kaydini aldım." : "Bilgileri toparladim.",
+    `Ad Soyad: ${lead.name}`,
+    `Telefon: ${lead.phone}`,
+    `Adres: ${lead.address}`,
+    `Hizmet: ${lead.service}`,
+    `Tarih: ${lead.date}`,
+    `Saat: ${lead.slot}`,
+    "",
+    saved
+      ? "Musaitlik onayi icin WhatsApp uzerinden donus yapacagiz."
+      : "Kayit sirasinda sorun olursa WhatsApp uzerinden devam edebiliriz.",
+  ].join("\n");
 
 const systemPrompt = [
   "Sen NisanProClean icin calisan bir randevu asistanisin.",
@@ -197,6 +286,44 @@ export default {
       }
 
       const userMessage = (body.message || "").trim();
+      const history = compactHistory(body, userMessage);
+      const conversationText = history.map((item) => `${item.role}: ${item.text}`).join("\n");
+      const appointmentLead = extractAppointment(conversationText);
+
+      if (appointmentLead.isComplete) {
+        let saved = false;
+        try {
+          const leadId = crypto.randomUUID();
+          await env.LEAD_LOGS.put(
+            `lead:${leadId}`,
+            JSON.stringify({
+              id: leadId,
+              createdAt: new Date().toISOString(),
+              name: appointmentLead.name,
+              phone: appointmentLead.phone,
+              address: appointmentLead.address,
+              service: appointmentLead.service,
+              date: appointmentLead.date,
+              slot: appointmentLead.slot,
+              source: "ai_chat_agent",
+            }),
+            { expirationTtl: 60 * 60 * 24 * 180 },
+          );
+          const dailyCounterKey = `counter:${todayKey()}`;
+          const current = Number((await env.LEAD_LOGS.get(dailyCounterKey)) || "0");
+          await env.LEAD_LOGS.put(dailyCounterKey, String(current + 1), {
+            expirationTtl: 60 * 60 * 24 * 370,
+          });
+          saved = true;
+        } catch {
+          saved = false;
+        }
+
+        return new Response(JSON.stringify({ success: true, reply: appointmentSummaryReply(appointmentLead, saved) }), {
+          status: 200,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
 
       if (containsPricingIntent(userMessage)) {
         return new Response(JSON.stringify({ success: true, reply: pricingReply }), {
@@ -205,15 +332,15 @@ export default {
         });
       }
 
-      if (containsAppointmentIntent(userMessage)) {
-        return new Response(JSON.stringify({ success: true, reply: appointmentReply }), {
+      if (containsStainAnalysisIntent(userMessage)) {
+        return new Response(JSON.stringify({ success: true, reply: stainAnalysisReply }), {
           status: 200,
           headers: { ...cors(origin), "content-type": "application/json" },
         });
       }
 
-      if (containsStainAnalysisIntent(userMessage)) {
-        return new Response(JSON.stringify({ success: true, reply: stainAnalysisReply }), {
+      if (containsAppointmentIntent(conversationText)) {
+        return new Response(JSON.stringify({ success: true, reply: appointmentReply }), {
           status: 200,
           headers: { ...cors(origin), "content-type": "application/json" },
         });
@@ -246,7 +373,10 @@ export default {
             result = await env.AI.run(model, {
               messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: userMessage },
+                ...history.map((item) => ({
+                  role: item.role as "user" | "assistant",
+                  content: item.text,
+                })),
               ],
               max_tokens: 280,
               temperature: 0.25,

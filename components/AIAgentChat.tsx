@@ -21,10 +21,11 @@ const AIAgentChat: React.FC = () => {
     const text = input.trim();
     if (text.length < 2 || sending) return;
 
-    setMessages((prev) => [...prev, { role: "user", text }]);
+    const nextMessages: ChatItem[] = [...messages, { role: "user", text }];
+    setMessages(nextMessages);
     setInput("");
     setSending(true);
-    const reply = await askAIAgent(text);
+    const reply = await askAIAgent(text, nextMessages);
     setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
     setSending(false);
   };
