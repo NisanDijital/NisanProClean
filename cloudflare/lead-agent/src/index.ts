@@ -1,7 +1,8 @@
 export interface Env {
   LEAD_LOGS: KVNamespace;
   ALLOWED_ORIGIN: string;
-  AI_MODEL?: string;
+  AI_MODEL_PRIMARY?: string;
+  AI_MODEL_FALLBACK?: string;
   AI?: Ai;
 }
 
@@ -140,7 +141,8 @@ const appointmentReply = [
 ].join("\n");
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
-const defaultModel = "@cf/google/gemma-3-12b-it";
+const defaultPrimaryModel = "@cf/qwen/qwen3-30b-a3b-fp8";
+const defaultFallbackModel = "@cf/zai-org/glm-4.7-flash";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -205,14 +207,32 @@ export default {
       }
 
       try {
-        const result = await env.AI.run(env.AI_MODEL || defaultModel, {
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-          max_tokens: 280,
-          temperature: 0.25,
-        });
+        const primaryModel = env.AI_MODEL_PRIMARY || defaultPrimaryModel;
+        const fallbackModel = env.AI_MODEL_FALLBACK || defaultFallbackModel;
+        const models = [primaryModel, fallbackModel].filter((model, index, arr) => arr.indexOf(model) === index);
+
+        let result: { response?: string } | null = null;
+        let lastError: unknown = null;
+
+        for (const model of models) {
+          try {
+            result = await env.AI.run(model, {
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage },
+              ],
+              max_tokens: 280,
+              temperature: 0.25,
+            });
+            if ((result?.response || "").trim().length > 0) break;
+          } catch (error) {
+            lastError = error;
+          }
+        }
+
+        if (!result || !(result.response || "").trim()) {
+          throw lastError || new Error("all_models_failed");
+        }
 
         const reply = (result?.response || "").trim();
         return new Response(
