@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { trackEvent } from "../analytics";
+import { getTrackingConsent, trackEvent } from "../analytics";
 
 const NAMES = ["Ahmet Y.", "Ayse K.", "Mehmet T.", "Fatma S.", "Caner B.", "Zeynep A.", "Burak C.", "Elif D.", "Mustafa E.", "Merve F."];
 const LOCATIONS = ["Afyon Merkez", "Erenler", "Uydukent", "Sahipata", "Erkmen", "Fatih", "Kanlica", "Gazi"];
@@ -21,8 +21,18 @@ const SocialProof: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [mode, setMode] = useState<SocialProofMode>("viewers");
   const [booking, setBooking] = useState({ name: "", location: "", service: "" });
+  const [canRender, setCanRender] = useState(false);
 
   useEffect(() => {
+    const updateEligibility = () => setCanRender(getTrackingConsent() !== null);
+    updateEligibility();
+    window.addEventListener("nisan:consent-updated", updateEligibility as EventListener);
+    return () => window.removeEventListener("nisan:consent-updated", updateEligibility as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (!canRender) return;
+
     const initialTimer = setTimeout(() => setIsVisible(true), 3000);
 
     const viewerInterval = setInterval(() => {
@@ -57,7 +67,9 @@ const SocialProof: React.FC = () => {
       clearInterval(viewerInterval);
       clearInterval(cycleInterval);
     };
-  }, []);
+  }, [canRender]);
+
+  if (!canRender) return null;
 
   const handleCardClick = () => {
     trackEvent("social_proof_click", {

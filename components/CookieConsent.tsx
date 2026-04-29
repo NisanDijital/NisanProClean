@@ -27,8 +27,8 @@ const CookieConsent: React.FC = () => {
   if (!visible) return null;
 
   return (
-    <aside className="fixed left-4 right-4 bottom-4 md:left-auto md:right-6 md:max-w-md z-[110]">
-      <div className="glass-card border border-white/10 rounded-2xl p-4 md:p-5 bg-surface-dark/95 backdrop-blur-md shadow-[0_16px_48px_rgba(0,0,0,0.45)]">
+    <aside className="fixed inset-x-3 bottom-3 z-[110] md:bottom-6 md:left-6 md:right-auto md:max-w-md">
+      <div className="glass-card rounded-2xl border border-white/10 bg-surface-dark/96 p-4 shadow-[0_16px_42px_rgba(0,0,0,0.36)] backdrop-blur-md md:p-5">
         <p className="text-white text-sm font-semibold mb-2">Cerez Tercihi</p>
         <p className="text-gray-300 text-xs leading-relaxed">
           Site performansini olcmek ve deneyimi iyilestirmek icin analitik cerezler kullanmak istiyoruz.
@@ -38,16 +38,16 @@ const CookieConsent: React.FC = () => {
           </a>
           .
         </p>
-        <div className="flex gap-2 mt-4">
+        <div className="mt-4 flex gap-2">
           <button
             onClick={() => applyDecision("denied")}
-            className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold border border-white/15 text-gray-200 hover:bg-white/5 transition-colors"
+            className="flex-1 rounded-xl border border-white/15 px-3 py-2 text-xs font-semibold text-gray-200 transition-colors hover:bg-white/5"
           >
             Reddet
           </button>
           <button
             onClick={() => applyDecision("granted")}
-            className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold bg-primary text-background-dark hover:bg-cyan-300 transition-colors"
+            className="flex-1 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-background-dark transition-colors hover:bg-cyan-300"
           >
             Kabul Et
           </button>

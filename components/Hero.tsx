@@ -158,26 +158,26 @@ const Hero: React.FC = () => {
           </div>
           <span>Afyon genelinde yerinde hizmet, net fiyat ve hizli geri donus</span>
         </div>
-      </div>
 
-      <div className="absolute hidden lg:flex flex-col gap-3 bottom-32 right-20">
-        <div className="flex items-center gap-4 bg-background-dark/85 p-4 rounded-2xl border border-red-500/40">
-          <div className="size-12 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">
-            <span className="material-symbols-outlined">gavel</span>
+        <div className="hidden w-full max-w-3xl gap-3 lg:grid lg:grid-cols-2">
+          <div className="flex items-center gap-4 rounded-2xl border border-red-500/35 bg-background-dark/72 p-4 backdrop-blur-sm">
+            <div className="flex size-12 items-center justify-center rounded-full bg-red-500/20 text-red-400">
+              <span className="material-symbols-outlined">gavel</span>
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-white">7 gun memnuniyet garantisi</p>
+              <p className="text-xs text-gray-300">Kosulsuz destek ve guvence</p>
+            </div>
           </div>
-          <div className="text-left">
-            <p className="text-white font-bold text-sm">7 gun memnuniyet garantisi</p>
-            <p className="text-gray-300 text-xs">Kosulsuz destek ve guvence</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-4 bg-background-dark/85 p-4 rounded-2xl border border-green-500/40">
-          <div className="size-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-            <span className="material-symbols-outlined">shield</span>
-          </div>
-          <div className="text-left">
-            <p className="text-white font-bold text-sm">Hassas yuzey guvencesi</p>
-            <p className="text-gray-300 text-xs">Kumas turune uygun, kontrollu ve guvenli uygulama</p>
+          <div className="flex items-center gap-4 rounded-2xl border border-green-500/35 bg-background-dark/72 p-4 backdrop-blur-sm">
+            <div className="flex size-12 items-center justify-center rounded-full bg-green-500/20 text-green-400">
+              <span className="material-symbols-outlined">shield</span>
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-white">Hassas yuzey guvencesi</p>
+              <p className="text-xs text-gray-300">Kumas turune uygun, kontrollu ve guvenli uygulama</p>
+            </div>
           </div>
         </div>
       </div>
