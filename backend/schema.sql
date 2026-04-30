@@ -78,6 +78,25 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     INDEX idx_subscriptions_pipeline (pipeline_stage)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS blog_posts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(160) NOT NULL UNIQUE,
+    title VARCHAR(180) NOT NULL,
+    category VARCHAR(80) NOT NULL DEFAULT 'Yerel Rehber',
+    excerpt VARCHAR(500) NOT NULL DEFAULT '',
+    content MEDIUMTEXT NOT NULL,
+    image_url VARCHAR(500) NOT NULL DEFAULT '',
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+    published_at DATETIME NULL,
+    meta_title VARCHAR(180) NOT NULL DEFAULT '',
+    meta_description VARCHAR(320) NOT NULL DEFAULT '',
+    author VARCHAR(120) NOT NULL DEFAULT 'NisanProClean',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    INDEX idx_blog_status_published (status, published_at),
+    INDEX idx_blog_category (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS referral_otps (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     phone VARCHAR(12) NOT NULL,

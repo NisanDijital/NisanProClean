@@ -1,14 +1,71 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { fetchBlogPosts, type ApiBlogPost } from "../apiClient";
 import { BLOG_CATEGORIES, BLOG_POSTS } from "../contentConstants";
 import OptimizedImage from "./OptimizedImage";
 
+type BlogPostView = {
+  id: number | string;
+  title: string;
+  category: string;
+  image: string;
+  date: string;
+  excerpt: string;
+  content: string;
+};
+
+const formatBlogDate = (value?: string) => {
+  if (!value) return "";
+  const date = new Date(value.replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+};
+
+const mapApiPost = (post: ApiBlogPost): BlogPostView => ({
+  id: post.id || post.slug,
+  title: post.title,
+  category: post.category || "Yerel Rehber",
+  image: post.image || BLOG_POSTS[0]?.image || "",
+  date: formatBlogDate(post.published_at || post.created_at),
+  excerpt: post.excerpt,
+  content: post.content,
+});
+
 const Blog: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState("Tumu");
+  const [apiPosts, setApiPosts] = useState<BlogPostView[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    void fetchBlogPosts().then((posts) => {
+      if (!isMounted || posts.length === 0) return;
+      setApiPosts(posts.map(mapApiPost));
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const posts = apiPosts.length > 0 ? apiPosts : BLOG_POSTS;
+  const categories = useMemo(
+    () => ["Tumu", ...Array.from(new Set(posts.map((post) => post.category).filter(Boolean)))],
+    [posts]
+  );
+  const visibleCategories = apiPosts.length > 0 ? categories : BLOG_CATEGORIES;
+
+  useEffect(() => {
+    if (!visibleCategories.includes(activeCategory)) {
+      setActiveCategory("Tumu");
+    }
+  }, [activeCategory, visibleCategories]);
 
   const filteredPosts =
     activeCategory === "Tumu"
-      ? BLOG_POSTS
-      : BLOG_POSTS.filter((post) => post.category === activeCategory);
+      ? posts
+      : posts.filter((post) => post.category === activeCategory);
 
   return (
     <section id="blog" className="py-24 px-4 relative bg-background-dark/50">
@@ -27,7 +84,7 @@ const Blog: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {BLOG_CATEGORIES.map((category) => (
+          {visibleCategories.map((category) => (
             <button
               key={category}
               onClick={() => setActiveCategory(category)}

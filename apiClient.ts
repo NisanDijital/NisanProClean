@@ -99,6 +99,39 @@ type ChatHistoryItem = {
   text: string;
 };
 
+export type ApiBlogPost = {
+  id: number;
+  slug: string;
+  title: string;
+  category: string;
+  excerpt: string;
+  content: string;
+  image: string;
+  status?: string;
+  published_at?: string;
+  meta_title?: string;
+  meta_description?: string;
+  author?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export async function fetchBlogPosts(): Promise<ApiBlogPost[]> {
+  try {
+    const response = await fetch("/api.php?action=blog_list&limit=30", {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const data = (await response.json()) as { success?: boolean; records?: ApiBlogPost[] };
+    if (!response.ok || !data.success || !Array.isArray(data.records)) {
+      return [];
+    }
+    return data.records;
+  } catch {
+    return [];
+  }
+}
+
 export async function askAIAgent(message: string, history: ChatHistoryItem[] = []): Promise<string> {
   try {
     const response = await fetch(`${LEAD_AGENT_URL}/chat`, {

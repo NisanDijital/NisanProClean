@@ -81,6 +81,7 @@ function loadAppConfig(): array
         'rate_limit_window_seconds' => 600,
         'rate_limit_max_public' => 20,
         'rate_limit_max_admin_login' => 8,
+        'blog_api_token' => '',
     ];
 
     $configFile = __DIR__ . '/config.php';
@@ -120,6 +121,7 @@ function loadAppConfig(): array
         'REFERRAL_RATE_LIMIT_WINDOW_SECONDS' => 'rate_limit_window_seconds',
         'REFERRAL_RATE_LIMIT_MAX_PUBLIC' => 'rate_limit_max_public',
         'REFERRAL_RATE_LIMIT_MAX_ADMIN_LOGIN' => 'rate_limit_max_admin_login',
+        'NPC_BLOG_API_TOKEN' => 'blog_api_token',
     ];
 
     foreach ($envMap as $env => $key) {
@@ -307,6 +309,27 @@ function initializeDbSchema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
 
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS blog_posts (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            slug VARCHAR(160) NOT NULL UNIQUE,
+            title VARCHAR(180) NOT NULL,
+            category VARCHAR(80) NOT NULL DEFAULT "Yerel Rehber",
+            excerpt VARCHAR(500) NOT NULL DEFAULT "",
+            content MEDIUMTEXT NOT NULL,
+            image_url VARCHAR(500) NOT NULL DEFAULT "",
+            status VARCHAR(20) NOT NULL DEFAULT "draft",
+            published_at DATETIME NULL,
+            meta_title VARCHAR(180) NOT NULL DEFAULT "",
+            meta_description VARCHAR(320) NOT NULL DEFAULT "",
+            author VARCHAR(120) NOT NULL DEFAULT "NisanProClean",
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            INDEX idx_blog_status_published (status, published_at),
+            INDEX idx_blog_category (category)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
     // Backward-compatible migrations for existing tables.
     $safeExec('ALTER TABLE appointments ADD COLUMN lead_source VARCHAR(64) NOT NULL DEFAULT "direct"');
     $safeExec('ALTER TABLE appointments ADD COLUMN utm_source VARCHAR(80) NOT NULL DEFAULT ""');
@@ -331,6 +354,12 @@ function initializeDbSchema(PDO $pdo): void
     $safeExec('ALTER TABLE subscriptions ADD COLUMN review_requested TINYINT(1) NOT NULL DEFAULT 0');
     $safeExec('ALTER TABLE subscriptions ADD COLUMN before_after_ready TINYINT(1) NOT NULL DEFAULT 0');
     $safeExec('ALTER TABLE subscriptions ADD INDEX idx_subscriptions_pipeline (pipeline_stage)');
+
+    $safeExec('ALTER TABLE blog_posts ADD COLUMN meta_title VARCHAR(180) NOT NULL DEFAULT ""');
+    $safeExec('ALTER TABLE blog_posts ADD COLUMN meta_description VARCHAR(320) NOT NULL DEFAULT ""');
+    $safeExec('ALTER TABLE blog_posts ADD COLUMN author VARCHAR(120) NOT NULL DEFAULT "NisanProClean"');
+    $safeExec('ALTER TABLE blog_posts ADD INDEX idx_blog_status_published (status, published_at)');
+    $safeExec('ALTER TABLE blog_posts ADD INDEX idx_blog_category (category)');
 
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS referral_otps (
@@ -400,6 +429,11 @@ function backupsDir(string $dir): string
 function otpPath(string $dir): string
 {
     return $dir . '/referral_otps.json';
+}
+
+function blogPostsPath(string $dir): string
+{
+    return $dir . '/blog_posts.json';
 }
 
 function readReferralsFromFile(string $path): array
@@ -887,6 +921,10 @@ function enforcePostSecurity(string $storageDir, string $action): void
         return;
     }
 
+    if (isBlogTokenAuthenticated($action)) {
+        return;
+    }
+
     if (!verifyCsrfToken()) {
         respond(419, ['success' => false, 'error' => 'Guvenlik dogrulamasi basarisiz. Sayfayi yenileyip tekrar deneyin.']);
     }
@@ -955,6 +993,102 @@ function cleanAttribution(string $value, int $max = 120): string
     $v = strtolower(trim($value));
     $v = preg_replace('/[^a-z0-9_\-\.]+/i', '_', $v) ?? '';
     return substr($v, 0, $max);
+}
+
+function cleanPlainText(string $value, int $max): string
+{
+    $value = trim(strip_tags($value));
+    $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+    if (function_exists('mb_substr')) {
+        return mb_substr($value, 0, $max);
+    }
+    return substr($value, 0, $max);
+}
+
+function cleanSlug(string $value): string
+{
+    $value = trim($value);
+    if ($value === '') {
+        return '';
+    }
+    $map = [
+        'ç' => 'c', 'Ç' => 'c',
+        'ğ' => 'g', 'Ğ' => 'g',
+        'ı' => 'i', 'İ' => 'i',
+        'ö' => 'o', 'Ö' => 'o',
+        'ş' => 's', 'Ş' => 's',
+        'ü' => 'u', 'Ü' => 'u',
+    ];
+    $value = strtr($value, $map);
+    $value = strtolower($value);
+    $value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? '';
+    $value = trim($value, '-');
+    return substr($value, 0, 160);
+}
+
+function cleanBlogContent(string $value): string
+{
+    $allowed = '<p><br><strong><b><em><i><ul><ol><li><h2><h3><a>';
+    $value = trim(strip_tags($value, $allowed));
+    $value = preg_replace('/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $value) ?? $value;
+    $value = preg_replace('/(href)\s*=\s*([\'"])\s*javascript:[^\'"]*\2/i', 'href="#"', $value) ?? $value;
+    $value = preg_replace('/<a\s+/i', '<a rel="nofollow noopener" target="_blank" ', $value) ?? $value;
+    return $value;
+}
+
+function normalizeBlogStatus(string $value): string
+{
+    $status = strtolower(trim($value));
+    return in_array($status, ['draft', 'published'], true) ? $status : 'draft';
+}
+
+function normalizeBlogPost(array $row): array
+{
+    return [
+        'id' => (int) ($row['id'] ?? 0),
+        'slug' => (string) ($row['slug'] ?? ''),
+        'title' => (string) ($row['title'] ?? ''),
+        'category' => (string) ($row['category'] ?? 'Yerel Rehber'),
+        'excerpt' => (string) ($row['excerpt'] ?? ''),
+        'content' => (string) ($row['content'] ?? ''),
+        'image' => (string) ($row['image_url'] ?? ($row['image'] ?? '')),
+        'status' => (string) ($row['status'] ?? 'draft'),
+        'published_at' => (string) ($row['published_at'] ?? ''),
+        'meta_title' => (string) ($row['meta_title'] ?? ''),
+        'meta_description' => (string) ($row['meta_description'] ?? ''),
+        'author' => (string) ($row['author'] ?? 'NisanProClean'),
+        'created_at' => (string) ($row['created_at'] ?? ''),
+        'updated_at' => (string) ($row['updated_at'] ?? ''),
+    ];
+}
+
+function blogApiToken(): string
+{
+    $cfg = appConfig();
+    return trim((string) ($cfg['blog_api_token'] ?? ''));
+}
+
+function isBlogTokenAuthenticated(string $action): bool
+{
+    if (!in_array($action, ['admin_blog_upsert', 'admin_blog_delete'], true)) {
+        return false;
+    }
+
+    $expected = blogApiToken();
+    if ($expected === '' || $expected === 'CHANGE_ME') {
+        return false;
+    }
+
+    $authorization = headerValue('Authorization');
+    $token = '';
+    if (preg_match('/^Bearer\s+(.+)$/i', $authorization, $matches)) {
+        $token = trim($matches[1]);
+    }
+    if ($token === '') {
+        $token = headerValue('X-Blog-Api-Token');
+    }
+
+    return $token !== '' && hash_equals($expected, $token);
 }
 
 function leadAttributionFromPayload(array $payload): array
@@ -1116,6 +1250,16 @@ function requireAdmin(string $storageDir): void
 
     logAdminAction($storageDir, 'admin_unauthorized', false);
     respond(401, ['success' => false, 'error' => 'Admin girisi gerekli.']);
+}
+
+function requireAdminOrBlogToken(string $storageDir, string $action): void
+{
+    if (isAdminAuthed() || isBlogTokenAuthenticated($action)) {
+        return;
+    }
+
+    logAdminAction($storageDir, 'blog_api_unauthorized', false, ['action' => $action]);
+    respond(401, ['success' => false, 'error' => 'Admin girisi veya blog API token gerekli.']);
 }
 
 function adminPassword(): string
@@ -2517,6 +2661,269 @@ function handleAdminLeadDaySummary(string $storageDir): void
     ]);
 }
 
+function fetchBlogPosts(string $storageDir, bool $includeDrafts = false, int $limit = 50, string $category = ''): array
+{
+    $pdo = dbConnection();
+    $limit = max(1, min(100, $limit));
+
+    if ($pdo instanceof PDO) {
+        $where = [];
+        $params = [];
+        if (!$includeDrafts) {
+            $where[] = 'status = "published"';
+        }
+        if ($category !== '') {
+            $where[] = 'category = :category';
+            $params['category'] = $category;
+        }
+        $sql = 'SELECT id, slug, title, category, excerpt, content, image_url, status, published_at, meta_title, meta_description, author, created_at, updated_at FROM blog_posts';
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY COALESCE(published_at, created_at) DESC, id DESC LIMIT :limit';
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+        return array_map('normalizeBlogPost', is_array($rows) ? $rows : []);
+    }
+
+    $rows = array_map('normalizeBlogPost', readJsonArrayFile(blogPostsPath($storageDir)));
+    $rows = array_values(array_filter($rows, static function (array $row) use ($includeDrafts, $category): bool {
+        if (!$includeDrafts && (string) ($row['status'] ?? '') !== 'published') {
+            return false;
+        }
+        if ($category !== '' && (string) ($row['category'] ?? '') !== $category) {
+            return false;
+        }
+        return true;
+    }));
+    usort($rows, static function (array $left, array $right): int {
+        $leftDate = (string) ($left['published_at'] ?: $left['created_at']);
+        $rightDate = (string) ($right['published_at'] ?: $right['created_at']);
+        return strcmp($rightDate, $leftDate);
+    });
+    return array_slice($rows, 0, $limit);
+}
+
+function blogPayloadFromRequest(array $payload): array
+{
+    $title = cleanPlainText((string) ($payload['title'] ?? ''), 180);
+    $slug = cleanSlug((string) ($payload['slug'] ?? $title));
+    $content = cleanBlogContent((string) ($payload['content'] ?? ''));
+    $excerpt = cleanPlainText((string) ($payload['excerpt'] ?? ''), 500);
+    if ($excerpt === '') {
+        $excerpt = cleanPlainText($content, 240);
+    }
+    $category = cleanPlainText((string) ($payload['category'] ?? 'Yerel Rehber'), 80);
+    $imageUrl = trim((string) ($payload['image'] ?? ($payload['image_url'] ?? '')));
+    if ($imageUrl !== '' && !preg_match('/^(https?:\/\/|\/)[^\s<>"]+$/i', $imageUrl)) {
+        respond(422, ['success' => false, 'error' => 'Gorsel URL gecersiz.']);
+    }
+    $status = normalizeBlogStatus((string) ($payload['status'] ?? 'draft'));
+    $publishedAt = trim((string) ($payload['published_at'] ?? ''));
+    if ($status === 'published' && $publishedAt === '') {
+        $publishedAt = gmdate('Y-m-d H:i:s');
+    }
+    if ($status === 'draft') {
+        $publishedAt = '';
+    }
+
+    if ($title === '' || stringLength($title) < 10) {
+        respond(422, ['success' => false, 'error' => 'Baslik en az 10 karakter olmali.']);
+    }
+    if ($slug === '' || stringLength($slug) < 3) {
+        respond(422, ['success' => false, 'error' => 'Slug gecersiz.']);
+    }
+    if ($content === '' || stringLength(strip_tags($content)) < 80) {
+        respond(422, ['success' => false, 'error' => 'Blog icerigi en az 80 karakter olmali.']);
+    }
+
+    return [
+        'id' => (int) ($payload['id'] ?? 0),
+        'slug' => $slug,
+        'title' => $title,
+        'category' => $category !== '' ? $category : 'Yerel Rehber',
+        'excerpt' => $excerpt,
+        'content' => $content,
+        'image_url' => substr($imageUrl, 0, 500),
+        'status' => $status,
+        'published_at' => $publishedAt,
+        'meta_title' => cleanPlainText((string) ($payload['meta_title'] ?? $title), 180),
+        'meta_description' => cleanPlainText((string) ($payload['meta_description'] ?? $excerpt), 320),
+        'author' => cleanPlainText((string) ($payload['author'] ?? 'NisanProClean'), 120) ?: 'NisanProClean',
+    ];
+}
+
+function handleBlogList(string $storageDir): void
+{
+    $limit = max(1, min(100, queryInt('limit', 30)));
+    $category = cleanPlainText(queryString('category', ''), 80);
+    $posts = fetchBlogPosts($storageDir, false, $limit, $category);
+    respond(200, ['success' => true, 'records' => $posts]);
+}
+
+function handleAdminBlogList(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    $limit = max(1, min(100, queryInt('limit', 50)));
+    $category = cleanPlainText(queryString('category', ''), 80);
+    $posts = fetchBlogPosts($storageDir, true, $limit, $category);
+    logAdminAction($storageDir, 'admin_blog_list', true, ['total' => count($posts)]);
+    respond(200, ['success' => true, 'records' => $posts]);
+}
+
+function handleAdminBlogUpsert(string $storageDir): void
+{
+    requireAdminOrBlogToken($storageDir, 'admin_blog_upsert');
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
+    }
+
+    $post = blogPayloadFromRequest(readJsonPayload());
+    $pdo = dbConnection();
+    $now = gmdate('Y-m-d H:i:s');
+
+    if ($pdo instanceof PDO) {
+        if ($post['id'] > 0) {
+            $stmt = $pdo->prepare(
+                'UPDATE blog_posts
+                 SET slug = :slug, title = :title, category = :category, excerpt = :excerpt, content = :content,
+                     image_url = :image_url, status = :status, published_at = :published_at,
+                     meta_title = :meta_title, meta_description = :meta_description, author = :author, updated_at = :updated_at
+                 WHERE id = :id'
+            );
+            $stmt->execute([
+                'id' => $post['id'],
+                'slug' => $post['slug'],
+                'title' => $post['title'],
+                'category' => $post['category'],
+                'excerpt' => $post['excerpt'],
+                'content' => $post['content'],
+                'image_url' => $post['image_url'],
+                'status' => $post['status'],
+                'published_at' => $post['published_at'] !== '' ? $post['published_at'] : null,
+                'meta_title' => $post['meta_title'],
+                'meta_description' => $post['meta_description'],
+                'author' => $post['author'],
+                'updated_at' => $now,
+            ]);
+            $id = $post['id'];
+        } else {
+            $stmt = $pdo->prepare(
+                'INSERT INTO blog_posts (slug, title, category, excerpt, content, image_url, status, published_at, meta_title, meta_description, author, created_at, updated_at)
+                 VALUES (:slug, :title, :category, :excerpt, :content, :image_url, :status, :published_at, :meta_title, :meta_description, :author, :created_at, :updated_at)
+                 ON DUPLICATE KEY UPDATE
+                    title = VALUES(title), category = VALUES(category), excerpt = VALUES(excerpt), content = VALUES(content),
+                    image_url = VALUES(image_url), status = VALUES(status), published_at = VALUES(published_at),
+                    meta_title = VALUES(meta_title), meta_description = VALUES(meta_description), author = VALUES(author), updated_at = VALUES(updated_at)'
+            );
+            $stmt->execute([
+                'slug' => $post['slug'],
+                'title' => $post['title'],
+                'category' => $post['category'],
+                'excerpt' => $post['excerpt'],
+                'content' => $post['content'],
+                'image_url' => $post['image_url'],
+                'status' => $post['status'],
+                'published_at' => $post['published_at'] !== '' ? $post['published_at'] : null,
+                'meta_title' => $post['meta_title'],
+                'meta_description' => $post['meta_description'],
+                'author' => $post['author'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $id = (int) $pdo->lastInsertId();
+            if ($id === 0) {
+                $lookup = $pdo->prepare('SELECT id FROM blog_posts WHERE slug = :slug LIMIT 1');
+                $lookup->execute(['slug' => $post['slug']]);
+                $id = (int) $lookup->fetchColumn();
+            }
+        }
+
+        logAdminAction($storageDir, 'admin_blog_upsert', true, ['id' => $id, 'slug' => $post['slug'], 'status' => $post['status']]);
+        respond(200, ['success' => true, 'id' => $id, 'slug' => $post['slug'], 'status' => $post['status']]);
+    }
+
+    $path = blogPostsPath($storageDir);
+    $rows = readJsonArrayFile($path);
+    $nowIso = gmdate('c');
+    $updated = false;
+    $nextId = 1;
+    foreach ($rows as $row) {
+        $nextId = max($nextId, (int) ($row['id'] ?? 0) + 1);
+    }
+    foreach ($rows as $index => $row) {
+        if ((int) ($row['id'] ?? 0) === $post['id'] || (string) ($row['slug'] ?? '') === $post['slug']) {
+            $rows[$index] = array_merge($row, $post, [
+                'id' => (int) ($row['id'] ?? $post['id']),
+                'image' => $post['image_url'],
+                'updated_at' => $nowIso,
+                'published_at' => $post['published_at'] !== '' ? $post['published_at'] : '',
+            ]);
+            $updated = true;
+            $post['id'] = (int) $rows[$index]['id'];
+            break;
+        }
+    }
+    if (!$updated) {
+        $post['id'] = $post['id'] > 0 ? $post['id'] : $nextId;
+        $rows[] = array_merge($post, [
+            'image' => $post['image_url'],
+            'created_at' => $nowIso,
+            'updated_at' => $nowIso,
+            'published_at' => $post['published_at'] !== '' ? $post['published_at'] : '',
+        ]);
+    }
+    writeJsonArrayFile($path, $rows);
+    logAdminAction($storageDir, 'admin_blog_upsert', true, ['id' => $post['id'], 'slug' => $post['slug'], 'status' => $post['status']]);
+    respond(200, ['success' => true, 'id' => $post['id'], 'slug' => $post['slug'], 'status' => $post['status']]);
+}
+
+function handleAdminBlogDelete(string $storageDir): void
+{
+    requireAdminOrBlogToken($storageDir, 'admin_blog_delete');
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
+    }
+
+    $payload = readJsonPayload();
+    $id = (int) ($payload['id'] ?? 0);
+    $slug = cleanSlug((string) ($payload['slug'] ?? ''));
+    if ($id <= 0 && $slug === '') {
+        respond(422, ['success' => false, 'error' => 'Silmek icin id veya slug gerekli.']);
+    }
+
+    $pdo = dbConnection();
+    if ($pdo instanceof PDO) {
+        $stmt = $id > 0
+            ? $pdo->prepare('DELETE FROM blog_posts WHERE id = :id')
+            : $pdo->prepare('DELETE FROM blog_posts WHERE slug = :slug');
+        $stmt->execute($id > 0 ? ['id' => $id] : ['slug' => $slug]);
+        logAdminAction($storageDir, 'admin_blog_delete', true, ['id' => $id, 'slug' => $slug]);
+        respond(200, ['success' => true, 'deleted' => $stmt->rowCount()]);
+    }
+
+    $path = blogPostsPath($storageDir);
+    $rows = readJsonArrayFile($path);
+    $before = count($rows);
+    $rows = array_values(array_filter($rows, static function (array $row) use ($id, $slug): bool {
+        if ($id > 0 && (int) ($row['id'] ?? 0) === $id) {
+            return false;
+        }
+        if ($slug !== '' && (string) ($row['slug'] ?? '') === $slug) {
+            return false;
+        }
+        return true;
+    }));
+    writeJsonArrayFile($path, $rows);
+    logAdminAction($storageDir, 'admin_blog_delete', true, ['id' => $id, 'slug' => $slug]);
+    respond(200, ['success' => true, 'deleted' => $before - count($rows)]);
+}
+
 $storageDir = storageDir();
 $pdo = dbConnection();
 
@@ -2535,6 +2942,9 @@ switch ($action) {
         break;
     case 'csrf_token':
         handleCsrfToken();
+        break;
+    case 'blog_list':
+        handleBlogList($storageDir);
         break;
     case 'generate':
         handleGenerate($storageDir);
@@ -2565,6 +2975,15 @@ switch ($action) {
         break;
     case 'admin_logs':
         handleAdminLogs($storageDir);
+        break;
+    case 'admin_blog_list':
+        handleAdminBlogList($storageDir);
+        break;
+    case 'admin_blog_upsert':
+        handleAdminBlogUpsert($storageDir);
+        break;
+    case 'admin_blog_delete':
+        handleAdminBlogDelete($storageDir);
         break;
     case 'cron_backup':
         handleCronBackup($storageDir);

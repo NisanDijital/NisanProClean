@@ -28,6 +28,7 @@ Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 - `GET /api.php?action=appointment_slots`
 - `POST /api.php?action=appointment_book`
 - `POST /api.php?action=subscription_create`
+- `GET /api.php?action=blog_list&limit=30`
 
 ## Admin Endpointler
 
@@ -43,6 +44,9 @@ Not: `config.php` git'e alinmaz (`.gitignore` icinde).
 - `GET /api.php?action=admin_subscriptions`
 - `POST /api.php?action=admin_subscription_status`
 - `GET /api.php?action=admin_lead_report&days=30`
+- `GET /api.php?action=admin_blog_list`
+- `POST /api.php?action=admin_blog_upsert`
+- `POST /api.php?action=admin_blog_delete`
 
 `admin_lead_report` son `days` gun icindeki (1-365) lead source dagilimini randevu ve uyelik icin ayri verir.
 
@@ -61,6 +65,50 @@ Config alanlari:
 - `rate_limit_window_seconds`
 - `rate_limit_max_public`
 - `rate_limit_max_admin_login`
+- `blog_api_token` (opsiyonel: dis blog yazma ajanlari icin Bearer token)
+
+## Blog API
+
+Canli sitedeki blog bolumu once `GET /api.php?action=blog_list` endpointini okur. Endpoint bos ya da ulasilamazsa statik yazilara duser.
+
+Blog yazmak icin iki guvenli yol vardir:
+
+1. Admin oturumu + `X-CSRF-Token`
+2. Dis ajan icin `Authorization: Bearer BLOG_API_TOKEN`
+
+`backend/config.php` icinde:
+
+```php
+'blog_api_token' => 'UZUN_RASTGELE_TOKEN',
+```
+
+Yeni yazi ekleme veya guncelleme:
+
+```bash
+curl -X POST "https://nisankoltukyikama.com/api.php?action=admin_blog_upsert" \
+  -H "Authorization: Bearer UZUN_RASTGELE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Afyon Koltuk Yikama Fiyatlari 2026",
+    "slug": "afyon-koltuk-yikama-fiyatlari-2026",
+    "category": "Yerel Rehber",
+    "excerpt": "Afyon merkezde koltuk yikama fiyatlarini etkileyen parca, kumas ve leke kriterleri.",
+    "content": "<p>Afyon koltuk yikama fiyatlari...</p>",
+    "image": "/media/hero-1280.jpg",
+    "status": "published",
+    "meta_title": "Afyon Koltuk Yikama Fiyatlari 2026",
+    "meta_description": "Afyon merkezde koltuk yikama fiyatlari ve randevu sureci."
+  }'
+```
+
+Silme:
+
+```bash
+curl -X POST "https://nisankoltukyikama.com/api.php?action=admin_blog_delete" \
+  -H "Authorization: Bearer UZUN_RASTGELE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"slug":"afyon-koltuk-yikama-fiyatlari-2026"}'
+```
 
 ## Cron
 

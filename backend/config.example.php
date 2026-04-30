@@ -25,4 +25,5 @@ return [
     'otp_max_attempts' => 5,
     'otp_cooldown_seconds' => 60,
     'otp_rate_limit_hour' => 5,
+    'blog_api_token' => 'CHANGE_ME_LONG_RANDOM_TOKEN',
 ];
