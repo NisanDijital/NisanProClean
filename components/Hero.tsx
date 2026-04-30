@@ -44,7 +44,7 @@ const Hero: React.FC = () => {
           </span>
         </div>
 
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-white leading-[1.1] max-w-5xl mx-auto">
+        <h1 className="max-w-5xl mx-auto text-[2.55rem] sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-white leading-[1.08]">
           Koltuklarinizda <br />
           <span className="text-gradient-primary">Derinlemesine Hijyen</span>
         </h1>
@@ -62,16 +62,16 @@ const Hero: React.FC = () => {
                   Hizli Kanit
                 </p>
                 <p className="mt-1 text-sm text-gray-300">
-                  Once-sonra sonucu, fiyat ve randevu akisina hizlica ulasin.
+                  Net fiyat, uygun saat ve randevu akisina hizlica ulasin.
                 </p>
               </div>
               <a
-                href="#gallery"
-                title="Oncesi ve sonrasi galeri bolumune git"
+                href="#fiyat-hesapla"
+                title="Fiyat hesaplama ve randevu bolumune git"
                 className="inline-flex items-center gap-2 rounded-full border border-primary/30 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:border-primary hover:bg-primary/10"
               >
-                Galeriye Git
-                <span className="material-symbols-outlined text-base">arrow_downward</span>
+                Fiyat Hesapla
+                <span className="material-symbols-outlined text-base">calculate</span>
               </a>
             </div>
 

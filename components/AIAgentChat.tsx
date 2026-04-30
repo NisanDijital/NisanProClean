@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { askAIAgent } from "../apiClient";
+import { getTrackingConsent } from "../analytics";
 
 type ChatItem = {
   role: "user" | "assistant";
@@ -17,6 +18,7 @@ const welcomeMessage =
 
 const AIAgentChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [canShow, setCanShow] = useState(() => getTrackingConsent() !== null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +31,12 @@ const AIAgentChat: React.FC = () => {
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const handleConsentUpdate = () => setCanShow(true);
+    window.addEventListener("nisan:consent-updated", handleConsentUpdate as EventListener);
+    return () => window.removeEventListener("nisan:consent-updated", handleConsentUpdate as EventListener);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -67,6 +75,8 @@ const AIAgentChat: React.FC = () => {
       void sendMessage();
     }
   };
+
+  if (!canShow) return null;
 
   return (
     <>
