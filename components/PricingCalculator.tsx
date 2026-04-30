@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { trackWhatsAppClick } from "../analytics";
 import { CONTACT_INFO } from "../constants";
-import { sendLeadToAgent } from "../apiClient";
+import { createAppointment, sendLeadToAgent } from "../apiClient";
 
 type PricedItem = {
   id: string;
@@ -45,6 +45,12 @@ const TIME_SLOTS = [
   "13:00 - 16:00",
   "17:00 - 20:00",
 ];
+
+const SLOT_TO_BACKEND_TIME: Record<string, string> = {
+  "09:00 - 12:00": "09:00",
+  "13:00 - 16:00": "13:00",
+  "17:00 - 20:00": "17:00",
+};
 
 const currency = (value: number) => `${value.toLocaleString("tr-TR")} TL`;
 const normalizePhone = (value: string) => value.replace(/\D/g, "");
@@ -143,6 +149,20 @@ const PricingCalculator: React.FC = () => {
     });
 
     setLeadStatus("sending");
+    const backendTime = SLOT_TO_BACKEND_TIME[time] || "09:00";
+    const preferredDate = date || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const appointmentSaved = await createAppointment({
+      name: customerName.trim(),
+      phone: customerPhone.trim(),
+      address: customerAddress.trim(),
+      service: summary.map((item) => item.name).join(", "),
+      date: preferredDate,
+      time: backendTime,
+      source: "web_pricing_calculator",
+      note: date ? `Saat blogu: ${time}` : `Tarih esnek. Saat blogu tercihi: ${time}`,
+    });
+
     const leadSaved = await sendLeadToAgent({
       name: customerName.trim(),
       phone: customerPhone.trim(),
@@ -152,7 +172,7 @@ const PricingCalculator: React.FC = () => {
       slot: time,
       source: "web_pricing_calculator",
     });
-    setLeadStatus(leadSaved ? "saved" : "failed");
+    setLeadStatus(appointmentSaved || leadSaved ? "saved" : "failed");
 
     window.open(`${CONTACT_INFO.whatsappLink}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
   };
@@ -396,10 +416,10 @@ const PricingCalculator: React.FC = () => {
                       <p className="text-xs text-amber-300 mt-2">Randevu gondermek icin ad, telefon ve adres girin.</p>
                     )}
                     {leadStatus === "saved" && (
-                      <p className="text-xs text-emerald-300 mt-2">Lead kaydi alindi. WhatsApp mesaji da aciliyor.</p>
+                      <p className="text-xs text-emerald-300 mt-2">Randevu talebi kayda alindi. WhatsApp mesaji da aciliyor.</p>
                     )}
                     {leadStatus === "failed" && (
-                      <p className="text-xs text-amber-300 mt-2">Lead kaydi su an alinamadi, WhatsApp uzerinden devam edebilirsiniz.</p>
+                      <p className="text-xs text-amber-300 mt-2">Kayit tarafinda gecici sorun var. WhatsApp uzerinden devam edebilirsiniz.</p>
                     )}
                   </div>
 

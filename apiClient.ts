@@ -54,6 +54,17 @@ type LeadAgentPayload = {
   source?: string;
 };
 
+type AppointmentPayload = {
+  name: string;
+  phone: string;
+  address: string;
+  service: string;
+  date: string;
+  time: string;
+  note?: string;
+  source?: string;
+};
+
 const LEAD_AGENT_URL =
   import.meta.env.VITE_LEAD_AGENT_URL ||
   "https://nisanproclean-lead-agent.nisankoltukyikamacom.workers.dev";
@@ -69,6 +80,15 @@ export async function sendLeadToAgent(payload: LeadAgentPayload): Promise<boolea
       body: JSON.stringify(payload),
     });
     return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function createAppointment(payload: AppointmentPayload): Promise<boolean> {
+  try {
+    await apiPost("appointment_book", payload);
+    return true;
   } catch {
     return false;
   }
