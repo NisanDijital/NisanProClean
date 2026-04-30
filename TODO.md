@@ -107,6 +107,7 @@ Bu bolum, son kapsamli analiz raporundan cikan aksiyonlari tek yerde takip etmek
 ### D) Google Isletme Profili (birlikte acilacak)
 
 - [ ] Google Business Profile kaydini ac / sahiplik dogrulamasini tamamla
+- [x] GBP launch kit ve 30 gunluk post plani hazirla (`docs/gbp-launch-kit-2026-04-30.md`, `docs/gbp-post-plan-30-days-2026-04-30.md`)
 - [ ] NAP bilgilerini birebir site ile hizala (ad, telefon, hizmet bolgesi)
 - [ ] Haftalik GBP icerik rutini baslat (post + gorsel + yorum talebi)
 - [ ] GBP linkini schema `sameAs` ve footer ile net bagla
