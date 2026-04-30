@@ -1,0 +1,76 @@
+{
+  "businessName": "NisanProClean",
+  "phoneDisplay": "0507 958 16 42",
+  "phoneIntl": "+90 507 958 16 42",
+  "website": "https://nisankoltukyikama.com/",
+  "mainCategory": "Upholstery cleaning service",
+  "additionalCategories": [
+    "Car detailing service",
+    "Cleaning service"
+  ],
+  "hours": {
+    "monday": "09:00-20:00",
+    "tuesday": "09:00-20:00",
+    "wednesday": "09:00-20:00",
+    "thursday": "09:00-20:00",
+    "friday": "09:00-20:00",
+    "saturday": "09:00-20:00",
+    "sunday": "09:00-20:00"
+  },
+  "serviceAreas": [
+    "Afyonkarahisar",
+    "Afyon Merkez",
+    "Erenler",
+    "Uydukent",
+    "Erkmen",
+    "Sahipata",
+    "Sandikli",
+    "Bolvadin",
+    "Emirdag"
+  ],
+  "description": "NisanProClean, Afyonkarahisar genelinde yerinde koltuk yikama, yatak yikama ve arac koltugu temizligi hizmeti sunar. Kumas tipine uygun uygulama, sicak buhar destegi, hizli kuruma ve net randevu planlamasi ile ev ve is yerlerinde profesyonel temizlik saglar.",
+  "services": [
+    {
+      "name": "Yerinde Koltuk Yikama",
+      "description": "Ev ve ofis koltuklarinda kumasa uygun derin temizlik ve hizli kuruma."
+    },
+    {
+      "name": "Yatak Yikama",
+      "description": "Yatak yuzeyinde hijyen odakli temizlik ve koku kontrolu."
+    },
+    {
+      "name": "Arac Koltugu Temizligi",
+      "description": "Arac ici koltuk ve dosemede yerinde temizlik uygulamasi."
+    },
+    {
+      "name": "Sandalye Yikama",
+      "description": "Yemek sandalyeleri ve dosemeli oturum alanlarinda detayli temizlik."
+    },
+    {
+      "name": "Leke ve Koku Giderme",
+      "description": "Leke yogunluguna gore hedefli temizlik adimlari."
+    }
+  ],
+  "qa": [
+    {
+      "question": "Hangi bolgelere hizmet veriyorsunuz?",
+      "answer": "Afyonkarahisar merkez ve cevre bolgelere yerinde hizmet veriyoruz: Afyon Merkez, Erenler, Uydukent, Erkmen, Sahipata, Sandikli, Bolvadin, Emirdag."
+    },
+    {
+      "question": "Koltuklar ne kadar surede kurur?",
+      "answer": "Ortam kosullarina gore degisir, ortalama 4-6 saat icinde kullanima hazir olur."
+    },
+    {
+      "question": "Fiyatlar nasil belirleniyor?",
+      "answer": "Koltuk tipi, adet, leke ve koku yogunlugu ile hizmet bolgesine gore netlestirilir."
+    },
+    {
+      "question": "Arac koltugu temizligi yerinde mi?",
+      "answer": "Evet. Aracin oldugu noktada yerinde arac koltugu temizligi uygulanir."
+    },
+    {
+      "question": "Ayni gun randevu aciliyor mu?",
+      "answer": "Rota yogunluguna gore uygun saat varsa ayni gun randevu acilir."
+    }
+  ]
+}
