@@ -26,7 +26,6 @@ export const NAV_LINKS = [
   { name: "Teknoloji", href: "#features" },
   { name: "Hizmetler", href: "#services" },
   { name: "Fiyat Hesapla", href: "#fiyat-hesapla" },
-  { name: "Kazan", href: "#referans" },
   { name: "Blog", href: "#blog" },
   { name: "Yorumlar", href: "#testimonials" },
 ];

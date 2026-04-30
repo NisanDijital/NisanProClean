@@ -232,6 +232,36 @@ const appointmentSummaryReply = (lead: ExtractedAppointment, saved: boolean, dup
       : "Kayit sirasinda sorun olursa WhatsApp uzerinden devam edebiliriz.",
   ].join("\n");
 
+const missingAppointmentReply = (lead: ExtractedAppointment) => {
+  const received = [
+    lead.name ? `Ad Soyad: ${lead.name}` : "",
+    lead.phone ? `Telefon: ${lead.phone}` : "",
+    lead.address ? `Adres: ${lead.address}` : "",
+    lead.service ? `Hizmet: ${lead.service}` : "",
+    lead.date ? `Tarih: ${lead.date}` : "",
+    lead.slot ? `Saat: ${lead.slot}` : "",
+  ].filter(Boolean);
+
+  const missing = [
+    !lead.name ? "ad soyad" : "",
+    !lead.phone ? "telefon" : "",
+    !lead.address ? "adres" : "",
+    !lead.service ? "hizmet" : "",
+    !lead.date ? "tarih" : "",
+    !lead.slot ? "saat blogu" : "",
+  ].filter(Boolean);
+
+  return [
+    received.length ? "Su bilgileri aldim:" : "Randevu olusturalim.",
+    ...received,
+    "",
+    missing.length
+      ? `Eksik kalan: ${missing.join(", ")}. Bunlari yazarsan kaydi hemen tamamlarim.`
+      : "Bilgiler tamam gibi gorunuyor; kaydi acmayi deniyorum.",
+    "Saat bloklari: 09:00-12:00 / 13:00-16:00 / 17:00-20:00.",
+  ].join("\n");
+};
+
 const dedupeKeyForLead = (lead: Pick<LeadPayload, "phone" | "service" | "date" | "slot">) =>
   [
     "dedupe",
@@ -339,11 +369,10 @@ const appointmentReply = [
 ].join("\n");
 
 const stainAnalysisReply = [
-  "Evet, leke analizi yapabiliriz.",
-  "Sitedeki Yapay Zeka Leke Analizi bolumunden lekenin fotografini yukleyebilirsin.",
-  "Chat alani su an fotograf almiyor; fotografli degerlendirme icin leke analizi panelini kullan ya da WhatsApp'tan fotograf gonder.",
+  "Evet, fotografla on degerlendirme yapabiliriz.",
+  "Bu sohbet alani su an fotograf almiyor; en net yol WhatsApp'tan fotograf gondermen.",
   "",
-  "Daha net sonuc icin fotografi gunduz isiginda, lekeye yakin ve net cekmeni oneririm.",
+  "Fotografi gunduz isiginda, lekeye yakin ve net cekersen daha dogru fiyat ve uygulama bilgisi verebiliriz.",
 ].join("\n");
 
 const defaultPrimaryModel = "@cf/zai-org/glm-4.7-flash";
@@ -578,7 +607,7 @@ export default {
       }
 
       if (containsAppointmentIntent(conversationText)) {
-        return new Response(JSON.stringify({ success: true, reply: appointmentReply }), {
+        return new Response(JSON.stringify({ success: true, reply: missingAppointmentReply(appointmentLead) || appointmentReply }), {
           status: 200,
           headers: { ...cors(origin), "content-type": "application/json" },
         });

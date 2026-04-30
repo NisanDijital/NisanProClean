@@ -13,10 +13,7 @@ import {
 import { CONTACT_INFO, IMAGES } from "./constants";
 
 const BeforeAfterGallery = lazy(() => import("./components/BeforeAfterGallery"));
-const AIStainAnalyzer = lazy(() => import("./components/AIStainAnalyzer"));
-const UVScanner = lazy(() => import("./components/UVScanner"));
 const PricingCalculator = lazy(() => import("./components/PricingCalculator"));
-const Referral = lazy(() => import("./components/Referral"));
 const Testimonial = lazy(() => import("./components/Testimonial"));
 const FAQ = lazy(() => import("./components/FAQ"));
 const Blog = lazy(() => import("./components/Blog"));
@@ -26,11 +23,7 @@ const Marquee = lazy(() => import("./components/Marquee"));
 const Features = lazy(() => import("./components/Features"));
 const SplitSection = lazy(() => import("./components/SplitSection"));
 const Footer = lazy(() => import("./components/Footer"));
-const ScrollToTop = lazy(() => import("./components/ScrollToTop"));
 const FloatingWhatsApp = lazy(() => import("./components/FloatingWhatsApp"));
-const SocialProof = lazy(() => import("./components/SocialProof"));
-const ExitIntentPopup = lazy(() => import("./components/ExitIntentPopup"));
-const EmergencyStainAssistant = lazy(() => import("./components/EmergencyStainAssistant"));
 const AIAgentChat = lazy(() => import("./components/AIAgentChat"));
 
 const DeferredSectionsFallback: React.FC = () => (
@@ -215,10 +208,7 @@ const App: React.FC = () => {
           <Suspense fallback={<DeferredSectionsFallback />}>
             <div style={{ contentVisibility: "auto", containIntrinsicSize: "2200px" }}>
               <BeforeAfterGallery />
-              <AIStainAnalyzer />
-              <UVScanner />
               <PricingCalculator />
-              <Referral />
               <FAQ />
               <Blog />
               <Testimonial />
@@ -231,11 +221,7 @@ const App: React.FC = () => {
       {showDeferredUi ? (
         <Suspense fallback={null}>
           <Footer />
-          <ScrollToTop />
           <FloatingWhatsApp />
-          <SocialProof />
-          <ExitIntentPopup />
-          <EmergencyStainAssistant />
           <AIAgentChat />
         </Suspense>
       ) : null}
