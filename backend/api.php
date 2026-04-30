@@ -2927,9 +2927,6 @@ function handleAdminBlogDelete(string $storageDir): void
 $storageDir = storageDir();
 $pdo = dbConnection();
 
-if (usingDb() && !($pdo instanceof PDO)) {
-    respond(500, ['success' => false, 'error' => 'MySQL baglantisi kurulamadi. backend/config.php kontrol edin.']);
-}
 if ($pdo instanceof PDO) {
     initializeDbSchema($pdo);
 }
@@ -2938,7 +2935,7 @@ $action = (string) ($_GET['action'] ?? 'health');
 enforcePostSecurity($storageDir, $action);
 switch ($action) {
     case 'health':
-        respond(200, ['success' => true, 'status' => 'ok', 'using_db' => $pdo instanceof PDO]);
+        respond(200, ['success' => true, 'status' => 'ok', 'db_configured' => usingDb(), 'using_db' => $pdo instanceof PDO]);
         break;
     case 'csrf_token':
         handleCsrfToken();
