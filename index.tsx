@@ -9,10 +9,23 @@ window.addEventListener('vite:preloadError', (event) => {
 });
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // Keep app working even if SW fails to register.
-    });
+  window.addEventListener('load', async () => {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    } catch {
+      // no-op
+    }
+
+    // Clear runtime caches to prevent stale UI serving after deploys.
+    if ('caches' in window) {
+      try {
+        const keys = await window.caches.keys();
+        await Promise.all(keys.map((key) => window.caches.delete(key)));
+      } catch {
+        // no-op
+      }
+    }
   });
 }
 

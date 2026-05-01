@@ -24,9 +24,9 @@ export const GALLERY_ITEMS = [
     title: "Arac Koltugu Su Lekesi",
     category: "Arac Koltuk Temizligi",
     beforeImage:
-      "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=800&auto=format&fit=crop",
     afterImage:
-      "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?q=80&w=800&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?q=80&w=800&auto=format&fit=crop",
   },
 ];
 
