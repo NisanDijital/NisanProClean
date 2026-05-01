@@ -13,6 +13,7 @@
     "traffic:gap": "node ./scripts/traffic-gap-report.mjs",
     "prebuild": "npm run -s sitemap:generate",
     "build": "vite build",
+    "postbuild": "node ./scripts/postbuild-copy-backend.mjs",
     "perf:budget": "node ./scripts/check-performance-budget.mjs",
     "preview": "vite preview",
     "lint": "tsc --noEmit"

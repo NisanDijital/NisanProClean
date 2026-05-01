@@ -1,3 +1,6 @@
+import { runDailyBlogAgent } from "./blogAgent";
+import { runQaGrowthMonitor } from "./qaMonitor";
+
 export interface Env {
   LEAD_LOGS: KVNamespace;
   ALLOWED_ORIGIN: string;
@@ -9,6 +12,22 @@ export interface Env {
   AI_MODEL_PRIMARY?: string;
   AI_MODEL_FALLBACK?: string;
   AI_MODELS?: string;
+  BLOG_API_BASE_URL?: string;
+  BLOG_API_TOKEN?: string;
+  BLOG_DAILY_ENABLED?: string;
+  BLOG_SEED_KEYWORDS?: string;
+  BLOG_OPENROUTER_MODEL?: string;
+  BLOG_OPENROUTER_MODELS?: string;
+  BLOG_GEMINI_MODEL?: string;
+  BLOG_WORKERS_AI_MODELS?: string;
+  BLOG_CRON_SECRET?: string;
+  QA_CRON_SECRET?: string;
+  QA_TARGET_URL?: string;
+  QA_PSI_API_KEY?: string;
+  GSC_SITE_URL?: string;
+  GSC_ACCESS_TOKEN?: string;
+  CLARITY_PROJECT_ID?: string;
+  CLARITY_ACCESS_TOKEN?: string;
   AI?: Ai;
 }
 
@@ -70,7 +89,7 @@ const json = (data: unknown, status = 200) =>
 const cors = (origin: string) => ({
   "access-control-allow-origin": origin,
   "access-control-allow-methods": "POST,OPTIONS",
-  "access-control-allow-headers": "content-type",
+  "access-control-allow-headers": "content-type,x-blog-cron-secret,x-qa-cron-secret",
 });
 
 const normalizeForIntent = (message: string) =>
@@ -537,6 +556,40 @@ export default {
       return new Response("ok", { status: 200 });
     }
 
+    if (pathname === "/blog-agent/run" && request.method === "POST") {
+      const secret = (env.BLOG_CRON_SECRET || "").trim();
+      const given = request.headers.get("x-blog-cron-secret")?.trim() || "";
+      if (!secret || given !== secret) {
+        return new Response(JSON.stringify({ success: false, error: "unauthorized" }), {
+          status: 401,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      const result = await runDailyBlogAgent(env);
+      return new Response(JSON.stringify({ success: result.ok, details: result.details }), {
+        status: result.ok ? 200 : 503,
+        headers: { ...cors(origin), "content-type": "application/json" },
+      });
+    }
+
+    if (pathname === "/qa/run" && request.method === "POST") {
+      const secret = (env.QA_CRON_SECRET || env.BLOG_CRON_SECRET || "").trim();
+      const given = request.headers.get("x-qa-cron-secret")?.trim() || "";
+      if (!secret || given !== secret) {
+        return new Response(JSON.stringify({ success: false, error: "unauthorized" }), {
+          status: 401,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      const report = await runQaGrowthMonitor(env);
+      return new Response(JSON.stringify({ success: true, report }), {
+        status: 200,
+        headers: { ...cors(origin), "content-type": "application/json" },
+      });
+    }
+
     if (pathname === "/chat" && request.method === "POST") {
       let body: ChatPayload;
       try {
@@ -700,5 +753,19 @@ export default {
     await env.LEAD_LOGS.put(`daily-summary:${todayKey()}`, JSON.stringify({ count }), {
       expirationTtl: 60 * 60 * 24 * 30,
     });
+
+    const blogResult = await runDailyBlogAgent(env);
+    await env.LEAD_LOGS.put(
+      `blog-scheduled:${Date.now()}`,
+      JSON.stringify({ ts: new Date().toISOString(), ok: blogResult.ok, details: blogResult.details }),
+      { expirationTtl: 60 * 60 * 24 * 90 },
+    );
+
+    const qaReport = await runQaGrowthMonitor(env);
+    await env.LEAD_LOGS.put(
+      `qa-scheduled:${Date.now()}`,
+      JSON.stringify({ ts: new Date().toISOString(), status: qaReport.status, summary: qaReport.summary }),
+      { expirationTtl: 60 * 60 * 24 * 90 },
+    );
   },
 };

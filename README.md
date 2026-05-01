@@ -101,3 +101,15 @@ Script prod URL filtreli olarak su metrikleri verir:
 ### 4) Onemli Operasyon Notu
 
 Clarity API rate-limit (`429`) verebilir. Bu durumda 30-60 saniye bekleyip tekrar deneyin.
+
+## PWA ve Admin Notlari
+
+- PWA aktif: `manifest.webmanifest` + `sw.js` + `index.tsx` service worker register.
+- Build sonrasi backend dosyalari otomatik `dist/` kokune kopyalanir:
+  - `admin.html`
+  - `api.php`
+  - `config.example.php`
+  - `schema.sql`
+  - `.htaccess`
+- Canli admin panel URL:
+  - `https://nisankoltukyikama.com/admin.html`

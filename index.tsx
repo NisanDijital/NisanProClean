@@ -8,12 +8,11 @@ window.addEventListener('vite:preloadError', (event) => {
   window.location.reload();
 });
 
-// Unregister any rogue Service Workers left over from PWA
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for(let registration of registrations) {
-      registration.unregister();
-    }
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Keep app working even if SW fails to register.
+    });
   });
 }
 
