@@ -363,6 +363,7 @@ const dedupeKeyForLead = (lead: Pick<LeadPayload, "phone" | "service" | "date" |
   ].join(":");
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
+const compactText = (value: string, limit = 300) => value.replace(/\s+/g, " ").trim().slice(0, limit);
 
 const buildLeadTelegramText = (lead: NonNullable<LeadSaveResult["payload"]>) =>
   [
@@ -811,6 +812,280 @@ const runSuperAgentBrain = async (env: Env, history: ReturnType<typeof compactHi
   throw lastError || new Error("all_super_model_providers_failed");
 };
 
+const superAgentActionIds = [
+  "lead_count",
+  "site_health",
+  "qa_report",
+  "blog_cadence",
+  "super_report",
+  "instagram_status",
+] as const;
+
+type SuperAgentActionId = (typeof superAgentActionIds)[number];
+
+type SuperAgentPlan = {
+  reply?: string;
+  actions?: SuperAgentActionId[];
+};
+
+type SuperAgentActionResult = {
+  action: SuperAgentActionId;
+  ok: boolean;
+  detail: string;
+};
+
+const isSuperAgentActionId = (value: string): value is SuperAgentActionId =>
+  (superAgentActionIds as readonly string[]).includes(value);
+
+const extractJsonObject = (raw: string) => {
+  const cleaned = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  return start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned;
+};
+
+const parseSuperAgentPlan = (raw: string): SuperAgentPlan | null => {
+  try {
+    const parsed = JSON.parse(extractJsonObject(raw)) as { reply?: unknown; actions?: unknown };
+    const actions = Array.isArray(parsed.actions)
+      ? parsed.actions.map((item) => String(item || "").trim()).filter(isSuperAgentActionId)
+      : [];
+    return {
+      reply: typeof parsed.reply === "string" ? parsed.reply.trim().slice(0, 1200) : "",
+      actions: actions.filter((action, index, arr) => arr.indexOf(action) === index),
+    };
+  } catch {
+    return null;
+  }
+};
+
+const superAgentPlannerPrompt = async (env: Env) =>
+  [
+    superAgentSystemPrompt,
+    "Owner mesajini analiz et ve sadece strict JSON dondur.",
+    "JSON sekli: {\"reply\":\"kisa niyet yorumu\",\"actions\":[\"lead_count\"]}",
+    "Musteri randevu formu isteme; bu kanal site sahibi Ali icin.",
+    "Aksiyonlari sadece gercekten kontrol/calismasi istenen isler icin sec.",
+    "Aksiyonlar: lead_count=bugunku lead sayaci, site_health=canli ana sayfa/admin/api kontrolu, qa_report=SEO/GEO/PageSpeed/Clarity odakli QA monitor, blog_cadence=blog agentini calistir, super_report=tum orkestratoru calistir, instagram_status=Instagram kuyrugunu kontrol et.",
+    "Eger kullanici sohbet etmek veya fikir almak istiyorsa actions bos olabilir.",
+    await buildSuperAgentContext(env),
+  ].join("\n");
+
+const runSuperPlanOpenRouter = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.OPENROUTER_API_KEY) return null;
+  const models = [
+    ...parseModelList(env.SUPER_OPENROUTER_MODELS),
+    env.SUPER_OPENROUTER_MODEL || "",
+    ...defaultSuperOpenRouterModels,
+  ].filter((model, index, arr) => model && arr.indexOf(model) === index);
+  const messages = [
+    { role: "system" as const, content: await superAgentPlannerPrompt(env) },
+    ...history.map((item) => ({
+      role: item.role as "user" | "assistant",
+      content: item.text,
+    })),
+  ];
+
+  let lastError: unknown = null;
+  for (const model of models) {
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://nisankoltukyikama.com",
+          "X-Title": "NisanProClean SuperAgent Planner",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: 260,
+          temperature: 0.15,
+        }),
+      });
+      if (!response.ok) throw new Error(`super_plan_openrouter_${response.status}_${model}`);
+      const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      const plan = parseSuperAgentPlan((data.choices?.[0]?.message?.content || "").trim());
+      if (plan) return plan;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastError) throw lastError;
+  return null;
+};
+
+const runSuperPlanGemini = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.GEMINI_API_KEY) return null;
+  const model = encodeURIComponent(env.SUPER_GEMINI_MODEL || env.GEMINI_MODEL || defaultGeminiModel);
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: await superAgentPlannerPrompt(env) }] },
+      contents: history.map((item) => ({
+        role: item.role === "assistant" ? "model" : "user",
+        parts: [{ text: item.text }],
+      })),
+      generationConfig: {
+        maxOutputTokens: 260,
+        temperature: 0.15,
+      },
+    }),
+  });
+  if (!response.ok) throw new Error(`super_plan_gemini_${response.status}`);
+  const data = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+  return parseSuperAgentPlan(data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "");
+};
+
+const runSuperPlanWorkersAI = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.AI) return null;
+  const models = [
+    ...parseModelList(env.SUPER_WORKERS_AI_MODELS),
+    ...defaultSuperWorkersAIModels,
+  ].filter((model, index, arr) => model && arr.indexOf(model) === index);
+  const messages = [
+    { role: "system" as const, content: await superAgentPlannerPrompt(env) },
+    ...history.map((item) => ({
+      role: item.role as "user" | "assistant",
+      content: item.text,
+    })),
+  ];
+  for (const model of models) {
+    const result = await env.AI.run(model, {
+      messages,
+      max_tokens: 260,
+      temperature: 0.15,
+    });
+    const plan = parseSuperAgentPlan(result?.response || "");
+    if (plan) return plan;
+  }
+  return null;
+};
+
+const runSuperAgentPlanner = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  const providers = [
+    () => runSuperPlanOpenRouter(env, history),
+    () => runSuperPlanGemini(env, history),
+    () => runSuperPlanWorkersAI(env, history),
+  ];
+
+  for (const runProvider of providers) {
+    try {
+      const plan = await runProvider();
+      if (plan) return plan;
+    } catch {
+      // Fall through to the next provider; owner chat still has the direct brain fallback.
+    }
+  }
+  return null;
+};
+
+const runSiteHealthAction = async (env: Env) => {
+  const target = (env.QA_TARGET_URL || env.BLOG_API_BASE_URL || "https://nisankoltukyikama.com").replace(/\/+$/, "");
+  const started = Date.now();
+  const [home, blog, admin, api] = await Promise.all([
+    fetch(`${target}/`, { method: "GET" }),
+    fetch(`${target}/blog/`, { method: "GET" }),
+    fetch(`${target}/admin.html`, { method: "GET" }),
+    fetch(`${target}/api.php?action=health`, { method: "GET" }),
+  ]);
+  return `home:${home.status} blog:${blog.status} admin:${admin.status} api:${api.status} sure:${Date.now() - started}ms`;
+};
+
+const executeSuperAgentActions = async (env: Env, actions: SuperAgentActionId[]): Promise<SuperAgentActionResult[]> => {
+  const uniqueActions = actions.filter((action, index, arr) => arr.indexOf(action) === index);
+  const results: SuperAgentActionResult[] = [];
+
+  for (const action of uniqueActions) {
+    try {
+      if (action === "lead_count") {
+        const count = Number((await env.LEAD_LOGS.get(`counter:${todayKey()}`)) || "0");
+        results.push({ action, ok: true, detail: `bugunku_worker_lead_sayaci:${count}` });
+      } else if (action === "site_health") {
+        results.push({ action, ok: true, detail: await runSiteHealthAction(env) });
+      } else if (action === "qa_report") {
+        const report = await runQaGrowthMonitor(env);
+        results.push({ action, ok: report.status !== "red", detail: `${report.status}: ${report.summary.join(" / ")}` });
+      } else if (action === "blog_cadence") {
+        const blog = await runBlogCadence(env);
+        results.push({ action, ok: blog.ok, detail: compactText(blog.details) });
+      } else if (action === "super_report") {
+        const summary = await runSuperAgent(env, "manual");
+        results.push({
+          action,
+          ok: summary.ok,
+          detail: `site:${summary.site.ok ? "ok" : "hata"} blog:${summary.blog.ok ? "ok" : "hata"} qa:${summary.qa.status} instagram:${summary.instagram.details}`,
+        });
+      } else if (action === "instagram_status") {
+        const queue = JSON.parse((await env.LEAD_LOGS.get("ig-msg:queue")) || "[]") as unknown;
+        const count = Array.isArray(queue) ? queue.length : 0;
+        results.push({ action, ok: true, detail: `bekleyen_instagram_mesaji:${count}` });
+      }
+    } catch (error) {
+      results.push({
+        action,
+        ok: false,
+        detail: `error:${String((error as Error).message || error).slice(0, 240)}`,
+      });
+    }
+  }
+
+  return results;
+};
+
+const runOwnerSuperAgentTurn = async (env: Env, text: string, history: Array<{ role: "user" | "assistant"; text: string }>) => {
+  const superHistory = compactHistory({ message: text, history }, text);
+  const plan = await runSuperAgentPlanner(env, superHistory);
+  const actions = plan?.actions || [];
+  const actionResults = actions.length > 0 ? await executeSuperAgentActions(env, actions) : [];
+
+  const synthesisHistory =
+    actionResults.length > 0
+      ? compactHistory(
+          {
+            message: [
+              text,
+              "",
+              "CALISAN SUPERAGENT AKSIYON SONUCLARI:",
+              ...actionResults.map((result) => `- ${result.action}: ${result.ok ? "OK" : "HATA"} | ${result.detail}`),
+              "",
+              "Bu sonuclari site sahibi Ali'ye kisa, net, aksiyon odakli ozetle. Ezbere cevap verme.",
+            ].join("\n"),
+            history: superHistory,
+          },
+          text,
+        )
+      : superHistory;
+
+  let reply = "";
+  try {
+    reply = await runSuperAgentBrain(env, synthesisHistory);
+  } catch {
+    if (actionResults.length > 0) {
+      reply = [
+        plan?.reply || "Kontrolu calistirdim.",
+        ...actionResults.map((result) => `${result.action}: ${result.ok ? "OK" : "HATA"} - ${result.detail}`),
+      ].join("\n");
+    } else {
+      reply = containsOwnerReportIntent(text)
+        ? await buildOwnerDailyReply(env)
+        : "SuperAgent modeli su an cevap veremedi. Sistem ayakta; `site kontrol`, `qa calistir`, `blog durum` veya `lead var mi` diye yazarsan alt ajanlari calistiririm.";
+    }
+  }
+
+  return {
+    reply,
+    history: appendAssistantHistory(superHistory, reply),
+    actions: actionResults,
+  };
+};
+
 const appendAssistantHistory = (history: Array<{ role: "user" | "assistant"; text: string }>, text: string) =>
   [...history, { role: "assistant" as const, text }].slice(-12);
 
@@ -1182,18 +1457,14 @@ export default {
 
       if (isOwnerChat(env, chatId)) {
         const history = await loadTelegramHistory(env, chatId);
-        const superHistory = compactHistory({ message: text, history }, text);
-        let reply = "";
-        try {
-          reply = await runSuperAgentBrain(env, superHistory);
-        } catch {
-          reply = containsOwnerReportIntent(text)
-            ? await buildOwnerDailyReply(env)
-            : "SuperAgent modeli su an cevap veremedi. Sistem ayakta; gerekirse `genel durum raporu` yaz, operasyon kontrolunu calistirayim.";
-        }
-        await saveTelegramHistory(env, chatId, appendAssistantHistory(superHistory, reply));
-        await sendTelegramChatMessage(env, chatId, reply);
-        return json({ success: true, status: "super_agent_replied" });
+        const result = await runOwnerSuperAgentTurn(env, text, history);
+        await saveTelegramHistory(env, chatId, result.history);
+        await sendTelegramChatMessage(env, chatId, result.reply);
+        return json({
+          success: true,
+          status: "super_agent_orchestrated",
+          actions: result.actions.map((action) => ({ action: action.action, ok: action.ok })),
+        });
       }
 
       const history = await loadTelegramHistory(env, chatId);
