@@ -23,7 +23,13 @@ const run = (label, command, args) => {
   }
 };
 
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const runNpmScript = (label, script) => {
+  if (process.platform === "win32") {
+    return run(label, "cmd.exe", ["/d", "/s", "/c", `npm run -s ${script}`]);
+  }
+  return run(label, "npm", ["run", "-s", script]);
+};
+
 const gitCommand = process.platform === "win32" ? "git.exe" : "git";
 
 console.log("\n[release-gate] workspace status check");
@@ -44,8 +50,8 @@ if (statusOutput) {
 }
 console.log("[release-gate] workspace clean");
 
-run("lint", npmCommand, ["run", "-s", "lint"]);
-run("e2e smoke", npmCommand, ["run", "-s", "test:e2e"]);
+runNpmScript("lint", "lint");
+runNpmScript("e2e smoke", "test:e2e");
 
 console.log("\n[release-gate] AutoQA execute is required after this script.");
 console.log("[release-gate] Example (Codex AutoQA tool): autoqa_execute_run_plan with tests/smoke.spec.ts");
