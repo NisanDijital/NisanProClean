@@ -1390,7 +1390,7 @@ function sendNotificationEvent(string $eventName, array $eventPayload): array
     return $result;
 }
 
-function notifyAppointmentBooked(string $storageDir, array $data): void
+function notifyAppointmentBooked(string $storageDir, array $data): array
 {
     $message =
         "Yeni randevu talebi\n" .
@@ -1416,6 +1416,8 @@ function notifyAppointmentBooked(string $storageDir, array $data): void
         'status' => (int) ($result['status'] ?? 0),
         'error' => (string) ($result['error'] ?? ''),
     ]);
+
+    return $result;
 }
 
 function notifySubscriptionCreated(string $storageDir, array $data): void
@@ -1908,6 +1910,169 @@ function handleAdminLogs(string $storageDir): void
     requireAdmin($storageDir);
     $rows = readAdminLogs($storageDir, 250);
     respond(200, ['success' => true, 'total' => count($rows), 'logs' => $rows]);
+}
+
+function notificationConfigSnapshot(): array
+{
+    $cfg = appConfig();
+    $enabled = notificationsEnabled();
+    $mode = strtolower(trim((string) ($cfg['notify_mode'] ?? 'webhook')));
+
+    $configOk = false;
+    $missing = [];
+    if (!$enabled) {
+        $missing[] = 'notify_disabled';
+    } elseif ($mode === 'whatsapp_cloud') {
+        if (trim((string) ($cfg['wa_to'] ?? '')) === '') $missing[] = 'wa_to';
+        if (trim((string) ($cfg['wa_phone_number_id'] ?? '')) === '') $missing[] = 'wa_phone_number_id';
+        if (trim((string) ($cfg['wa_access_token'] ?? '')) === '') $missing[] = 'wa_access_token';
+        $configOk = count($missing) === 0;
+    } else {
+        if (trim((string) ($cfg['notify_webhook_url'] ?? '')) === '') $missing[] = 'notify_webhook_url';
+        $configOk = count($missing) === 0;
+    }
+
+    return [
+        'enabled' => $enabled,
+        'mode' => $mode,
+        'config_ok' => $configOk,
+        'missing' => $missing,
+    ];
+}
+
+function handleAdminNotifyCheck(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Bildirim kontrolu icin veritabani gerekli.']);
+    }
+
+    $todayStart = gmdate('Y-m-d 00:00:00');
+    $todayEnd = gmdate('Y-m-d 23:59:59');
+
+    $statStmt = $pdo->prepare(
+        'SELECT action_name, ok, COUNT(*) AS total
+         FROM admin_logs
+         WHERE action_name IN ("notify_appointment_booked", "notify_subscription_created")
+           AND ts BETWEEN :start AND :end
+         GROUP BY action_name, ok'
+    );
+    $statStmt->execute(['start' => $todayStart, 'end' => $todayEnd]);
+    $statRows = $statStmt->fetchAll();
+    if (!is_array($statRows)) {
+        $statRows = [];
+    }
+
+    $stats = [
+        'appointment_ok' => 0,
+        'appointment_fail' => 0,
+        'subscription_ok' => 0,
+        'subscription_fail' => 0,
+    ];
+    foreach ($statRows as $row) {
+        $actionName = (string) ($row['action_name'] ?? '');
+        $ok = (int) ($row['ok'] ?? 0);
+        $total = (int) ($row['total'] ?? 0);
+        if ($actionName === 'notify_appointment_booked') {
+            $stats[$ok ? 'appointment_ok' : 'appointment_fail'] += $total;
+        } elseif ($actionName === 'notify_subscription_created') {
+            $stats[$ok ? 'subscription_ok' : 'subscription_fail'] += $total;
+        }
+    }
+
+    $logsStmt = $pdo->prepare(
+        'SELECT ts, action_name, ok, meta_json
+         FROM admin_logs
+         WHERE action_name IN ("notify_appointment_booked", "notify_subscription_created")
+         ORDER BY id DESC
+         LIMIT 25'
+    );
+    $logsStmt->execute();
+    $logRows = $logsStmt->fetchAll();
+    if (!is_array($logRows)) {
+        $logRows = [];
+    }
+
+    $candidateStmt = $pdo->prepare(
+        'SELECT id, customer_name, phone, customer_address, service_type, appointment_date, appointment_time, status, note
+         FROM appointments
+         WHERE appointment_date >= :date_min
+         ORDER BY id DESC
+         LIMIT 20'
+    );
+    $candidateStmt->execute([
+        'date_min' => (new DateTimeImmutable('-2 days'))->format('Y-m-d'),
+    ]);
+    $candidates = $candidateStmt->fetchAll();
+    if (!is_array($candidates)) {
+        $candidates = [];
+    }
+
+    logAdminAction($storageDir, 'admin_notify_check', true, ['total_logs' => count($logRows)]);
+    respond(200, [
+        'success' => true,
+        'today' => gmdate('Y-m-d'),
+        'config' => notificationConfigSnapshot(),
+        'stats' => $stats,
+        'recent_logs' => $logRows,
+        'retry_candidates' => $candidates,
+    ]);
+}
+
+function handleAdminNotifyRetry(string $storageDir): void
+{
+    requireAdmin($storageDir);
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        respond(405, ['success' => false, 'error' => 'Gecersiz istek.']);
+    }
+
+    $pdo = dbConnection();
+    if (!($pdo instanceof PDO)) {
+        respond(503, ['success' => false, 'error' => 'Bildirim retry icin veritabani gerekli.']);
+    }
+
+    $payload = readJsonPayload();
+    $appointmentId = (int) ($payload['appointment_id'] ?? 0);
+    if ($appointmentId <= 0) {
+        respond(422, ['success' => false, 'error' => 'appointment_id gerekli.']);
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT id, customer_name, phone, customer_address, service_type, appointment_date, appointment_time, note
+         FROM appointments
+         WHERE id = :id
+         LIMIT 1'
+    );
+    $stmt->execute(['id' => $appointmentId]);
+    $row = $stmt->fetch();
+    if (!is_array($row)) {
+        respond(404, ['success' => false, 'error' => 'Randevu bulunamadi.']);
+    }
+
+    $result = notifyAppointmentBooked($storageDir, [
+        'name' => (string) ($row['customer_name'] ?? ''),
+        'phone' => (string) ($row['phone'] ?? ''),
+        'address' => (string) ($row['customer_address'] ?? ''),
+        'service' => (string) ($row['service_type'] ?? ''),
+        'date' => (string) ($row['appointment_date'] ?? ''),
+        'time' => substr((string) ($row['appointment_time'] ?? ''), 0, 5),
+        'note' => (string) ($row['note'] ?? ''),
+    ]);
+
+    $ok = (bool) ($result['ok'] ?? false);
+    logAdminAction($storageDir, 'admin_notify_retry', $ok, [
+        'appointment_id' => $appointmentId,
+        'status' => (int) ($result['status'] ?? 0),
+        'error' => (string) ($result['error'] ?? ''),
+    ]);
+
+    respond($ok ? 200 : 502, [
+        'success' => $ok,
+        'appointment_id' => $appointmentId,
+        'notify_status' => (int) ($result['status'] ?? 0),
+        'notify_error' => (string) ($result['error'] ?? ''),
+    ]);
 }
 
 function handleCronBackup(string $storageDir): void
@@ -2986,6 +3151,12 @@ switch ($action) {
         break;
     case 'admin_logs':
         handleAdminLogs($storageDir);
+        break;
+    case 'admin_notify_check':
+        handleAdminNotifyCheck($storageDir);
+        break;
+    case 'admin_notify_retry':
+        handleAdminNotifyRetry($storageDir);
         break;
     case 'admin_blog_list':
         handleAdminBlogList($storageDir);

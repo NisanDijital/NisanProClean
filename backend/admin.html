@@ -63,6 +63,7 @@
         <button id="refreshBtn">Yenile</button>
         <button id="backupBtn" class="secondary">Yedek Al</button>
         <button id="logsBtn" class="secondary">Loglar</button>
+        <button id="notifyCheckBtn" class="secondary">Bildirim Check</button>
         <button id="dailySummaryBtn" class="secondary">Gunluk Ozeti Yenile</button>
         <button id="logoutBtn" class="danger">Cikis</button>
         <span id="panelMsg" class="muted"></span>
@@ -85,6 +86,33 @@
           <div class="stat"><span class="muted">Yorum Bekleyen</span><strong id="summaryReviews">0</strong></div>
           <div class="stat"><span class="muted">Bugun Randevu</span><strong id="summaryAppointments">0</strong></div>
           <div class="stat"><span class="muted">Bildirim Hata</span><strong id="summaryNotifyFail">0</strong></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Bildirim Check / Retry</h3>
+        <div class="row" style="margin-bottom:10px;">
+          <span class="muted tiny">Mod:</span><strong id="notifyMode">-</strong>
+          <span class="muted tiny">Durum:</span><strong id="notifyEnabled">-</strong>
+          <span class="muted tiny">Config:</span><strong id="notifyConfigOk">-</strong>
+          <span class="muted tiny">Hata:</span><span id="notifyLastError" class="muted tiny">-</span>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="muted">Randevu Bildirim OK</span><strong id="notifyAppOk">0</strong></div>
+          <div class="stat"><span class="muted">Randevu Bildirim Fail</span><strong id="notifyAppFail">0</strong></div>
+          <div class="stat"><span class="muted">Uyelik Bildirim OK</span><strong id="notifySubOk">0</strong></div>
+          <div class="stat"><span class="muted">Uyelik Bildirim Fail</span><strong id="notifySubFail">0</strong></div>
+        </div>
+        <div class="row" style="margin-bottom:8px;">
+          <input id="notifyRetryAppointmentId" type="number" placeholder="Randevu ID ile tekrar dene" />
+          <button id="notifyRetryBtn" class="secondary">Retry Gonder</button>
+          <button id="notifyRefreshBtn" class="secondary">Yenile</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Musteri</th><th>Tarih/Saat</th><th>Durum</th><th>Islem</th></tr></thead>
+            <tbody id="notifyRetryBody"></tbody>
+          </table>
         </div>
       </div>
 
@@ -251,6 +279,16 @@
     const summaryReviews = $('summaryReviews');
     const summaryAppointments = $('summaryAppointments');
     const summaryNotifyFail = $('summaryNotifyFail');
+    const notifyMode = $('notifyMode');
+    const notifyEnabled = $('notifyEnabled');
+    const notifyConfigOk = $('notifyConfigOk');
+    const notifyLastError = $('notifyLastError');
+    const notifyAppOk = $('notifyAppOk');
+    const notifyAppFail = $('notifyAppFail');
+    const notifySubOk = $('notifySubOk');
+    const notifySubFail = $('notifySubFail');
+    const notifyRetryBody = $('notifyRetryBody');
+    const notifyRetryAppointmentId = $('notifyRetryAppointmentId');
     const dailySummaryWaPhoneInput = $('dailySummaryWaPhone');
     const logsOut = $('logsOut');
     let csrfToken = '';
@@ -695,11 +733,56 @@
       summaryNotifyFail.textContent = String(d.notify_failures_today || 0);
     }
 
+    async function loadNotifyCheck() {
+      const d = await api('admin_notify_check');
+      notifyMode.textContent = d.config?.mode || '-';
+      notifyEnabled.textContent = d.config?.enabled ? 'aktif' : 'pasif';
+      notifyConfigOk.textContent = d.config?.config_ok ? 'tamam' : 'eksik';
+      notifyLastError.textContent = Array.isArray(d.config?.missing) && d.config.missing.length ? d.config.missing.join(', ') : '-';
+      notifyAppOk.textContent = String(d.stats?.appointment_ok || 0);
+      notifyAppFail.textContent = String(d.stats?.appointment_fail || 0);
+      notifySubOk.textContent = String(d.stats?.subscription_ok || 0);
+      notifySubFail.textContent = String(d.stats?.subscription_fail || 0);
+
+      notifyRetryBody.innerHTML = '';
+      const rows = Array.isArray(d.retry_candidates) ? d.retry_candidates : [];
+      for (const row of rows) {
+        const tr = document.createElement('tr');
+        const timeText = String(row.appointment_time || '').slice(0, 5);
+        tr.innerHTML = `
+          <td>${row.id}</td>
+          <td>${escapeHtml(row.customer_name || '-')}<br><span class="muted tiny">${escapeHtml(row.phone || '-')}</span></td>
+          <td>${escapeHtml(row.appointment_date || '-')} ${escapeHtml(timeText || '')}</td>
+          <td>${escapeHtml(row.status || '-')}</td>
+          <td><button class="secondary" data-notify-retry-id="${row.id}">Retry</button></td>
+        `;
+        notifyRetryBody.appendChild(tr);
+      }
+      if (!notifyRetryBody.children.length) {
+        notifyRetryBody.innerHTML = '<tr><td colspan="5" class="muted">Retry adayi randevu bulunamadi.</td></tr>';
+      }
+
+      notifyRetryBody.querySelectorAll('button[data-notify-retry-id]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = Number(btn.getAttribute('data-notify-retry-id'));
+          try {
+            const res = await api('admin_notify_retry', 'POST', { appointment_id: id });
+            panelMsg.textContent = `Randevu #${id} bildirim retry sonucu: ${res.notify_status || 0}`;
+          } catch (e) {
+            panelMsg.textContent = e.message;
+          }
+          await loadDaySummary();
+          await loadNotifyCheck();
+        });
+      });
+    }
+
     $('loginBtn').addEventListener('click', async () => {
       try {
         await api('admin_login', 'POST', { password: $('password').value });
         setAuthed(true);
         await loadDaySummary();
+        await loadNotifyCheck();
         await loadReferrals();
         await loadLeads();
         await loadAppointments();
@@ -710,8 +793,25 @@
       }
     });
 
-    $('refreshBtn').addEventListener('click', async () => { await loadDaySummary(); await loadReferrals(); await loadLeads(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
-    $('dailySummaryBtn').addEventListener('click', async () => { await loadDaySummary(); });
+    $('refreshBtn').addEventListener('click', async () => { await loadDaySummary(); await loadNotifyCheck(); await loadReferrals(); await loadLeads(); await loadAppointments(); await loadSubscriptions(); await loadLeadReport(); });
+    $('dailySummaryBtn').addEventListener('click', async () => { await loadDaySummary(); await loadNotifyCheck(); });
+    $('notifyCheckBtn').addEventListener('click', async () => { await loadNotifyCheck(); });
+    $('notifyRefreshBtn').addEventListener('click', async () => { await loadNotifyCheck(); });
+    $('notifyRetryBtn').addEventListener('click', async () => {
+      const id = Number(notifyRetryAppointmentId.value || '0');
+      if (!id) {
+        panelMsg.textContent = 'Retry icin randevu ID girin.';
+        return;
+      }
+      try {
+        const res = await api('admin_notify_retry', 'POST', { appointment_id: id });
+        panelMsg.textContent = `Randevu #${id} bildirim retry sonucu: ${res.notify_status || 0}`;
+      } catch (e) {
+        panelMsg.textContent = e.message;
+      }
+      await loadDaySummary();
+      await loadNotifyCheck();
+    });
     $('dailySummaryWaBtn').addEventListener('click', () => {
       const rawPhone = String(dailySummaryWaPhoneInput.value || '').trim();
       const digits = normalizePhoneForWhatsApp(rawPhone);
@@ -804,6 +904,7 @@
         setAuthed(!!d.authed);
         if (d.authed) {
           await loadDaySummary();
+          await loadNotifyCheck();
           await loadReferrals();
           await loadLeads();
           await loadAppointments();

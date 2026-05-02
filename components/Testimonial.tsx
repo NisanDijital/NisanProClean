@@ -35,7 +35,7 @@ const Testimonial: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const stars = "⭐".repeat(rating);
+    const stars = "*".repeat(rating);
     const message = `*NisanProClean Hizmet Gorusum*\n\n${stars}\n*Isim:* ${name}\n*Bolge:* ${location}\n*Yorum:* ${reviewText}\n\nNot: Isterseniz once/sonra fotograflarinizi bu mesaja ekleyebilirsiniz.`;
 
     const phone = CONTACT_INFO.whatsapp.replace(/\s/g, "");

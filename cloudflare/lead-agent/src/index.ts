@@ -263,8 +263,11 @@ const extractAppointment = (conversation: string): ExtractedAppointment => {
 
   const phoneIndex = phoneMatch ? conversation.search(/0?\s*5\s*\d[\d\s().-]{8,}/) : -1;
   const beforePhone = phoneIndex > 0 ? conversation.slice(Math.max(0, phoneIndex - 60), phoneIndex).trim() : "";
-  const nameMatch = beforePhone.match(/([\p{L}]{2,}(?:\s+[\p{L}]{2,}){0,2})\s*$/u);
-  const name = nameMatch ? nameMatch[1].trim() : "";
+  const explicitNameMatch = conversation.match(/(?:ad\s*soyad|isim)\s*[:\-]\s*([\p{L}]{2,}(?:\s+[\p{L}]{2,}){0,3})/iu);
+  const inlineNameMatch = beforePhone.match(/([\p{L}]{2,}(?:\s+[\p{L}]{2,}){0,2})\s*$/u);
+  const name = explicitNameMatch
+    ? explicitNameMatch[1].trim()
+    : (inlineNameMatch ? inlineNameMatch[1].trim() : "");
 
   const service = normalized.includes("arac")
     ? "Arac koltugu"
@@ -282,8 +285,13 @@ const extractAppointment = (conversation: string): ExtractedAppointment => {
         ? "17:00 - 20:00"
         : "";
 
-  const dateMatch = normalized.match(/\b(\d{1,2})\s*(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)\b/);
-  const date = dateMatch ? `${dateMatch[1]} ${dateMatch[2]}` : normalized.includes("yarin") ? "yarin" : "";
+  const dateMonthMatch = normalized.match(/\b(\d{1,2})\s*(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)\b/);
+  const dateNumericMatch = normalized.match(/\b(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?\b/);
+  const date = dateMonthMatch
+    ? `${dateMonthMatch[1]} ${dateMonthMatch[2]}`
+    : (dateNumericMatch ? `${dateNumericMatch[1]}.${dateNumericMatch[2]}` : (normalized.includes("yarin") ? "yarin" : ""));
+
+  const explicitAddressMatch = conversation.match(/adres\s*[:\-]\s*([^\n,]{5,120})/iu);
 
   const addressPatterns = [
     /\bafyon\s+merkez\b/i,
@@ -295,7 +303,8 @@ const extractAppointment = (conversation: string): ExtractedAppointment => {
     /\bbolvadin\b/i,
     /\bemirdag\b/i,
   ];
-  const address = addressPatterns.map((pattern) => conversation.match(pattern)?.[0]).find(Boolean) || "";
+  const inferredAddress = addressPatterns.map((pattern) => conversation.match(pattern)?.[0]).find(Boolean) || "";
+  const address = explicitAddressMatch ? explicitAddressMatch[1].trim() : inferredAddress;
 
   return {
     name,
