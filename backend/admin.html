@@ -83,6 +83,8 @@
           <div class="stat"><span class="muted">Takip (Gecmis/Bugun)</span><strong id="summaryDue">0</strong></div>
           <div class="stat"><span class="muted">Yarina Takip</span><strong id="summaryTomorrow">0</strong></div>
           <div class="stat"><span class="muted">Yorum Bekleyen</span><strong id="summaryReviews">0</strong></div>
+          <div class="stat"><span class="muted">Bugun Randevu</span><strong id="summaryAppointments">0</strong></div>
+          <div class="stat"><span class="muted">Bildirim Hata</span><strong id="summaryNotifyFail">0</strong></div>
         </div>
       </div>
 
@@ -247,6 +249,8 @@
     const summaryDue = $('summaryDue');
     const summaryTomorrow = $('summaryTomorrow');
     const summaryReviews = $('summaryReviews');
+    const summaryAppointments = $('summaryAppointments');
+    const summaryNotifyFail = $('summaryNotifyFail');
     const dailySummaryWaPhoneInput = $('dailySummaryWaPhone');
     const logsOut = $('logsOut');
     let csrfToken = '';
@@ -333,7 +337,9 @@
         `- Bugun Tamamlanan: ${summaryCompleted.textContent || '0'}`,
         `- Takip (Gecmis/Bugun): ${summaryDue.textContent || '0'}`,
         `- Yarina Takip: ${summaryTomorrow.textContent || '0'}`,
-        `- Yorum Bekleyen: ${summaryReviews.textContent || '0'}`
+        `- Yorum Bekleyen: ${summaryReviews.textContent || '0'}`,
+        `- Bugun Randevu: ${summaryAppointments.textContent || '0'}`,
+        `- Bildirim Hata: ${summaryNotifyFail.textContent || '0'}`
       ].join('\n');
     }
 
@@ -685,6 +691,8 @@
       summaryDue.textContent = String(d.followup_due || 0);
       summaryTomorrow.textContent = String(d.followup_tomorrow || 0);
       summaryReviews.textContent = String(d.reviews_pending || 0);
+      summaryAppointments.textContent = String(d.appointments_today || 0);
+      summaryNotifyFail.textContent = String(d.notify_failures_today || 0);
     }
 
     $('loginBtn').addEventListener('click', async () => {

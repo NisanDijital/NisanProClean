@@ -1262,6 +1262,37 @@ const saveTelegramHistory = async (
   });
 };
 
+const saveOwnerActionLog = async (
+  env: Env,
+  chatId: string,
+  prompt: string,
+  actions: SuperAgentActionResult[],
+  reply: string,
+) => {
+  try {
+    const key = `super-owner-actions:${todayKey()}`;
+    const raw = await env.LEAD_LOGS.get(key);
+    const current = raw ? (JSON.parse(raw) as Array<Record<string, unknown>>) : [];
+    const entry = {
+      ts: new Date().toISOString(),
+      chat_id: chatId,
+      prompt: prompt.slice(0, 500),
+      actions: actions.map((item) => ({
+        action: item.action,
+        ok: item.ok,
+        detail: item.detail.slice(0, 280),
+      })),
+      reply: reply.slice(0, 800),
+    };
+    current.push(entry);
+    await env.LEAD_LOGS.put(key, JSON.stringify(current.slice(-80)), {
+      expirationTtl: 60 * 60 * 24 * 30,
+    });
+  } catch {
+    // Owner reply should continue even if action log persistence fails.
+  }
+};
+
 const telegramWelcomeReply =
   [
     "Merhaba, ben NisanProClean asistani.",
@@ -1459,6 +1490,7 @@ export default {
         const history = await loadTelegramHistory(env, chatId);
         const result = await runOwnerSuperAgentTurn(env, text, history);
         await saveTelegramHistory(env, chatId, result.history);
+        await saveOwnerActionLog(env, chatId, text, result.actions, result.reply);
         await sendTelegramChatMessage(env, chatId, result.reply);
         return json({
           success: true,

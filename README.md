@@ -113,3 +113,20 @@ Clarity API rate-limit (`429`) verebilir. Bu durumda 30-60 saniye bekleyip tekra
   - `.htaccess`
 - Canli admin panel URL:
   - `https://nisankoltukyikama.com/admin.html`
+
+## Release Gate (Stabilizasyon)
+
+Bu repoda tek akisli cikis kurali var:
+
+1. `npm run -s release:gate`
+2. AutoQA execute sonucu `executed=true` ve `status=passed`
+3. `npm run -s build`
+
+Deploy sonrasi zorunlu kontroller:
+
+1. `npm run -s index:health`
+2. `npm run -s release:live-check`
+
+Detay prosedur:
+
+- `docs/release-gate.md`

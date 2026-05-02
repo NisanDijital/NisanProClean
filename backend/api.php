@@ -2647,6 +2647,18 @@ function handleAdminLeadDaySummary(string $storageDir): void
         $sumCount($pdo, 'appointments', 'pipeline_stage = "completed" AND review_requested = 0', []) +
         $sumCount($pdo, 'subscriptions', 'pipeline_stage = "completed" AND review_requested = 0', []);
 
+    $appointmentsToday = $sumCount($pdo, 'appointments', 'appointment_date = :today', ['today' => gmdate('Y-m-d')]);
+
+    $notifyFailuresStmt = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM admin_logs
+         WHERE action_name = "notify_appointment_booked"
+           AND ok = 0
+           AND ts BETWEEN :start AND :end'
+    );
+    $notifyFailuresStmt->execute(['start' => $todayStart, 'end' => $todayEnd]);
+    $notifyFailuresToday = (int) $notifyFailuresStmt->fetchColumn();
+
     logAdminAction($storageDir, 'admin_lead_day_summary', true, ['today' => gmdate('Y-m-d')]);
     respond(200, [
         'success' => true,
@@ -2658,6 +2670,8 @@ function handleAdminLeadDaySummary(string $storageDir): void
         'followup_due' => $followupDue,
         'followup_tomorrow' => $followupTomorrow,
         'reviews_pending' => $reviewsPending,
+        'appointments_today' => $appointmentsToday,
+        'notify_failures_today' => $notifyFailuresToday,
     ]);
 }
 

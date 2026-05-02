@@ -29,4 +29,9 @@ backend/config.php
 # Local automation artifacts
 .playwright-cli/
 .playwright-gsc-profile/
+.playwright-gbp-profile/
+output/
 reports/
+.autoqa/
+test-results/
+playwright-report/
