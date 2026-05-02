@@ -1,5 +1,6 @@
-import { runDailyBlogAgent } from "./blogAgent";
+import { repairPublishedBlogs, runBlogCadence, runDailyBlogAgent } from "./blogAgent";
 import { runQaGrowthMonitor } from "./qaMonitor";
+import { ingestInstagramMessage, runSuperAgent, sendTelegramText } from "./superAgent";
 
 export interface Env {
   LEAD_LOGS: KVNamespace;
@@ -12,6 +13,10 @@ export interface Env {
   AI_MODEL_PRIMARY?: string;
   AI_MODEL_FALLBACK?: string;
   AI_MODELS?: string;
+  SUPER_OPENROUTER_MODEL?: string;
+  SUPER_OPENROUTER_MODELS?: string;
+  SUPER_GEMINI_MODEL?: string;
+  SUPER_WORKERS_AI_MODELS?: string;
   BLOG_API_BASE_URL?: string;
   BLOG_API_TOKEN?: string;
   BLOG_DAILY_ENABLED?: string;
@@ -20,6 +25,22 @@ export interface Env {
   BLOG_OPENROUTER_MODELS?: string;
   BLOG_GEMINI_MODEL?: string;
   BLOG_WORKERS_AI_MODELS?: string;
+  BLOG_BOOTCAMP_DAYS?: string;
+  BLOG_BOOTCAMP_PER_DAY?: string;
+  BLOG_NORMAL_PER_DAY?: string;
+  SUPER_AGENT_ENABLED?: string;
+  SUPER_AGENT_CRON_SECRET?: string;
+  SUPER_NOTIFY_WEBHOOK_URL?: string;
+  SUPER_NOTIFY_WEBHOOK_TOKEN?: string;
+  SUPER_TELEGRAM_ENABLED?: string;
+  SUPER_TELEGRAM_BOT_TOKEN?: string;
+  SUPER_TELEGRAM_CHAT_ID?: string;
+  SUPER_WHATSAPP_ENABLED?: string;
+  SUPER_WHATSAPP_PHONE_NUMBER_ID?: string;
+  SUPER_WHATSAPP_ACCESS_TOKEN?: string;
+  SUPER_WHATSAPP_TO?: string;
+  INSTAGRAM_INGEST_ENABLED?: string;
+  INSTAGRAM_INGEST_SECRET?: string;
   BLOG_CRON_SECRET?: string;
   QA_CRON_SECRET?: string;
   QA_TARGET_URL?: string;
@@ -62,9 +83,32 @@ type LeadPayload = {
   source?: string;
 };
 
+type LeadSaveResult = {
+  id: string;
+  duplicate: boolean;
+  createdAt?: string;
+  payload?: {
+    name: string;
+    phone: string;
+    address: string;
+    service: string;
+    date: string;
+    slot: string;
+    source: string;
+  };
+};
+
 type ChatPayload = {
   message?: string;
   history?: Array<{ role?: string; text?: string }>;
+};
+
+type ChatTurnResult = {
+  success: boolean;
+  reply: string;
+  error?: string;
+  status?: number;
+  history: Array<{ role: "user" | "assistant"; text: string }>;
 };
 
 type ExtractedAppointment = {
@@ -89,7 +133,7 @@ const json = (data: unknown, status = 200) =>
 const cors = (origin: string) => ({
   "access-control-allow-origin": origin,
   "access-control-allow-methods": "POST,OPTIONS",
-  "access-control-allow-headers": "content-type,x-blog-cron-secret,x-qa-cron-secret",
+  "access-control-allow-headers": "content-type,x-blog-cron-secret,x-qa-cron-secret,x-super-agent-secret,x-instagram-ingest-secret",
 });
 
 const normalizeForIntent = (message: string) =>
@@ -154,6 +198,34 @@ const containsAppointmentIntent = (message: string) => {
   );
 };
 
+const containsMetaConversationIntent = (message: string) => {
+  const normalized = normalizeForIntent(message);
+  return (
+    normalized.includes("ezbere") ||
+    normalized.includes("sahibiyim") ||
+    normalized.includes("kimsin") ||
+    normalized.includes("sen bot musun") ||
+    normalized.includes("beni dinlem") ||
+    normalized.includes("onceki mesaji oku") ||
+    normalized.includes("mesajlari oku") ||
+    normalized.includes("anlamadin") ||
+    normalized.includes("yanlis anladin")
+  );
+};
+
+const containsOwnerReportIntent = (message: string) => {
+  const normalized = normalizeForIntent(message);
+  return (
+    (normalized.includes("bugun") || normalized.includes("bu gun")) &&
+    (normalized.includes("randevu alan") ||
+      normalized.includes("lead") ||
+      normalized.includes("talep") ||
+      normalized.includes("kayit") ||
+      normalized.includes("musteri geldi") ||
+      normalized.includes("musteri var"))
+  );
+};
+
 const containsStainAnalysisIntent = (message: string) => {
   const normalized = normalizeForIntent(message);
   return (
@@ -166,18 +238,18 @@ const containsStainAnalysisIntent = (message: string) => {
   );
 };
 
-const compactHistory = (payload: ChatPayload, currentMessage: string) => {
+const compactHistory = (payload: ChatPayload, currentMessage: string): Array<{ role: "user" | "assistant"; text: string }> => {
   const history = Array.isArray(payload.history) ? payload.history : [];
   const cleaned = history
     .slice(-12)
     .map((item) => ({
-      role: item.role === "assistant" ? "assistant" : "user",
+      role: item.role === "assistant" ? ("assistant" as const) : ("user" as const),
       text: String(item.text || "").trim().slice(0, 800),
     }))
     .filter((item) => item.text.length > 0);
 
   if (!cleaned.some((item) => item.role === "user" && item.text === currentMessage)) {
-    cleaned.push({ role: "user", text: currentMessage });
+    cleaned.push({ role: "user" as const, text: currentMessage });
   }
 
   return cleaned;
@@ -292,6 +364,23 @@ const dedupeKeyForLead = (lead: Pick<LeadPayload, "phone" | "service" | "date" |
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
+const buildLeadTelegramText = (lead: NonNullable<LeadSaveResult["payload"]>) =>
+  [
+    "Yeni lead geldi",
+    `Ad: ${lead.name}`,
+    `Telefon: ${lead.phone}`,
+    `Adres: ${lead.address}`,
+    `Hizmet: ${lead.service}`,
+    `Tarih: ${lead.date || "-"}`,
+    `Saat: ${lead.slot || "-"}`,
+    `Kaynak: ${lead.source}`,
+  ].join("\n");
+
+const notifyLeadTelegram = async (env: Env, result: LeadSaveResult) => {
+  if (result.duplicate || !result.payload) return;
+  await sendTelegramText(env, buildLeadTelegramText(result.payload));
+};
+
 const incrementDailyCounter = async (env: Env) => {
   const dailyCounterKey = `counter:${todayKey()}`;
   const current = Number((await env.LEAD_LOGS.get(dailyCounterKey)) || "0");
@@ -300,7 +389,7 @@ const incrementDailyCounter = async (env: Env) => {
   });
 };
 
-const saveLead = async (env: Env, payload: LeadPayload) => {
+const saveLead = async (env: Env, payload: LeadPayload): Promise<LeadSaveResult> => {
   const dedupeKey = dedupeKeyForLead(payload);
   const existingLeadId = await env.LEAD_LOGS.get(dedupeKey);
   if (existingLeadId) {
@@ -309,18 +398,21 @@ const saveLead = async (env: Env, payload: LeadPayload) => {
 
   const leadId = crypto.randomUUID();
   const createdAt = new Date().toISOString();
+  const cleanedPayload = {
+    name: (payload.name || "").trim(),
+    phone: normalizePhone(payload.phone || ""),
+    address: (payload.address || "").trim(),
+    service: (payload.service || "").trim(),
+    date: (payload.date || "").trim(),
+    slot: (payload.slot || "").trim(),
+    source: (payload.source || "web").trim(),
+  };
   await env.LEAD_LOGS.put(
     `lead:${leadId}`,
     JSON.stringify({
       id: leadId,
       createdAt,
-      name: (payload.name || "").trim(),
-      phone: normalizePhone(payload.phone || ""),
-      address: (payload.address || "").trim(),
-      service: (payload.service || "").trim(),
-      date: (payload.date || "").trim(),
-      slot: (payload.slot || "").trim(),
-      source: (payload.source || "web").trim(),
+      ...cleanedPayload,
     }),
     { expirationTtl: 60 * 60 * 24 * 180 },
   );
@@ -328,19 +420,24 @@ const saveLead = async (env: Env, payload: LeadPayload) => {
     expirationTtl: 60 * 60 * 24 * 180,
   });
   await incrementDailyCounter(env);
-  return { id: leadId, duplicate: false };
+  const result: LeadSaveResult = { id: leadId, duplicate: false, createdAt, payload: cleanedPayload };
+  await notifyLeadTelegram(env, result);
+  return result;
 };
 
 const systemPrompt = [
   "Sen NisanProClean icin calisan bir randevu asistanisin.",
   "Her zaman Turkce cevap ver.",
-  "Kisa, net ve yardimci cevap ver.",
+  "Kisa, net, dogal ve yardimci cevap ver.",
   "Musteri sinirli yazsa bile sakin kal, azarlama.",
+  "Kullanici sitenin sahibi, ekipten biri veya test eden biri olabilir; boyle bir durumda bunu kabul et ve test/iyilestirme odakli cevap ver.",
+  "Kullanici seni ezbere konusmakla elestirirse savunmaya gecme; once neyi yanlis anladigini kisaca soyle, sonra daha akilli ve baglama uygun cevap ver.",
   "Sadece koltuk, yatak, arac koltugu temizligi ve randevu konularinda cevap ver.",
   "Fiyat sorularinda asla rakam uydurma.",
   "Pazarlik ve indirim isteginde yetkisiz indirim sozu verme; once kapsam, leke, adet, adres ve slot bilgisi iste.",
   "Fiyat itirazinda deger anlat, gereksiz kalemleri ayiklamayi teklif et, paket avantaji ihtimalini soyle ve randevu kapanisina yonlendir.",
   "Satis odakli ol: musteriye bir sonraki net adimi yazdir, ama rahatsiz edici baski kurma.",
+  "Ayni bilgileri tekrar tekrar isteme; elde olan bilgileri kullan ve sadece eksik kalanlari sor.",
   "Gerekirse ad, telefon, adres, tarih ve saat bilgilerini istemeyi hatirlat.",
 ].join(" ");
 
@@ -410,9 +507,55 @@ const defaultWorkersAIModels = [
   "@cf/meta/llama-4-scout-17b-16e-instruct",
   "@cf/google/gemma-3-12b-it",
 ];
+const defaultSuperOpenRouterModels = [
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "openai/gpt-oss-120b:free",
+  "z-ai/glm-4.5-air:free",
+  "google/gemma-4-26b-a4b-it:free",
+];
+const defaultSuperWorkersAIModels = [
+  "@cf/zai-org/glm-4.7-flash",
+  "@cf/meta/llama-4-scout-17b-16e-instruct",
+  "@cf/qwen/qwen3-30b-a3b-fp8",
+  "@cf/google/gemma-3-12b-it",
+];
 
 const messagesForModel = (history: ReturnType<typeof compactHistory>) => [
   { role: "system" as const, content: systemPrompt },
+  ...history.map((item) => ({
+    role: item.role as "user" | "assistant",
+    content: item.text,
+  })),
+];
+
+const superAgentSystemPrompt = [
+  "Sen NisanProClean SuperAgent'sin.",
+  "Kullanici sitenin sahibi Ali. Musteri gibi davranma.",
+  "Gorevin siteyi, lead akisini, blog/SEO/GEO islerini, QA kontrolunu ve Instagram sinyallerini yoneten akilli operasyon beyni olmak.",
+  "Hazir cevap verme. Baglami oku, eldeki veriyi kullan, eksikse bunu acikca soyle.",
+  "Kisa ama dusunerek cevap ver. Gereksiz form sorulari sorma.",
+  "Bir aksiyon gerekiyorsa net soyle: hangi alt ajan calismali, neyi kontrol edeceksin, sonraki adim ne.",
+  "Musteri randevu akisini sen ustlenme; onu customer chat agent yapar. Sen sahibi yoneten SuperAgent'sin.",
+].join(" ");
+
+const buildSuperAgentContext = async (env: Env) => {
+  const today = todayKey();
+  const [leadCountRaw, latestRunRaw, profileRaw] = await Promise.all([
+    env.LEAD_LOGS.get(`counter:${today}`),
+    env.LEAD_LOGS.get("super-run:latest"),
+    env.LEAD_LOGS.get("super-agent:profile"),
+  ]);
+  return [
+    `Bugunun tarihi: ${today}`,
+    `Bugunku worker lead sayaci: ${Number(leadCountRaw || "0")}`,
+    latestRunRaw ? `Son SuperAgent raporu: ${latestRunRaw.slice(0, 1800)}` : "Son SuperAgent raporu yok.",
+    profileRaw ? `SuperAgent profili: ${profileRaw.slice(0, 900)}` : "SuperAgent profili yok.",
+    "Canli yetenekler: blog cadence, QA/GEO monitor, site health check, Instagram ingest queue, Telegram bildirimleri, lead KV sayaci.",
+  ].join("\n");
+};
+
+const messagesForSuperAgent = async (env: Env, history: ReturnType<typeof compactHistory>) => [
+  { role: "system" as const, content: `${superAgentSystemPrompt}\n\n${await buildSuperAgentContext(env)}` },
   ...history.map((item) => ({
     role: item.role as "user" | "assistant",
     content: item.text,
@@ -465,6 +608,53 @@ const runOpenRouter = async (env: Env, history: ReturnType<typeof compactHistory
   return "";
 };
 
+const runSuperOpenRouter = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.OPENROUTER_API_KEY) return "";
+
+  const models = [
+    ...parseModelList(env.SUPER_OPENROUTER_MODELS),
+    env.SUPER_OPENROUTER_MODEL || "",
+    ...defaultSuperOpenRouterModels,
+  ].filter((model, index, arr) => model && arr.indexOf(model) === index);
+
+  let lastError: unknown = null;
+  const messages = await messagesForSuperAgent(env, history);
+  for (const model of models) {
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://nisankoltukyikama.com",
+          "X-Title": "NisanProClean SuperAgent",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: 520,
+          temperature: 0.35,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`super_openrouter_${response.status}_${model}`);
+      }
+
+      const data = (await response.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const reply = (data.choices?.[0]?.message?.content || "").trim();
+      if (reply) return reply;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) throw lastError;
+  return "";
+};
+
 const runGemini = async (env: Env, history: ReturnType<typeof compactHistory>) => {
   if (!env.GEMINI_API_KEY) return "";
 
@@ -499,6 +689,43 @@ const runGemini = async (env: Env, history: ReturnType<typeof compactHistory>) =
   return (data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "").trim();
 };
 
+const runSuperGemini = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.GEMINI_API_KEY) return "";
+
+  const model = encodeURIComponent(env.SUPER_GEMINI_MODEL || env.GEMINI_MODEL || defaultGeminiModel);
+  const messages = await messagesForSuperAgent(env, history);
+  const system = messages[0]?.content || superAgentSystemPrompt;
+  const contents = messages.slice(1).map((item) => ({
+    role: item.role === "assistant" ? "model" : "user",
+    parts: [{ text: item.content }],
+  }));
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: system }],
+      },
+      contents,
+      generationConfig: {
+        maxOutputTokens: 520,
+        temperature: 0.35,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`super_gemini_${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  return (data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "").trim();
+};
+
 const runWorkersAI = async (env: Env, history: ReturnType<typeof compactHistory>) => {
   if (!env.AI) return "";
 
@@ -514,6 +741,28 @@ const runWorkersAI = async (env: Env, history: ReturnType<typeof compactHistory>
       messages: messagesForModel(history),
       max_tokens: 280,
       temperature: 0.25,
+    });
+    const reply = (result?.response || "").trim();
+    if (reply) return reply;
+  }
+
+  return "";
+};
+
+const runSuperWorkersAI = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  if (!env.AI) return "";
+
+  const models = [
+    ...parseModelList(env.SUPER_WORKERS_AI_MODELS),
+    ...defaultSuperWorkersAIModels,
+  ].filter((model, index, arr) => model && arr.indexOf(model) === index);
+
+  const messages = await messagesForSuperAgent(env, history);
+  for (const model of models) {
+    const result = await env.AI.run(model, {
+      messages,
+      max_tokens: 520,
+      temperature: 0.35,
     });
     const reply = (result?.response || "").trim();
     if (reply) return reply;
@@ -541,6 +790,217 @@ const runBestAvailableModel = async (env: Env, history: ReturnType<typeof compac
 
   throw lastError || new Error("all_model_providers_failed");
 };
+
+const runSuperAgentBrain = async (env: Env, history: ReturnType<typeof compactHistory>) => {
+  const providers = [
+    () => runSuperOpenRouter(env, history),
+    () => runSuperGemini(env, history),
+    () => runSuperWorkersAI(env, history),
+  ];
+
+  let lastError: unknown = null;
+  for (const runProvider of providers) {
+    try {
+      const reply = await runProvider();
+      if (reply) return reply;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("all_super_model_providers_failed");
+};
+
+const appendAssistantHistory = (history: Array<{ role: "user" | "assistant"; text: string }>, text: string) =>
+  [...history, { role: "assistant" as const, text }].slice(-12);
+
+const telegramSecret = (env: Env) => (env.SUPER_AGENT_CRON_SECRET || env.BLOG_CRON_SECRET || "").trim();
+
+const sendTelegramChatMessage = async (env: Env, chatId: string, text: string) => {
+  const token = (env.SUPER_TELEGRAM_BOT_TOKEN || "").trim();
+  if (!token || !chatId) return false;
+
+  const response = await fetch(`https://api.telegram.org/bot${encodeURIComponent(token)}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: text.slice(0, 3900),
+      disable_web_page_preview: true,
+    }),
+  });
+
+  return response.ok;
+};
+
+const runChatTurn = async (env: Env, body: ChatPayload): Promise<ChatTurnResult> => {
+  if (!isValidChatMessage(body)) {
+    return {
+      success: false,
+      error: "invalid_message",
+      reply: "Mesajini anlayamadim. Kisa ve net yazar misin?",
+      status: 422,
+      history: [],
+    };
+  }
+
+  const userMessage = (body.message || "").trim();
+  const history = compactHistory(body, userMessage);
+  const conversationText = history.map((item) => `${item.role}: ${item.text}`).join("\n");
+  const appointmentLead = extractAppointment(conversationText);
+
+  if (appointmentLead.isComplete) {
+    let saved = false;
+    let duplicate = false;
+    try {
+      const result = await saveLead(env, {
+        name: appointmentLead.name,
+        phone: appointmentLead.phone,
+        address: appointmentLead.address,
+        service: appointmentLead.service,
+        date: appointmentLead.date,
+        slot: appointmentLead.slot,
+        source: "ai_chat_agent",
+      });
+      saved = true;
+      duplicate = result.duplicate;
+    } catch {
+      saved = false;
+    }
+
+    const reply = appointmentSummaryReply(appointmentLead, saved, duplicate);
+    return {
+      success: true,
+      reply,
+      status: 200,
+      history: appendAssistantHistory(history, reply),
+    };
+  }
+
+  if (containsNegotiationIntent(userMessage)) {
+    return {
+      success: true,
+      reply: negotiationReply,
+      status: 200,
+      history: appendAssistantHistory(history, negotiationReply),
+    };
+  }
+
+  if (containsPricingIntent(userMessage)) {
+    return {
+      success: true,
+      reply: pricingReply,
+      status: 200,
+      history: appendAssistantHistory(history, pricingReply),
+    };
+  }
+
+  if (containsStainAnalysisIntent(userMessage)) {
+    return {
+      success: true,
+      reply: stainAnalysisReply,
+      status: 200,
+      history: appendAssistantHistory(history, stainAnalysisReply),
+    };
+  }
+
+  if (!containsMetaConversationIntent(userMessage) && containsAppointmentIntent(userMessage)) {
+    const reply = missingAppointmentReply(appointmentLead) || appointmentReply;
+    return {
+      success: true,
+      reply,
+      status: 200,
+      history: appendAssistantHistory(history, reply),
+    };
+  }
+
+  if (!env.OPENROUTER_API_KEY && !env.GEMINI_API_KEY && !env.AI) {
+    const reply = "AI asistan su anda aktif degil. Lutfen biraz sonra tekrar deneyin.";
+    return {
+      success: false,
+      error: "ai_binding_missing",
+      reply,
+      status: 503,
+      history: appendAssistantHistory(history, reply),
+    };
+  }
+
+  try {
+    const reply = await runBestAvailableModel(env, history);
+    return {
+      success: true,
+      reply,
+      status: 200,
+      history: appendAssistantHistory(history, reply),
+    };
+  } catch {
+    const reply =
+      "Su anda cevap olustururken kisa bir sorun yasadim. Dilersen fiyat, randevu veya adres bilgilerini yaz; oradan hizla devam edelim.";
+    return {
+      success: false,
+      error: "all_model_providers_failed",
+      reply,
+      status: 503,
+      history: appendAssistantHistory(history, reply),
+    };
+  }
+};
+
+const telegramHistoryKey = (chatId: string) => `tg-history:${chatId}`;
+const isOwnerChat = (env: Env, chatId: string) => chatId === String(env.SUPER_TELEGRAM_CHAT_ID || "").trim();
+
+const buildOwnerDailyReply = async (env: Env) => {
+  const count = Number((await env.LEAD_LOGS.get(`counter:${todayKey()}`)) || "0");
+  return count > 0
+    ? `Bugun su ana kadar ${count} yeni lead kaydi var. Istersen birazdan kaynak ve takip aksiyonlarini da ozetleyebilirim.`
+    : "Bugun su ana kadar worker ustunden kaydedilmis yeni lead gorunmuyor. Istersen trafik, form ve sohbet akislarini birlikte kontrol edelim.";
+};
+
+const loadTelegramHistory = async (env: Env, chatId: string): Promise<Array<{ role: "user" | "assistant"; text: string }>> => {
+  try {
+    const raw = await env.LEAD_LOGS.get(telegramHistoryKey(chatId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<{ role?: string; text?: string }>;
+    return Array.isArray(parsed)
+      ? parsed
+          .map((item) => ({
+            role: item.role === "assistant" ? ("assistant" as const) : ("user" as const),
+            text: String(item.text || "").trim().slice(0, 800),
+          }))
+          .filter((item) => item.text.length > 0)
+          .slice(-12)
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveTelegramHistory = async (
+  env: Env,
+  chatId: string,
+  history: Array<{ role: "user" | "assistant"; text: string }>,
+) => {
+  await env.LEAD_LOGS.put(telegramHistoryKey(chatId), JSON.stringify(history.slice(-12)), {
+    expirationTtl: 60 * 60 * 24 * 14,
+  });
+};
+
+const telegramWelcomeReply =
+  [
+    "Merhaba, ben NisanProClean asistani.",
+    "Buradan fiyat, randevu, leke on degerlendirmesi ve hizmet bolgesi konularinda hizli yardim alabilirsin.",
+    "Istersen direkt su formatta yaz:",
+    "Ad Soyad - Telefon - Adres - Hizmet - Tarih - Saat blogu",
+  ].join("\n");
+
+const superAgentWelcomeReply =
+  [
+    "Ben NisanProClean SuperAgent.",
+    "Bu Telegram hattinda seni musteri gibi degil, site sahibi gibi dinlerim.",
+    "Bana lead, site, blog, SEO, QA, Instagram veya genel operasyon durumunu sorabilirsin.",
+  ].join("\n");
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -573,6 +1033,52 @@ export default {
       });
     }
 
+    if (pathname === "/blog-agent/run-cadence" && request.method === "POST") {
+      const secret = (env.BLOG_CRON_SECRET || "").trim();
+      const given = request.headers.get("x-blog-cron-secret")?.trim() || "";
+      if (!secret || given !== secret) {
+        return new Response(JSON.stringify({ success: false, error: "unauthorized" }), {
+          status: 401,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      const result = await runBlogCadence(env);
+      return new Response(JSON.stringify({ success: result.ok, details: result.details }), {
+        status: result.ok ? 200 : 503,
+        headers: { ...cors(origin), "content-type": "application/json" },
+      });
+    }
+
+    if (pathname === "/blog-agent/repair" && request.method === "POST") {
+      const secret = (env.BLOG_CRON_SECRET || "").trim();
+      const given = request.headers.get("x-blog-cron-secret")?.trim() || "";
+      if (!secret || given !== secret) {
+        return new Response(JSON.stringify({ success: false, error: "unauthorized" }), {
+          status: 401,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      let body: { limit?: number; slug?: string; templateOnly?: boolean; force?: boolean } = {};
+      try {
+        body = (await request.json()) as { limit?: number; slug?: string; templateOnly?: boolean; force?: boolean };
+      } catch {
+        body = {};
+      }
+
+      const result = await repairPublishedBlogs(env, {
+        limit: body.limit,
+        slug: body.slug,
+        templateOnly: body.templateOnly,
+        force: body.force,
+      });
+      return new Response(JSON.stringify({ success: result.ok, details: result.details }), {
+        status: result.ok ? 200 : 503,
+        headers: { ...cors(origin), "content-type": "application/json" },
+      });
+    }
+
     if (pathname === "/qa/run" && request.method === "POST") {
       const secret = (env.QA_CRON_SECRET || env.BLOG_CRON_SECRET || "").trim();
       const given = request.headers.get("x-qa-cron-secret")?.trim() || "";
@@ -588,6 +1094,114 @@ export default {
         status: 200,
         headers: { ...cors(origin), "content-type": "application/json" },
       });
+    }
+
+    if (pathname === "/super-agent/run" && request.method === "POST") {
+      const secret = (env.SUPER_AGENT_CRON_SECRET || env.BLOG_CRON_SECRET || "").trim();
+      const given = request.headers.get("x-super-agent-secret")?.trim() || "";
+      if (!secret || given !== secret) {
+        return new Response(JSON.stringify({ success: false, error: "unauthorized" }), {
+          status: 401,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      const result = await runSuperAgent(env, "manual");
+      return new Response(JSON.stringify({ success: result.ok, result }), {
+        status: result.ok ? 200 : 503,
+        headers: { ...cors(origin), "content-type": "application/json" },
+      });
+    }
+
+    if (pathname === "/ingest/instagram" && request.method === "POST") {
+      const secret = (env.INSTAGRAM_INGEST_SECRET || env.SUPER_AGENT_CRON_SECRET || env.BLOG_CRON_SECRET || "").trim();
+      const given = request.headers.get("x-instagram-ingest-secret")?.trim() || "";
+      if (!secret || given !== secret) {
+        return new Response(JSON.stringify({ success: false, error: "unauthorized" }), {
+          status: 401,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      let payload: {
+        source?: string;
+        username?: string;
+        userId?: string;
+        message?: string;
+        permalink?: string;
+        ts?: string;
+      };
+      try {
+        payload = (await request.json()) as typeof payload;
+      } catch {
+        return new Response(JSON.stringify({ success: false, error: "invalid_json" }), {
+          status: 400,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      const result = await ingestInstagramMessage(env, payload);
+      return new Response(JSON.stringify({ success: result.ok, id: result.id }), {
+        status: 201,
+        headers: { ...cors(origin), "content-type": "application/json" },
+      });
+    }
+
+    if (pathname === "/telegram/webhook" && request.method === "POST") {
+      const secret = telegramSecret(env);
+      const given = request.headers.get("x-telegram-bot-api-secret-token")?.trim() || "";
+      if (!secret || given !== secret) {
+        return json({ success: false, error: "unauthorized" }, 401);
+      }
+
+      let update: {
+        message?: {
+          text?: string;
+          chat?: { id?: number | string };
+        };
+      };
+      try {
+        update = (await request.json()) as typeof update;
+      } catch {
+        return json({ success: false, error: "invalid_json" }, 400);
+      }
+
+      const chatId = String(update.message?.chat?.id || "").trim();
+      const text = String(update.message?.text || "").trim();
+      if (!chatId) return json({ success: true, ignored: "missing_chat_id" });
+      if (!text) {
+        await sendTelegramChatMessage(env, chatId, "Su an yalnizca metin mesajlari isleyebiliyorum. Yazi olarak gonder, hemen devam edelim.");
+        return json({ success: true, ignored: "non_text_message" });
+      }
+
+      if (text === "/start") {
+        await saveTelegramHistory(env, chatId, []);
+        await sendTelegramChatMessage(env, chatId, isOwnerChat(env, chatId) ? superAgentWelcomeReply : telegramWelcomeReply);
+        return json({ success: true, status: "welcomed" });
+      }
+
+      if (isOwnerChat(env, chatId)) {
+        const history = await loadTelegramHistory(env, chatId);
+        const superHistory = compactHistory({ message: text, history }, text);
+        let reply = "";
+        try {
+          reply = await runSuperAgentBrain(env, superHistory);
+        } catch {
+          reply = containsOwnerReportIntent(text)
+            ? await buildOwnerDailyReply(env)
+            : "SuperAgent modeli su an cevap veremedi. Sistem ayakta; gerekirse `genel durum raporu` yaz, operasyon kontrolunu calistirayim.";
+        }
+        await saveTelegramHistory(env, chatId, appendAssistantHistory(superHistory, reply));
+        await sendTelegramChatMessage(env, chatId, reply);
+        return json({ success: true, status: "super_agent_replied" });
+      }
+
+      const history = await loadTelegramHistory(env, chatId);
+      const result = await runChatTurn(env, { message: text, history });
+      await saveTelegramHistory(env, chatId, result.history);
+      await sendTelegramChatMessage(env, chatId, result.reply);
+
+      return json({ success: true, status: result.success ? "replied" : "fallback_replied" });
     }
 
     if (pathname === "/chat" && request.method === "POST") {
@@ -607,106 +1221,19 @@ export default {
           headers: { ...cors(origin), "content-type": "application/json" },
         });
       }
-
-      const userMessage = (body.message || "").trim();
-      const history = compactHistory(body, userMessage);
-      const conversationText = history.map((item) => `${item.role}: ${item.text}`).join("\n");
-      const appointmentLead = extractAppointment(conversationText);
-
-      if (appointmentLead.isComplete) {
-        let saved = false;
-        let duplicate = false;
-        try {
-          const result = await saveLead(env, {
-            name: appointmentLead.name,
-            phone: appointmentLead.phone,
-            address: appointmentLead.address,
-            service: appointmentLead.service,
-            date: appointmentLead.date,
-            slot: appointmentLead.slot,
-            source: "ai_chat_agent",
-          });
-          saved = true;
-          duplicate = result.duplicate;
-        } catch {
-          saved = false;
-        }
-
-        return new Response(JSON.stringify({ success: true, reply: appointmentSummaryReply(appointmentLead, saved, duplicate) }), {
-          status: 200,
+      const result = await runChatTurn(env, body);
+      return new Response(
+        JSON.stringify({
+          success: result.success,
+          reply: result.reply,
+          ...(result.error ? { error: result.error } : {}),
+          history: result.history,
+        }),
+        {
+          status: result.status || (result.success ? 200 : 503),
           headers: { ...cors(origin), "content-type": "application/json" },
-        });
-      }
-
-      if (containsNegotiationIntent(userMessage)) {
-        return new Response(JSON.stringify({ success: true, reply: negotiationReply }), {
-          status: 200,
-          headers: { ...cors(origin), "content-type": "application/json" },
-        });
-      }
-
-      if (containsPricingIntent(userMessage)) {
-        return new Response(JSON.stringify({ success: true, reply: pricingReply }), {
-          status: 200,
-          headers: { ...cors(origin), "content-type": "application/json" },
-        });
-      }
-
-      if (containsStainAnalysisIntent(userMessage)) {
-        return new Response(JSON.stringify({ success: true, reply: stainAnalysisReply }), {
-          status: 200,
-          headers: { ...cors(origin), "content-type": "application/json" },
-        });
-      }
-
-      if (containsAppointmentIntent(conversationText)) {
-        return new Response(JSON.stringify({ success: true, reply: missingAppointmentReply(appointmentLead) || appointmentReply }), {
-          status: 200,
-          headers: { ...cors(origin), "content-type": "application/json" },
-        });
-      }
-
-      if (!env.OPENROUTER_API_KEY && !env.GEMINI_API_KEY && !env.AI) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "ai_binding_missing",
-            reply: "AI asistan su anda aktif degil. Lutfen biraz sonra tekrar deneyin.",
-          }),
-          {
-            status: 503,
-            headers: { ...cors(origin), "content-type": "application/json" },
-          },
-        );
-      }
-
-      try {
-        const reply = await runBestAvailableModel(env, history);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            reply:
-              reply ||
-              "Sorunu anladim. Hizli randevu icin ad, telefon, adres, tarih ve saat bilgini paylasabilirsin.",
-          }),
-          {
-            status: 200,
-            headers: { ...cors(origin), "content-type": "application/json" },
-          },
-        );
-      } catch {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "ai_runtime_error",
-            reply: "Sistem su an yogun. Lutfen bir kac dakika sonra tekrar deneyin.",
-          }),
-          {
-            status: 503,
-            headers: { ...cors(origin), "content-type": "application/json" },
-          },
-        );
-      }
+        },
+      );
     }
 
     if (pathname !== "/lead" || request.method !== "POST") {
@@ -754,17 +1281,10 @@ export default {
       expirationTtl: 60 * 60 * 24 * 30,
     });
 
-    const blogResult = await runDailyBlogAgent(env);
+    const superRun = await runSuperAgent(env, "daily");
     await env.LEAD_LOGS.put(
-      `blog-scheduled:${Date.now()}`,
-      JSON.stringify({ ts: new Date().toISOString(), ok: blogResult.ok, details: blogResult.details }),
-      { expirationTtl: 60 * 60 * 24 * 90 },
-    );
-
-    const qaReport = await runQaGrowthMonitor(env);
-    await env.LEAD_LOGS.put(
-      `qa-scheduled:${Date.now()}`,
-      JSON.stringify({ ts: new Date().toISOString(), status: qaReport.status, summary: qaReport.summary }),
+      `super-scheduled:${Date.now()}`,
+      JSON.stringify({ ts: new Date().toISOString(), ok: superRun.ok, qa: superRun.qa.status, blog: superRun.blog.ok }),
       { expirationTtl: 60 * 60 * 24 * 90 },
     );
   },

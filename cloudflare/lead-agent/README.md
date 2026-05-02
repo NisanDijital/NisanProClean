@@ -73,6 +73,9 @@ npx wrangler secret put OPENROUTER_API_KEY
 npx wrangler secret put GEMINI_API_KEY
 npx wrangler secret put BLOG_API_TOKEN
 npx wrangler secret put BLOG_CRON_SECRET
+npx wrangler secret put SUPER_AGENT_CRON_SECRET
+npx wrangler secret put SUPER_TELEGRAM_BOT_TOKEN
+npx wrangler secret put SUPER_TELEGRAM_CHAT_ID
 ```
 
 Manual run endpoint example:
@@ -106,6 +109,12 @@ npx wrangler secret put QA_PSI_API_KEY
 npx wrangler secret put GSC_ACCESS_TOKEN
 npx wrangler secret put CLARITY_ACCESS_TOKEN
 ```
+
+SuperAgent notification channels:
+
+- `SUPER_NOTIFY_WEBHOOK_URL` + optional `SUPER_NOTIFY_WEBHOOK_TOKEN`
+- `SUPER_TELEGRAM_BOT_TOKEN` + `SUPER_TELEGRAM_CHAT_ID`
+- `SUPER_WHATSAPP_*` vars if WhatsApp is enabled
 
 Optional vars in `wrangler.toml`:
 

@@ -49,6 +49,7 @@ const MidSectionsFallback: React.FC = () => (
 
 const App: React.FC = () => {
   const [showDeferredUi, setShowDeferredUi] = useState(false);
+  const isBlogRoute = typeof window !== "undefined" && window.location.pathname.replace(/\/+$/, "") === "/blog";
 
   useEffect(() => {
     let trackingTimeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -109,6 +110,27 @@ const App: React.FC = () => {
       }
     };
   }, []);
+
+  if (isBlogRoute) {
+    return (
+      <div className="min-h-screen flex flex-col relative">
+        <Navbar />
+        <main className="pt-20">
+          <Suspense fallback={<MidSectionsFallback />}>
+            <Blog />
+          </Suspense>
+        </main>
+        {showDeferredUi ? (
+          <Suspense fallback={null}>
+            <Footer />
+            <FloatingWhatsApp />
+            <AIAgentChat />
+          </Suspense>
+        ) : null}
+        <CookieConsent />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative">
