@@ -1548,6 +1548,56 @@ export default {
       );
     }
 
+    if (pathname === "/notify" && request.method === "POST") {
+      let payload: { event?: string; ts?: string; payload?: Record<string, unknown> };
+      try {
+        payload = (await request.json()) as { event?: string; ts?: string; payload?: Record<string, unknown> };
+      } catch {
+        return new Response(JSON.stringify({ success: false, error: "invalid_json" }), {
+          status: 400,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        });
+      }
+
+      const event = String(payload.event || "unknown_event");
+      const data = payload.payload || {};
+      const text =
+        [
+          `NisanProClean Bildirim (${event})`,
+          `Musteri: ${String(data.name || "-")}`,
+          `Telefon: ${String(data.phone || "-")}`,
+          `Adres: ${String(data.address || "-")}`,
+          `Hizmet: ${String(data.service || data.plan_name || "-")}`,
+          `Tarih: ${String(data.date || "-")} ${String(data.time || "")}`.trim(),
+          `Not: ${String(data.note || "-")}`,
+        ].join("\n");
+
+      const notifyResult = await sendTelegramText(env, text);
+      await env.LEAD_LOGS.put(
+        `notify-event:${Date.now()}`,
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          event,
+          ok: notifyResult.ok,
+          detail: notifyResult.detail,
+          payload: data,
+        }),
+        { expirationTtl: 60 * 60 * 24 * 30 },
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          telegram_ok: notifyResult.ok,
+          detail: notifyResult.detail,
+        }),
+        {
+          status: 200,
+          headers: { ...cors(origin), "content-type": "application/json" },
+        },
+      );
+    }
+
     if (pathname !== "/lead" || request.method !== "POST") {
       return json({ success: false, error: "not_found" }, 404);
     }
